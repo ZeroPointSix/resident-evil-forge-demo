@@ -120,7 +120,7 @@ public final class G1BirkinEntity extends EncounterMob {
             server.sendParticles(ParticleTypes.CRIT, location.x, location.y, location.z, 2, 0.12, 0.12, 0.12, 0);
         }
         if (!validTarget(getTarget())) setTarget(null);
-        if (!attacking() && cooldown == 0 && getTarget() != null && distanceTo(getTarget()) <= 3.4 && hasLineOfSight(getTarget())) {
+        if (!isNoAi() && !attacking() && cooldown == 0 && getTarget() != null && distanceTo(getTarget()) <= 3.4 && hasLineOfSight(getTarget())) {
             int skill = switch (skillSequence++ % 3) { case 1 -> SWEEP; case 2 -> GRAB; default -> SLAM; };
             startAttack(skill, skill == SLAM ? 36 : 40, isBerserk() ? 12 : 35);
         }

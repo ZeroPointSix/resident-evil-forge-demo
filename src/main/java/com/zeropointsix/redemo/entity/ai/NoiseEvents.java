@@ -3,6 +3,8 @@ package com.zeropointsix.redemo.entity.ai;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.entity.EncounterMob;
 import com.zeropointsix.redemo.entity.LickerEntity;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -19,6 +21,7 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ResidentEvilMod.MOD_ID)
 public final class NoiseEvents {
+    private static final Map<Player, Vec3> PREVIOUS_POSITIONS = new WeakHashMap<>();
     private NoiseEvents() { }
 
     public static void emit(Level level, Vec3 position, LivingEntity source, double radius) {
@@ -31,9 +34,11 @@ public final class NoiseEvents {
     @SubscribeEvent
     public static void footsteps(TickEvent.PlayerTickEvent event) {
         Player p = event.player;
-        if (event.phase != TickEvent.Phase.END || p.level().isClientSide || p.isCrouching() || !p.onGround() || !EncounterMob.validTarget(p)) return;
-        double moved = p.position().distanceToSqr(new Vec3(p.xo, p.yo, p.zo));
-        if (moved > 0.0005 && p.tickCount % (p.isSprinting() ? 6 : 12) == 0) emit(p.level(), p.position(), p, p.isSprinting() ? 20 : 9);
+        if (event.phase != TickEvent.Phase.END || p.level().isClientSide) return;
+        Vec3 previous = PREVIOUS_POSITIONS.put(p, p.position());
+        if (previous == null || p.isCrouching() || p.isShiftKeyDown() || !p.onGround() || !EncounterMob.validTarget(p)) return;
+        double moved = p.position().distanceToSqr(previous);
+        if (moved > 0.0005 && moved < 25 && p.tickCount % (p.isSprinting() ? 6 : 12) == 0) emit(p.level(), p.position(), p, p.isSprinting() ? 20 : 9);
     }
 
     @SubscribeEvent

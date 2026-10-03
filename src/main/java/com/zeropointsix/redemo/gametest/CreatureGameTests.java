@@ -17,6 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -32,6 +33,7 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.minecraftforge.event.TickEvent;
 
 @GameTestHolder(ResidentEvilMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -102,6 +104,63 @@ public final class CreatureGameTests {
         NoiseEvents.emit(h.getLevel(), outside, null, 20);
         h.assertTrue(licker.investigationPoint() != null, "Loud sound inside radius must be recorded");
         h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void sneakingIsSilentButSprintIsAudible(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(3, 1, 3));
+        licker.setNoAi(true);
+        FakePlayer player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.fromString("dcb3ab95-3d8f-45ba-9aa9-259b510228d2"), "HearingQA"));
+        Vec3 oldPosition = player.position();
+        boolean oldShift = player.isShiftKeyDown();
+        boolean oldSprint = player.isSprinting();
+        boolean oldGround = player.onGround();
+        int oldTicks = player.tickCount;
+        GameType oldMode = player.gameMode.getGameModeForPlayer();
+        try {
+            player.setGameMode(GameType.SURVIVAL);
+            player.setOnGround(true);
+            player.tickCount = 24;
+            player.setPos(licker.position().add(3, 0, 0));
+            NoiseEvents.footsteps(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
+            player.setShiftKeyDown(true);
+            player.setPos(player.position().add(0.2, 0, 0));
+            NoiseEvents.footsteps(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
+            h.assertTrue(licker.investigationPoint() == null, "Sneaking movement must not create footstep aggro");
+            player.setShiftKeyDown(false);
+            player.setSprinting(true);
+            player.setPos(player.position().add(0.3, 0, 0));
+            NoiseEvents.footsteps(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, player));
+            h.assertTrue(licker.investigationPoint() != null, "Sprinting movement must produce a detectable sound");
+            h.succeed();
+        } finally {
+            player.setGameMode(oldMode);
+            player.setShiftKeyDown(oldShift);
+            player.setSprinting(oldSprint);
+            player.setOnGround(oldGround);
+            player.tickCount = oldTicks;
+            player.setPos(oldPosition);
+        }
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void lickerClawHasWindupAndSingleHit(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 6));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        licker.setNoGravity(true);
+        licker.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
+        target.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        licker.hear(target.position(), target, 16);
+        licker.hear(target.position(), target, 16);
+        float original = target.getHealth();
+        h.runAfterDelay(5, () -> h.assertTrue(target.getHealth() == original, "Claw must not damage during telegraph"));
+        h.runAfterDelay(14, () -> h.assertTrue(Math.abs(target.getHealth() - (original - 10)) < 0.001, "Claw must land one 10 damage hit at animation frame 9"));
+        h.runAfterDelay(25, () -> {
+            h.assertTrue(Math.abs(target.getHealth() - (original - 10)) < 0.001, "Same animation must never hit twice");
+            h.succeed();
+        });
     }
 
     @GameTest(template = "empty", timeoutTicks = 40)

@@ -121,7 +121,7 @@ public final class LickerEntity extends EncounterMob {
             }
             return;
         }
-        if (attacking() || cooldown > 0 || getTarget() == null) return;
+        if (isNoAi() || attacking() || cooldown > 0 || getTarget() == null) return;
         double range = distanceTo(getTarget());
         if (!hasLineOfSight(getTarget())) return;
         if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {

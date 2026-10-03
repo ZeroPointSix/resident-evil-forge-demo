@@ -88,7 +88,7 @@ public final class TyrantEntity extends EncounterMob {
         chargeCooldown = Math.max(0, chargeCooldown - 1);
         breakCooldown = Math.max(0, breakCooldown - 1);
         if (!validTarget(getTarget())) setTarget(null);
-        if (getTarget() == null || attacking() || cooldown > 0) return;
+        if (isNoAi() || getTarget() == null || attacking() || cooldown > 0) return;
         double distance = distanceTo(getTarget());
         if (breakCooldown == 0 && hasBreakableAhead() && (horizontalCollision || !hasLineOfSight(getTarget()))) {
             startAttack(BREAK, scaled(28), 15);

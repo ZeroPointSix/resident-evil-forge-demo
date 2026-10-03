@@ -23,9 +23,8 @@ jobs:
         run: chmod +x gradlew
       - name: Build
         run: |
-          mkdir -p build
           set -o pipefail
-          ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee build/ci-build.log
+          ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
@@ -37,5 +36,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-log-${{ github.sha }}
-          path: build/ci-build.log
-          if-no-files-found: warn
+          path: ${{ runner.temp }}/re-demo-ci-build.log
+          if-no-files-found: error

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 import binascii
+import hashlib
 import json
 import math
 import struct
@@ -315,11 +316,21 @@ def validate_blockbench(data: dict, names: set[str], texture_size: tuple[int, in
 
 
 def validate(root: Path, jar: Path | None = None) -> dict:
-    report = {"kind": "static-resource-contract", "gameplay_verified": False, "creatures": {}, "errors": []}
+    report = {
+        "kind": "static-resource-contract", "gameplay_verified": False, "creatures": {}, "errors": [],
+        "jar_resource_check": {"requested": jar is not None, "passed": False, "matched_resources": 0},
+    }
     packed = None
     if jar:
         try:
             packed = zipfile.ZipFile(jar)
+            size = packed.fp.seek(0, 2)
+            packed.fp.seek(0)
+            report["jar_resource_check"].update({
+                "name": jar.name,
+                "sha256": hashlib.file_digest(packed.fp, "sha256").hexdigest(),
+                "bytes": size,
+            })
             require(len(packed.namelist()) == len(set(packed.namelist())), "JAR contains duplicate entries")
             require("META-INF/mods.toml" in packed.namelist(), "JAR has no Forge mods.toml")
         except (OSError, zipfile.BadZipFile, InvalidAsset) as exc:
@@ -344,6 +355,7 @@ def validate(root: Path, jar: Path | None = None) -> dict:
                         info = packed.getinfo(path)
                         require(info.file_size <= MAX_FILE_BYTES, f"oversized JAR resource: {path}")
                         require(packed.read(path) == content[key], f"JAR resource differs from source: {path}")
+                        report["jar_resource_check"]["matched_resources"] += 1
                 size = png_size(content["texture"])
                 names = validate_geometry(load_json(content["geo"]), size, creature)
                 validate_animations(load_json(content["animation"]), names, creature)
@@ -357,6 +369,7 @@ def validate(root: Path, jar: Path | None = None) -> dict:
     finally:
         if packed:
             packed.close()
+    report["jar_resource_check"]["passed"] = jar is not None and not report["errors"]
     return report
 
 

@@ -3,6 +3,7 @@
 import base64
 import binascii
 import copy
+import hashlib
 import importlib.util
 import json
 import struct
@@ -216,6 +217,11 @@ class AssetValidationTests(unittest.TestCase):
             self.assertFalse(result["errors"], result)
             self.assertFalse(result["gameplay_verified"])
             original = jar.read_bytes()
+            self.assertEqual(result["jar_resource_check"], {
+                "requested": True, "passed": True, "matched_resources": 9,
+                "name": "test.jar", "bytes": len(original),
+                "sha256": hashlib.sha256(original).hexdigest(),
+            })
             bad_compression = bytearray(original)
             start = 0
             while True:
@@ -227,16 +233,42 @@ class AssetValidationTests(unittest.TestCase):
             jar.write_bytes(bad_compression)
             result = validator.validate(root, jar)
             self.assertEqual(len(result["errors"]), 3)
+            self.assertFalse(result["jar_resource_check"]["passed"])
+            self.assertEqual(result["jar_resource_check"]["sha256"], hashlib.sha256(bad_compression).hexdigest())
             jar.write_bytes(original)
             (root / "src/main/resources/assets/re_demo/textures/entity/licker.png").write_bytes(png(32, 32))
             result = validator.validate(root, jar)
             self.assertTrue(any("differs from source" in error for error in result["errors"]))
+            self.assertFalse(result["jar_resource_check"]["passed"])
 
     def test_missing_assets_fail(self):
         with tempfile.TemporaryDirectory() as folder:
             result = validator.validate(Path(folder))
             self.assertEqual(len(result["errors"]), 3)
             self.assertFalse(result["gameplay_verified"])
+            self.assertEqual(result["jar_resource_check"], {
+                "requested": False, "passed": False, "matched_resources": 0,
+            })
+
+    def test_missing_jar_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            result = validator.validate(root, root / "missing.jar")
+            self.assertTrue(result["errors"])
+            self.assertEqual(result["jar_resource_check"], {
+                "requested": True, "passed": False, "matched_resources": 0,
+            })
+
+    def test_jar_without_forge_metadata_is_not_verified(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            jar = root / "not-a-mod.jar"
+            with zipfile.ZipFile(jar, "w") as archive:
+                archive.writestr("hello.txt", "test")
+            result = validator.validate(root, jar)
+            self.assertTrue(any("mods.toml" in error for error in result["errors"]))
+            self.assertFalse(result["jar_resource_check"]["passed"])
+            self.assertEqual(result["jar_resource_check"]["sha256"], hashlib.sha256(jar.read_bytes()).hexdigest())
 
     def test_invalid_jar_fails(self):
         with tempfile.TemporaryDirectory() as folder:

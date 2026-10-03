@@ -1,0 +1,13 @@
+{
+  "entity.re_demo.licker": "舔食者",
+  "entity.re_demo.tyrant": "暴君",
+  "entity.re_demo.g1_birkin": "G1 威廉·柏金",
+  "item.re_demo.licker_spawn_egg": "舔食者刷怪蛋",
+  "item.re_demo.tyrant_spawn_egg": "暴君刷怪蛋",
+  "item.re_demo.g1_birkin_spawn_egg": "G1 柏金刷怪蛋",
+  "subtitles.re_demo.licker_hiss": "舔食者嘶鸣",
+  "subtitles.re_demo.heavy_step": "沉重脚步声",
+  "subtitles.re_demo.impact": "猛烈撞击",
+  "subtitles.re_demo.rage": "限制解除",
+  "subtitles.re_demo.eye_open": "肩眼脉动"
+}

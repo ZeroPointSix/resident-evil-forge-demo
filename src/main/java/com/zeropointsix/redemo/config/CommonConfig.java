@@ -1,0 +1,27 @@
+package com.zeropointsix.redemo.config;
+
+import net.minecraftforge.common.ForgeConfigSpec;
+
+public final class CommonConfig {
+    public static final ForgeConfigSpec SPEC;
+    public static final ForgeConfigSpec.BooleanValue TYRANT_BREAK_BLOCKS;
+    public static final ForgeConfigSpec.DoubleValue DAMAGE_SCALE;
+    public static final ForgeConfigSpec.IntValue SOUND_MEMORY_TICKS;
+    public static final double LICKER_HEALTH = 120;
+    public static final double TYRANT_HEALTH = 400;
+    public static final double BIRKIN_HEALTH = 480;
+    public static final double EYE_MULTIPLIER = 1.75;
+
+    static {
+        ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
+        TYRANT_BREAK_BLOCKS = b.comment("Requires mobGriefing and re_demo:tyrant_breakable; never breaks block entities.")
+                .define("tyrantBreakSoftBlocks", true);
+        DAMAGE_SCALE = b.comment("Multiplier for this mod's outgoing attack damage.")
+                .defineInRange("damageScale", 1.0, 0.1, 5.0);
+        SOUND_MEMORY_TICKS = b.comment("Licker forgets a silent target after this many ticks.")
+                .defineInRange("lickerSoundMemoryTicks", 120, 40, 600);
+        SPEC = b.build();
+    }
+
+    private CommonConfig() { }
+}

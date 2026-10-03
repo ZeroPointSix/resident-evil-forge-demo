@@ -1,0 +1,174 @@
+package com.zeropointsix.redemo.entity;
+
+import com.zeropointsix.redemo.config.CommonConfig;
+import com.zeropointsix.redemo.entity.ai.SoundInvestigateGoal;
+import com.zeropointsix.redemo.registry.ModSounds;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+
+public final class LickerEntity extends EncounterMob {
+    public static final int CLAW = 1, LEAP = 2, TONGUE = 3, AMBUSH = 4;
+    private static final EntityDataAccessor<Boolean> CLIMBING = SynchedEntityData.defineId(LickerEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> HANGING = SynchedEntityData.defineId(LickerEntity.class, EntityDataSerializers.BOOLEAN);
+    private Vec3 lastSound;
+    private int lastSoundTick = -10000;
+    private int hangTicks;
+    private int leapCooldown;
+    private int tongueCooldown;
+    private int hangCooldown;
+
+    public LickerEntity(EntityType<? extends Monster> type, Level level) { super(type, level); }
+
+    public static AttributeSupplier.Builder attributes() {
+        return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.LICKER_HEALTH)
+                .add(Attributes.ARMOR, 4).add(Attributes.MOVEMENT_SPEED, 0.29)
+                .add(Attributes.ATTACK_DAMAGE, 10).add(Attributes.FOLLOW_RANGE, 24);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        entityData.define(CLIMBING, false);
+        entityData.define(HANGING, false);
+    }
+
+    @Override
+    protected void registerGoals() {
+        goalSelector.addGoal(0, new FloatGoal(this));
+        goalSelector.addGoal(1, new SoundInvestigateGoal(this));
+        goalSelector.addGoal(6, new WaterAvoidingRandomStrollGoal(this, 0.65));
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) { return new WallClimberNavigation(this, level); }
+
+    @Override
+    public boolean onClimbable() { return entityData.get(CLIMBING); }
+
+    public boolean isHanging() { return entityData.get(HANGING); }
+    public Vec3 investigationPoint() { return lastSound; }
+
+    public void hear(Vec3 position, LivingEntity source, double radius) {
+        if (level().isClientSide || !isAlive() || position.distanceToSqr(position()) > radius * radius) return;
+        boolean repeated = lastSound != null && tickCount - lastSoundTick < 50;
+        lastSound = position;
+        lastSoundTick = tickCount;
+        if (repeated && validTarget(source)) setTarget(source);
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        boolean damaged = super.hurt(source, amount);
+        if (damaged && !level().isClientSide && source.getEntity() instanceof LivingEntity attacker && validTarget(attacker)) {
+            hear(attacker.position(), attacker, 100);
+            setTarget(attacker);
+            lastSound = attacker.position();
+            lastSoundTick = tickCount;
+        }
+        return damaged;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide || !isAlive()) return;
+        leapCooldown = Math.max(0, leapCooldown - 1);
+        tongueCooldown = Math.max(0, tongueCooldown - 1);
+        hangCooldown = Math.max(0, hangCooldown - 1);
+        entityData.set(CLIMBING, horizontalCollision && !onGround() || horizontalCollision && lastSound != null);
+        if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
+            lastSound = null;
+            setTarget(null);
+        }
+        if (!validTarget(getTarget())) setTarget(null);
+        if (onClimbable() && lastSound != null && !isHanging() && !attacking()) {
+            setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
+        }
+        BlockPos ceiling = BlockPos.containing(getX(), getBoundingBox().maxY + 0.15, getZ());
+        boolean solidCeiling = level().getBlockState(ceiling).isFaceSturdy(level(), ceiling, Direction.DOWN);
+        if (!isHanging() && !attacking() && !onGround() && solidCeiling && lastSound != null && hangCooldown == 0) {
+            entityData.set(HANGING, true);
+            hangTicks = 0;
+            setPos(getX(), ceiling.getY() - getBbHeight(), getZ());
+        }
+        if (isHanging()) {
+            setNoGravity(true);
+            setDeltaMovement(Vec3.ZERO);
+            getNavigation().stop();
+            hangTicks++;
+            if (!solidCeiling || hangTicks >= 50 || getTarget() != null && hangTicks >= 20 && distanceTo(getTarget()) < 7) {
+                entityData.set(HANGING, false);
+                setNoGravity(false);
+                hangCooldown = 160;
+                if (validTarget(getTarget())) startAttack(AMBUSH, 28, 35);
+            }
+            return;
+        }
+        if (attacking() || cooldown > 0 || getTarget() == null) return;
+        double range = distanceTo(getTarget());
+        if (!hasLineOfSight(getTarget())) return;
+        if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {
+            startAttack(LEAP, 28, 28);
+            leapCooldown = 120;
+            playSound(ModSounds.LICKER_HISS.get(), 1, 1.2F);
+        } else if (range > 2.2 && range <= 4 && tongueCooldown == 0) {
+            startAttack(TONGUE, 24, 24);
+            tongueCooldown = 90;
+        } else if (range <= 2.3) startAttack(CLAW, 20, 20);
+    }
+
+    @Override
+    protected void attackFrame(int attack, int tick) {
+        if (attack == CLAW && tick == 9) strike(2.3, 110, 10, 0.3);
+        if (attack == TONGUE && tick == 11) {
+            strike(4, 22, 8, 0);
+            LivingEntity target = getTarget();
+            if (target != null && attackHits.contains(target.getUUID())) {
+                Vec3 pull = position().subtract(target.position()).normalize().scale(0.45);
+                target.push(pull.x, 0.12, pull.z);
+                target.hurtMarked = true;
+            }
+        }
+        if ((attack == LEAP && tick == 12) || (attack == AMBUSH && tick == 8)) {
+            Vec3 direction = forward();
+            double speed = attack == LEAP ? 0.82 : 0.65;
+            setDeltaMovement(direction.x * speed, attack == LEAP ? 0.48 : -0.35, direction.z * speed);
+            hasImpulse = true;
+        }
+        if ((attack == LEAP && tick >= 13) || (attack == AMBUSH && tick >= 9)) strike(1.7, 130, 14, 0.5);
+    }
+
+    @Override
+    protected String attackAnimation(int attack) {
+        return switch (attack) { case LEAP -> "leap"; case TONGUE -> "tongue"; case AMBUSH -> "ambush"; default -> "claw"; };
+    }
+
+    @Override
+    public String assetId() { return "licker"; }
+
+    @Override
+    protected SoundEvent getHurtSound(DamageSource source) { return SoundEvents.SPIDER_HURT; }
+
+    @Override
+    protected SoundEvent getDeathSound() { return SoundEvents.SPIDER_DEATH; }
+
+    @Override
+    public boolean causeFallDamage(float distance, float multiplier, DamageSource source) { return false; }
+}

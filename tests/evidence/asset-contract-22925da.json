@@ -1,0 +1,97 @@
+{
+  "kind": "static-resource-contract",
+  "gameplay_verified": false,
+  "creatures": {
+    "licker": {
+      "passed": true,
+      "bones": 25,
+      "texture": [
+        256,
+        256
+      ]
+    },
+    "tyrant": {
+      "passed": true,
+      "bones": 23,
+      "texture": [
+        256,
+        256
+      ]
+    },
+    "g1_birkin": {
+      "passed": true,
+      "bones": 22,
+      "texture": [
+        256,
+        256
+      ]
+    }
+  },
+  "errors": [],
+  "resource_commit": "22925da999b68dfe1480cca0ce362bb80e7eac4c",
+  "validator_commit": "8fd9df0ee29bceb0669cc70709bd9e68ed522514",
+  "command": "python tools/qa/validate_assets.py --root <verified-resource-checkout>",
+  "jar_verified": false,
+  "inputs": [
+    {
+      "path": "art/g1_birkin.bbmodel",
+      "git_blob_sha": "47720dcb693789a660660e801e2a86aff04ebb2b",
+      "bytes": 145187
+    },
+    {
+      "path": "art/licker.bbmodel",
+      "git_blob_sha": "f10253899d3a3353ac0e8136f55f92a2f0069589",
+      "bytes": 157787
+    },
+    {
+      "path": "art/tyrant.bbmodel",
+      "git_blob_sha": "b49c3098b6f7edf04a41e6479e99dfa8666300de",
+      "bytes": 154090
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/animations/g1_birkin.animation.json",
+      "git_blob_sha": "f30af29418e943b995a6d98354409c86a356635b",
+      "bytes": 13664
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/animations/licker.animation.json",
+      "git_blob_sha": "6920912cd5afa700c7787a7228374fd411b151c6",
+      "bytes": 13995
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/animations/tyrant.animation.json",
+      "git_blob_sha": "9fd6de61553d2db3d55cf08f6525e7b8bd5cb334",
+      "bytes": 14546
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/geo/g1_birkin.geo.json",
+      "git_blob_sha": "34a22b57a6e020fb5406b8f9172e34edc934ca0a",
+      "bytes": 78475
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/geo/licker.geo.json",
+      "git_blob_sha": "7a1f4ed72cec420b486c68e80aef65cbd5a2b58f",
+      "bytes": 93019
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/geo/tyrant.geo.json",
+      "git_blob_sha": "f35393a00da824cc72c0a5b8e073d7356bc0418f",
+      "bytes": 85998
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/textures/entity/g1_birkin.png",
+      "git_blob_sha": "f0da40c9772c483d3eef907dc03a69a4f0b5d30e",
+      "bytes": 7976
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/textures/entity/licker.png",
+      "git_blob_sha": "bbca03567793b6d239446e795ecca2a247a90e3a",
+      "bytes": 5633
+    },
+    {
+      "path": "src/main/resources/assets/re_demo/textures/entity/tyrant.png",
+      "git_blob_sha": "a751e4a7fee7e4b7d6bc35457013f6167e5d1691",
+      "bytes": 5744
+    }
+  ]
+}

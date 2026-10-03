@@ -144,7 +144,7 @@ public final class CombatRegressionGameTests {
     private static void meleeEyes(GameTestHelper h, G1BirkinEntity[] mobs) {
         FakePlayer player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.fromString("df13d884-df39-4b1c-9ca9-c1c5aadbe109"), "WeakPointQA"));
         Vec3 oldPosition = player.position();
-        float oldYaw = player.getYRot(), oldPitch = player.getXRot();
+        float oldYaw = player.getYRot(), oldPitch = player.getXRot(), oldHeadYaw = player.getYHeadRot();
         ItemStack oldHand = player.getMainHandItem().copy();
         double oldDamage = player.getAttribute(Attributes.ATTACK_DAMAGE).getBaseValue();
         double oldSpeed = player.getAttribute(Attributes.ATTACK_SPEED).getBaseValue();
@@ -159,11 +159,13 @@ public final class CombatRegressionGameTests {
                 Vec3 start = mob.eyeCenter().add(front(mob).scale(2.5));
                 player.setPos(start.subtract(0, player.getEyeHeight(), 0));
                 player.setYRot(mob.yBodyRot + 180);
+                player.setYHeadRot(mob.yBodyRot + 180);
                 player.setXRot(0);
                 Vec3 end = start.add(player.getViewVector(1).scale(3));
                 var hit = ProjectileUtil.getEntityHitResult(h.getLevel(), player, start, end, new AABB(start, end).inflate(1),
                         entity -> entity.isPickable() && !entity.isSpectator());
-                h.assertTrue(hit != null && (hit.getEntity() == mob || hit.getEntity() == mob.eyePart()), "Player aim must select the real boss or its eye");
+                h.assertTrue(hit != null && (hit.getEntity() == mob || hit.getEntity() == mob.eyePart()),
+                        "Player aim must select the real boss or its eye: yaw=" + mob.yBodyRot + " view=" + player.getViewVector(1) + " hit=" + (hit == null ? "none" : hit.getEntity()));
                 player.attack(hit.getEntity());
                 float expected = CombatRules.getDamageAfterAbsorb(8, 8, 0) * 1.75F;
                 h.assertTrue(Math.abs(mob.getMaxHealth() - mob.getHealth() - expected) < 0.01,
@@ -172,6 +174,7 @@ public final class CombatRegressionGameTests {
         } finally {
             player.setPos(oldPosition);
             player.setYRot(oldYaw);
+            player.setYHeadRot(oldHeadYaw);
             player.setXRot(oldPitch);
             player.setItemInHand(InteractionHand.MAIN_HAND, oldHand);
             player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(oldDamage);

@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "summary": {
+    "creatures": 3,
+    "errors": 0,
+    "checks": 17
+  },
+  "checks": [
+    "Generation manifest parses as JSON",
+    "licker: geometry 25 bones / 48 cubes",
+    "licker: 8 named animations bind to existing bones",
+    "licker: texture is 256x256 with pixel detail",
+    "licker: bbmodel structural openability checks passed",
+    "licker: three orthographic previews and one animated attack preview checked",
+    "tyrant: geometry 23 bones / 46 cubes",
+    "tyrant: 9 named animations bind to existing bones",
+    "tyrant: texture is 256x256 with pixel detail",
+    "tyrant: bbmodel structural openability checks passed",
+    "tyrant: three orthographic previews and one animated attack preview checked",
+    "g1_birkin: geometry 22 bones / 41 cubes",
+    "g1_birkin: 8 named animations bind to existing bones",
+    "g1_birkin: texture is 256x256 with pixel detail",
+    "g1_birkin: bbmodel structural openability checks passed",
+    "g1_birkin: three orthographic previews and one animated attack preview checked",
+    "Chinese evidence notes disclose offline preview status"
+  ],
+  "errors": [],
+  "contract": {
+    "hit_timings_seconds": {
+      "licker": {
+        "claw": 0.45,
+        "leap": 0.6,
+        "tongue": 0.55
+      },
+      "tyrant": {
+        "punch": 0.8,
+        "shove": 0.5,
+        "charge": 1.0,
+        "break": 0.7
+      },
+      "g1_birkin": {
+        "slam": 0.9,
+        "sweep": 1.0,
+        "grab": 0.75
+      }
+    },
+    "phase_bones": {
+      "tyrant": [
+        "coat_intact",
+        "coat_torn"
+      ],
+      "g1_birkin": [
+        "eye_open",
+        "eye_closed"
+      ]
+    },
+    "g1_right_shoulder_blocks": [
+      -0.75,
+      2.15,
+      0
+    ]
+  }
+}

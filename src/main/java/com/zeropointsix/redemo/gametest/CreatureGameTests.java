@@ -21,7 +21,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
@@ -30,6 +29,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -74,7 +74,7 @@ public final class CreatureGameTests {
         player.setPos(Vec3.atCenterOf(block.above(2)));
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(egg));
         UseOnContext context = new UseOnContext(player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(block).add(0, 0.5, 0), Direction.UP, block, false));
-        h.assertTrue(SpawnEggItem.byId(type) == egg, "Spawn egg must map to entity type");
+        h.assertTrue(ForgeSpawnEggItem.fromEntityType(type) == egg, "Forge spawn egg must map to entity type");
         h.assertTrue(egg.useOn(context).consumesAction(), "Spawn egg use must succeed");
         h.assertTrue(!h.getLevel().getEntities(type, new AABB(block.above()).inflate(1), entity -> entity.isAlive()).isEmpty(), "Spawn egg must create a living entity");
     }

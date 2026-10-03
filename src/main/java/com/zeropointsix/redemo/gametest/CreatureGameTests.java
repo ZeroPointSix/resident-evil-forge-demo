@@ -3,6 +3,7 @@ package com.zeropointsix.redemo.gametest;
 import com.mojang.authlib.GameProfile;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.entity.G1BirkinEntity;
+import com.zeropointsix.redemo.entity.EncounterMob;
 import com.zeropointsix.redemo.entity.LickerEntity;
 import com.zeropointsix.redemo.entity.TyrantEntity;
 import com.zeropointsix.redemo.entity.ai.NoiseEvents;
@@ -17,7 +18,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -140,6 +140,7 @@ public final class CreatureGameTests {
             player.setOnGround(oldGround);
             player.tickCount = oldTicks;
             player.setPos(oldPosition);
+            NoiseEvents.clearFootstepHistory(player);
         }
     }
 
@@ -254,5 +255,72 @@ public final class CreatureGameTests {
         h.assertTrue(!loaded.isEyeOpen() && !loaded.attacking(), "Reload must not retain stuck hit windows");
         loaded.discard();
         h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void oddAndEvenBossesPursueFromTwelveBlocks(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        EncounterMob[] bosses = {
+            spawnParity(h, ModEntities.TYRANT.get(), new BlockPos(1, 1, 2), 0),
+            spawnParity(h, ModEntities.TYRANT.get(), new BlockPos(1, 1, 5), 1),
+            spawnParity(h, ModEntities.G1_BIRKIN.get(), new BlockPos(1, 1, 8), 0),
+            spawnParity(h, ModEntities.G1_BIRKIN.get(), new BlockPos(1, 1, 11), 1)
+        };
+        var targets = new net.minecraft.world.entity.animal.IronGolem[bosses.length];
+        double[] initialDistance = new double[bosses.length];
+        for (int i = 0; i < bosses.length; i++) {
+            var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(14, 1, 2 + i * 3));
+            target.setNoAi(true);
+            targets[i] = target;
+            bosses[i].setTarget(target);
+            initialDistance[i] = bosses[i].distanceTo(target);
+            h.assertTrue(initialDistance[i] >= 12, "Pursuit fixture must start outside attack range");
+        }
+        h.runAfterDelay(50, () -> {
+            for (int i = 0; i < bosses.length; i++) {
+                h.assertTrue(bosses[i].distanceTo(targets[i]) < initialDistance[i] - 2, "Boss must pursue for both ID parities: " + bosses[i].assetId() + " id=" + bosses[i].getId());
+            }
+            h.succeed();
+        });
+    }
+
+    private static <T extends EncounterMob> T spawnParity(GameTestHelper h, EntityType<T> type, BlockPos relative, int parity) {
+        for (int attempt = 0; attempt < 4; attempt++) {
+            T mob = type.create(h.getLevel());
+            if (mob != null && (mob.getId() & 1) == parity) {
+                mob.moveTo(Vec3.atBottomCenterOf(h.absolutePos(relative)));
+                h.getLevel().addFreshEntity(mob);
+                return mob;
+            }
+            if (mob != null) mob.discard();
+            if (attempt % 2 == 1) {
+                var unused = EntityType.ARMOR_STAND.create(h.getLevel());
+                if (unused != null) unused.discard();
+            }
+        }
+        throw new IllegalStateException("Could not allocate the required entity ID parity");
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 50)
+    public static void lethalHitClearsLickerTargetAndAttackImmediately(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));
+        var attacker = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 6));
+        attacker.setNoAi(true);
+        attacker.setNoGravity(true);
+        licker.setNoGravity(true);
+        licker.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
+        licker.hear(attacker.position(), attacker, 16);
+        licker.hear(attacker.position(), attacker, 16);
+        h.runAfterDelay(3, () -> {
+            h.assertTrue(licker.attacking(), "Fixture must be attacking before lethal damage");
+            licker.hurt(licker.damageSources().mobAttack(attacker), 10000);
+            h.assertTrue(!licker.isAlive() && licker.getTarget() == null && !licker.attacking(), "Lethal damage must clear target and animation in the same tick");
+        });
+        h.runAfterDelay(5, () -> {
+            h.assertTrue(licker.getTarget() == null && !licker.attacking(), "Dead Licker must not reacquire its attacker");
+            h.succeed();
+        });
     }
 }

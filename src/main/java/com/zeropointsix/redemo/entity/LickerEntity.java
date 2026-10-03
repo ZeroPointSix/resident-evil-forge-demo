@@ -76,13 +76,22 @@ public final class LickerEntity extends EncounterMob {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         boolean damaged = super.hurt(source, amount);
-        if (damaged && !level().isClientSide && source.getEntity() instanceof LivingEntity attacker && validTarget(attacker)) {
+        if (damaged && isAlive() && !level().isClientSide && source.getEntity() instanceof LivingEntity attacker && validTarget(attacker)) {
             hear(attacker.position(), attacker, 100);
             setTarget(attacker);
             lastSound = attacker.position();
             lastSoundTick = tickCount;
         }
         return damaged;
+    }
+
+    @Override
+    public void die(DamageSource source) {
+        lastSound = null;
+        entityData.set(CLIMBING, false);
+        entityData.set(HANGING, false);
+        setNoGravity(false);
+        super.die(source);
     }
 
     @Override

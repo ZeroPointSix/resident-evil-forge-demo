@@ -7,6 +7,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 
 public final class TyrantPursuitGoal extends Goal {
     private final EncounterMob mob;
+    private int pathRefreshTicks;
 
     public TyrantPursuitGoal(EncounterMob mob) {
         this.mob = mob;
@@ -17,11 +18,23 @@ public final class TyrantPursuitGoal extends Goal {
     public boolean canUse() { return EncounterMob.validTarget(mob.getTarget()) && !mob.attacking(); }
 
     @Override
+    public boolean requiresUpdateEveryTick() { return true; }
+
+    @Override
+    public void start() {
+        pathRefreshTicks = 0;
+        tick();
+    }
+
+    @Override
     public void tick() {
         LivingEntity target = mob.getTarget();
         if (target == null) return;
         mob.getLookControl().setLookAt(target, 20, 20);
-        if (mob.tickCount % 10 == 0) mob.getNavigation().moveTo(target, 1.0);
+        if (--pathRefreshTicks <= 0) {
+            mob.getNavigation().moveTo(target, 1.0);
+            pathRefreshTicks = 10;
+        }
     }
 
     @Override

@@ -164,6 +164,8 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         super.die(source);
         getNavigation().stop();
         setTarget(null);
+        entityData.set(ATTACK, 0);
+        entityData.set(ATTACK_TICK, 0);
         if (bossBar != null) bossBar.removeAllPlayers();
     }
 

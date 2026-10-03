@@ -173,6 +173,9 @@ public final class LickerEntity extends EncounterMob {
     public String assetId() { return "licker"; }
 
     @Override
+    public int deathDurationTicks() { return 48; }
+
+    @Override
     protected SoundEvent getHurtSound(DamageSource source) { return SoundEvents.SPIDER_HURT; }
 
     @Override

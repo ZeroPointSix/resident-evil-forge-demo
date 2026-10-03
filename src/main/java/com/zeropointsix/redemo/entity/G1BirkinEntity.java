@@ -35,6 +35,10 @@ import net.minecraftforge.entity.PartEntity;
 
 public final class G1BirkinEntity extends EncounterMob {
     public static final int SLAM = 1, SWEEP = 2, GRAB = 3, RAGE = 4;
+    // Center of the visible eye cubes in the stable exposure pose, in model pixels.
+    // GeckoLib reverses model Z when the entity faces Minecraft's positive Z.
+    public static final Vec3 EYE_LOCAL_CENTER = new Vec3(-11.5 / 16, 35.0 / 16, 4.6 / 16);
+    public static final String[] EXPOSURE_BONES = { "root", "pelvis", "torso", "chest", "right_shoulder", "eye_open" };
     private static final EntityDataAccessor<Boolean> EYE_OPEN = SynchedEntityData.defineId(G1BirkinEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> BERSERK = SynchedEntityData.defineId(G1BirkinEntity.class, EntityDataSerializers.BOOLEAN);
     private final EyePart eye;
@@ -92,6 +96,10 @@ public final class G1BirkinEntity extends EncounterMob {
     public boolean isEyeOpen() { return entityData.get(EYE_OPEN); }
     public boolean isBerserk() { return entityData.get(BERSERK); }
 
+    public Vec3 eyeCenter() {
+        return EYE_LOCAL_CENTER.yRot(-yBodyRot * Mth.DEG_TO_RAD).add(position());
+    }
+
     public void openWeakPoint(int ticks) {
         if (level().isClientSide || !isAlive()) return;
         if (!isEyeOpen()) playSound(ModSounds.EYE_OPEN.get(), 1.2F, 1.3F);
@@ -110,7 +118,7 @@ public final class G1BirkinEntity extends EncounterMob {
     @Override
     public void tick() {
         super.tick();
-        Vec3 location = new Vec3(-0.75, 2.15, 0).yRot(-getYRot() * Mth.DEG_TO_RAD).add(position());
+        Vec3 location = eyeCenter();
         eye.setPos(location.x, location.y - eye.getBbHeight() * 0.5, location.z);
         if (level().isClientSide || !isAlive()) return;
         updatePhase();
@@ -205,6 +213,17 @@ public final class G1BirkinEntity extends EncounterMob {
 
     @Override
     public String assetId() { return "g1_birkin"; }
+
+    @Override
+    public int deathDurationTicks() { return 64; }
+
+    @Override
+    public void die(DamageSource source) {
+        super.die(source);
+        weakTicks = 0;
+        grabbed = null;
+        entityData.set(EYE_OPEN, false);
+    }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {

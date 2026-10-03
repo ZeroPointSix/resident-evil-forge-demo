@@ -33,6 +33,23 @@ public final class CreatureModel<T extends EncounterMob> extends GeoModel<T> {
         if (entity instanceof G1BirkinEntity birkin) {
             hide("eye_open", !birkin.isEyeOpen());
             hide("eye_closed", birkin.isEyeOpen());
+            if (birkin.isAlive() && birkin.isEyeOpen()) {
+                // The exposure pose is a gameplay contract shared with EyePart.
+                // Arm descendants still animate; ancestors cannot move the visible eye.
+                for (String name : G1BirkinEntity.EXPOSURE_BONES) {
+                    var bone = getAnimationProcessor().getBone(name);
+                    if (bone == null) continue;
+                    bone.setRotX(0);
+                    bone.setRotY(0);
+                    bone.setRotZ(0);
+                    bone.setPosX(0);
+                    bone.setPosY(0);
+                    bone.setPosZ(0);
+                    bone.setScaleX(1);
+                    bone.setScaleY(1);
+                    bone.setScaleZ(1);
+                }
+            }
         }
         if (entity instanceof LickerEntity licker) {
             var root = getAnimationProcessor().getBone("root");

@@ -26,5 +26,8 @@ public final class ClientRegistration {
             super(context, new CreatureModel<>(id));
             shadowRadius = shadow;
         }
+
+        @Override
+        protected float getDeathMaxRotation(T entity) { return 0; }
     }
 }

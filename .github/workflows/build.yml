@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Set up Java 17
@@ -25,12 +26,29 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
+      - name: Verify packaged asset contract
+        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.0.jar --report build/reports/asset-contract.json
+      - name: Run real Forge GameTests
+        run: |
+          set -o pipefail
+          ./gradlew runGameTestServer --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
           name: re-demo-${{ github.sha }}
           path: build/libs/*.jar
           if-no-files-found: error
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/re-demo-gametest.log
+            build/reports/asset-contract.json
+            run/logs/
+            run/crash-reports/
+          if-no-files-found: warn
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4

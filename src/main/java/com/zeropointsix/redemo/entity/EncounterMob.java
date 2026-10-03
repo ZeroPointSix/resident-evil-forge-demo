@@ -63,6 +63,7 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     public int attackTick() { return entityData.get(ATTACK_TICK); }
     public boolean attacking() { return attack() != 0; }
     public abstract String assetId();
+    public abstract int deathDurationTicks();
     protected abstract String attackAnimation(int attack);
     protected abstract void attackFrame(int attack, int tick);
 
@@ -167,6 +168,15 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         entityData.set(ATTACK, 0);
         entityData.set(ATTACK_TICK, 0);
         if (bossBar != null) bossBar.removeAllPlayers();
+    }
+
+    @Override
+    protected void tickDeath() {
+        deathTime++;
+        if (deathTime >= deathDurationTicks() && !level().isClientSide && !isRemoved()) {
+            level().broadcastEntityEvent(this, (byte) 60);
+            remove(RemovalReason.KILLED);
+        }
     }
 
     @Override

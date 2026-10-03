@@ -27,6 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.ForgeEventFactory;
 
@@ -90,7 +91,7 @@ public final class TyrantEntity extends EncounterMob {
         if (!validTarget(getTarget())) setTarget(null);
         if (isNoAi() || getTarget() == null || attacking() || cooldown > 0) return;
         double distance = distanceTo(getTarget());
-        if (breakCooldown == 0 && hasBreakableAhead() && (horizontalCollision || !hasLineOfSight(getTarget()))) {
+        if (breakCooldown == 0 && hasBreakableAhead()) {
             startAttack(BREAK, scaled(28), 15);
             breakCooldown = 60;
         } else if (distance >= 4 && distance <= 10 && chargeCooldown == 0 && onGround() && hasLineOfSight(getTarget())) {
@@ -120,9 +121,12 @@ public final class TyrantEntity extends EncounterMob {
         }
     }
 
-    private BlockPos obstacleOrigin() {
-        Vec3 dir = getTarget() == null ? getLookAngle() : getTarget().position().subtract(position()).normalize();
-        return BlockPos.containing(getX() + dir.x * 1.3, getY(), getZ() + dir.z * 1.3);
+    private Iterable<BlockPos> obstacleSection(Vec3 direction) {
+        Vec3 horizontal = new Vec3(direction.x, 0, direction.z).normalize();
+        // A bounded body-width section also finds the sides of an existing narrow hole.
+        AABB section = getBoundingBox().deflate(0.0001).move(horizontal);
+        return BlockPos.betweenClosed(BlockPos.containing(section.minX, section.minY, section.minZ),
+                BlockPos.containing(section.maxX, section.maxY, section.maxZ));
     }
 
     private boolean canBreak(BlockPos pos) {
@@ -132,17 +136,14 @@ public final class TyrantEntity extends EncounterMob {
 
     public boolean hasBreakableAhead() {
         if (!CommonConfig.TYRANT_BREAK_BLOCKS.get() || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return false;
-        BlockPos origin = obstacleOrigin();
-        for (int dy = 0; dy <= 2; dy++) if (canBreak(origin.above(dy))) return true;
+        Vec3 direction = getTarget() == null ? getLookAngle() : getTarget().position().subtract(position());
+        for (BlockPos pos : obstacleSection(direction)) if (canBreak(pos)) return true;
         return false;
     }
 
     public void breakSoftObstacles() {
         if (level().isClientSide || !CommonConfig.TYRANT_BREAK_BLOCKS.get() || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return;
-        Vec3 direction = forward();
-        BlockPos origin = BlockPos.containing(getX() + direction.x * 1.3, getY(), getZ() + direction.z * 1.3);
-        for (int dy = 0; dy <= 2; dy++) {
-            BlockPos pos = origin.above(dy);
+        for (BlockPos pos : obstacleSection(forward())) {
             if (canBreak(pos)) level().destroyBlock(pos, true, this);
         }
         playSound(ModSounds.IMPACT.get(), 1.3F, 0.7F);
@@ -161,6 +162,9 @@ public final class TyrantEntity extends EncounterMob {
 
     @Override
     public String assetId() { return "tyrant"; }
+
+    @Override
+    public int deathDurationTicks() { return 60; }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {

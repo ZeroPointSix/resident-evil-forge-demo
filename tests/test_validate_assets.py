@@ -79,6 +79,41 @@ class AssetValidationTests(unittest.TestCase):
     def test_non_finite_numbers(self):
         self.assertFalse(validator.vector([0, float("nan"), 0]))
         self.assertFalse(validator.number(True))
+        self.assertFalse(validator.number(10**10000))
+
+    def test_deep_json_is_reportable(self):
+        with self.assertRaises(validator.InvalidAsset):
+            validator.load_json(b'{"data":' + b'[' * 12000 + b'0' + b']' * 12000 + b'}')
+
+    def test_invalid_face_uv(self):
+        for uv in ({"no_face": "bad"}, {"north": "bad"}, {"north": {"uv": [0, 0], "uv_size": [65, 1]}}):
+            with self.subTest(uv=uv), self.assertRaises(validator.InvalidAsset):
+                validator.validate_uv(uv, (64, 64))
+
+    def test_mirrored_face_uv_is_valid(self):
+        validator.validate_uv({"north": {"uv": [20, 20], "uv_size": [-5, 5]}}, (64, 64))
+
+    def test_dynamic_detection_ignores_metadata_and_numeric_representation(self):
+        self.assertFalse(validator.dynamic_track({"0": [0, 0, 0], "1": [0.0, 0, 0]}, 2))
+        self.assertFalse(validator.dynamic_track({
+            "0": {"post": [0, 0, 0], "lerp_mode": "linear"},
+            "1": {"post": [0, 0, 0], "lerp_mode": "catmullrom"},
+        }, 2))
+
+    def test_molang_in_single_keyframe_is_dynamic(self):
+        self.assertTrue(validator.dynamic_track({"0": {"post": ["query.anim_time", 0, 0]}}, 2))
+
+    def test_invalid_palette(self):
+        def chunk(kind, data):
+            return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", binascii.crc32(kind + data) & 0xFFFFFFFF)
+
+        header = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 3, 0, 0, 0))
+        pixels = chunk(b"IDAT", zlib.compress(b"\0\0"))
+        end = chunk(b"IEND", b"")
+        for data in (header + chunk(b"PLTE", b"") + pixels + end,
+                     header + pixels + chunk(b"PLTE", b"\xff\0\0") + end):
+            with self.assertRaises(validator.InvalidAsset):
+                validator.png_size(data)
 
     def test_all_three_contracts(self):
         for creature in validator.CONTRACTS:
@@ -180,6 +215,19 @@ class AssetValidationTests(unittest.TestCase):
             result = validator.validate(root, jar)
             self.assertFalse(result["errors"], result)
             self.assertFalse(result["gameplay_verified"])
+            original = jar.read_bytes()
+            bad_compression = bytearray(original)
+            start = 0
+            while True:
+                start = bad_compression.find(b"PK\x01\x02", start)
+                if start < 0:
+                    break
+                struct.pack_into("<H", bad_compression, start + 10, 99)
+                start += 4
+            jar.write_bytes(bad_compression)
+            result = validator.validate(root, jar)
+            self.assertEqual(len(result["errors"]), 3)
+            jar.write_bytes(original)
             (root / "src/main/resources/assets/re_demo/textures/entity/licker.png").write_bytes(png(32, 32))
             result = validator.validate(root, jar)
             self.assertTrue(any("differs from source" in error for error in result["errors"]))

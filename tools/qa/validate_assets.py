@@ -45,7 +45,10 @@ def require(condition: bool, message: str) -> None:
 
 
 def number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+    try:
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def vector(value: Any, length: int = 3) -> bool:
@@ -64,7 +67,7 @@ def load_json(data: bytes) -> dict:
 
     try:
         result = json.loads(data, object_pairs_hook=unique)
-    except (ValueError, UnicodeError) as exc:
+    except (ValueError, UnicodeError, RecursionError) as exc:
         raise InvalidAsset(f"invalid JSON: {exc}") from exc
     require(isinstance(result, dict), "JSON root must be an object")
     return result
@@ -78,6 +81,7 @@ def png_size(data: bytes) -> tuple[int, int]:
     compressed = bytearray()
     header = None
     ended = False
+    palette = None
     while offset < len(data):
         require(offset + 12 <= len(data), "truncated PNG chunk")
         size = struct.unpack_from(">I", data, offset)[0]
@@ -90,6 +94,10 @@ def png_size(data: bytes) -> tuple[int, int]:
         if kind == b"IHDR":
             require(header is None and len(chunks) == 1 and size == 13, "invalid PNG IHDR")
             header = struct.unpack(">IIBBBBB", payload)
+        elif kind == b"PLTE":
+            require(palette is None and b"IDAT" not in chunks, "invalid PNG palette order")
+            require(3 <= size <= 768 and size % 3 == 0, "invalid PNG palette length")
+            palette = size // 3
         elif kind == b"IDAT":
             compressed.extend(payload)
         elif kind == b"IEND":
@@ -105,7 +113,9 @@ def png_size(data: bytes) -> tuple[int, int]:
     depths = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8), 4: (8, 16), 6: (8, 16)}
     require(color in depths and depth in depths[color], "invalid PNG color/bit-depth")
     if color == 3:
-        require(b"PLTE" in chunks, "indexed PNG is missing palette")
+        require(palette is not None and palette <= 2**depth, "invalid or missing indexed PNG palette")
+    elif color in (0, 4):
+        require(palette is None, "grayscale PNG must not have a palette")
     require(bool(compressed), "PNG has no pixel data")
     try:
         decoder = zlib.decompressobj()
@@ -132,6 +142,20 @@ def png_size(data: bytes) -> tuple[int, int]:
         position += rows * (row_bytes + 1)
     require(position == len(pixels), "PNG scanline length mismatch")
     return width, height
+
+
+def validate_uv(uv: Any, texture_size: tuple[int, int]) -> None:
+    if vector(uv, 2):
+        require(all(0 <= v < size for v, size in zip(uv, texture_size)), "box UV origin outside texture")
+        return
+    require(isinstance(uv, dict) and bool(uv), "missing/invalid UV")
+    require(set(uv).issubset({"north", "south", "east", "west", "up", "down"}), "unknown UV face")
+    for face in uv.values():
+        require(isinstance(face, dict) and vector(face.get("uv"), 2), "invalid face UV")
+        size = face.get("uv_size", [0, 0])
+        require(vector(size, 2), "invalid face UV size")
+        for start, extent, limit in zip(face["uv"], size, texture_size):
+            require(0 <= start <= limit and 0 <= start + extent <= limit, "face UV outside texture")
 
 
 def validate_geometry(model: dict, texture_size: tuple[int, int], creature: str) -> set[str]:
@@ -167,7 +191,7 @@ def validate_geometry(model: dict, texture_size: tuple[int, int], creature: str)
             require(all(v >= 0 for v in cube["size"]) and sum(v > 0 for v in cube["size"]) >= 2,
                     f"{name}: degenerate cube")
             uv = cube.get("uv")
-            require(vector(uv, 2) or isinstance(uv, dict) and bool(uv), f"{name}: missing/invalid UV")
+            validate_uv(uv, texture_size)
             for field in ("pivot", "rotation"):
                 require(field not in cube or vector(cube[field]), f"{name}: invalid cube {field}")
             cube_count += 1
@@ -193,9 +217,17 @@ def transform(value: Any) -> bool:
 
 
 def dynamic_track(track: Any, length: float) -> bool:
+    def samples(value: Any) -> list[list]:
+        if isinstance(value, list):
+            return [value]
+        return [sample for key in ("pre", "post", "vector") if key in value for sample in samples(value[key])]
+
+    def dynamic_expression(value: list) -> bool:
+        return any(isinstance(v, str) and any(s in v for s in ("query.", "math.", "q.")) for v in value)
+
     if isinstance(track, list):
         require(transform(track), "invalid animation vector")
-        return any(isinstance(v, str) and any(s in v for s in ("query.", "math.", "q.")) for v in track)
+        return dynamic_expression(track)
     require(isinstance(track, dict) and track, "empty animation track")
     values = []
     for timestamp, value in track.items():
@@ -205,8 +237,8 @@ def dynamic_track(track: Any, length: float) -> bool:
             raise InvalidAsset(f"invalid keyframe time: {timestamp}") from exc
         require(math.isfinite(time) and 0 <= time <= length + 0.0001, "keyframe outside animation duration")
         require(transform(value), "invalid animation keyframe")
-        values.append(json.dumps(value, sort_keys=True))
-    return len(set(values)) > 1
+        values.extend(samples(value))
+    return any(dynamic_expression(value) for value in values) or any(value != values[0] for value in values[1:])
 
 
 def validate_animations(data: dict, bones: set[str], creature: str) -> None:
@@ -319,7 +351,7 @@ def validate(root: Path, jar: Path | None = None) -> dict:
                 require(source.stat().st_size <= MAX_FILE_BYTES, "oversized Blockbench source")
                 validate_blockbench(load_json(source.read_bytes()), names, size)
                 report["creatures"][creature] = {"passed": True, "bones": len(names), "texture": list(size)}
-            except (OSError, KeyError, InvalidAsset, zipfile.BadZipFile) as exc:
+            except (OSError, KeyError, InvalidAsset, zipfile.BadZipFile, RuntimeError, zlib.error, RecursionError) as exc:
                 report["creatures"][creature] = {"passed": False}
                 report["errors"].append(f"{creature}: {exc}")
     finally:

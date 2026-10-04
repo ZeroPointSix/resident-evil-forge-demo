@@ -419,18 +419,18 @@ class Capture:
                      f"unless entity @a[name={CAMERA},distance=..0.15]", "real client movement packet received")
         self.report["client_input_roundtrip_verified"] = True
 
-    def combat_clip(self, entity: str, x: int) -> None:
+    def combat_clip(self, entity: str, x: int, scenario: str = "attack", target_distance: float = 1.8) -> None:
         selector = f"@e[type=re_demo:{entity},tag=ce_{entity},limit=1]"
         dummy = f"@e[type=minecraft:iron_golem,tag=ce_dummy_{entity},limit=1]"
         before, after = f"before_{entity}", f"after_{entity}"
-        self.command(f"summon minecraft:iron_golem {x + 1.8} 64 3.2 "
+        self.command(f"summon minecraft:iron_golem {x + target_distance} 64 4 "
                      f"{{Tags:[\"ce_dummy_{entity}\"],NoAI:1b,PersistenceRequired:1b,Health:1000.0f,"
                      'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
                      '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
         self.confirm(f"if entity {dummy}", f"{entity}: controlled target summoned")
         self.command(f"execute store result score {before} ce_health run data get entity {dummy} Health 100")
         self.confirm(f"if score {before} ce_health matches 100000", f"{entity}: stationary target at full health")
-        path = self.output / f"{entity}-attack.mp4"
+        path = self.output / f"{entity}-{scenario}.mp4"
         recorder = self.start(f"ffmpeg-{entity}", [
             "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
             "-f", "x11grab", "-framerate", "20", "-video_size", "1280x720", "-i", self.env["DISPLAY"],
@@ -462,7 +462,30 @@ class Capture:
         if difference < 0.05:
             raise EvidenceError(f"Recording appears frozen for {entity}")
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
-                                         sampled_motion=round(difference, 3), server_target_damaged=True))
+                                         sampled_motion=round(difference, 3), server_target_damaged=True,
+                                         scenario=scenario, initial_target_distance=target_distance))
+
+    def ranged_action_scenes(self) -> None:
+        # Fresh entities keep cooldowns from the close-range scenes out of these
+        # normal-AI range tests. No scripted animation or damage is substituted.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
+        time.sleep(4)
+        for entity, scenario, distance in (("tyrant", "charge", 7.0),
+                                            ("licker", "tongue", 3.4),
+                                            ("licker", "crawl", 12.0)):
+            x = 4
+            self.command(f"summon re_demo:{entity} {x} 64 4 "
+                         f"{{Tags:[\"ce_{entity}\"],PersistenceRequired:1b,NoAI:1b,Rotation:[-90.0f,0.0f]}}")
+            self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_{entity},limit=1]",
+                         f"fresh normal-AI {scenario} scene")
+            center = x + distance * 0.5
+            self.camera(center + 2, -6 if scenario != "crawl" else -9,
+                        center, 65.1 if entity == "tyrant" else 64.6, 4,
+                        f"{entity}: {scenario}")
+            self.combat_clip(entity, x, scenario, distance)
+            self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
+            time.sleep(4)
 
     def capture(self) -> None:
         self.camera(8, -15, 8, 65.3, 4, "Three creatures")
@@ -474,6 +497,7 @@ class Capture:
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
             self.combat_clip(entity, x)
+        self.ranged_action_scenes()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
                             r"(?:Unable|Failed|Could not|Missing).{0,100}(?:re_demo[:/]|assets/re_demo/))", re.I)
@@ -481,7 +505,7 @@ class Capture:
             match = errors.search(tail(path, 10_000_000))
             if match:
                 raise EvidenceError(f"Client rendering/resource error in {path.name}: {match.group(0)}")
-        if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 3:
+        if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 6:
             raise EvidenceError("Incomplete evidence set")
         self.report["installed_jar_client_verified"] = True
         self.report["passed"] = True

@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import shutil
 
-from creature_assets_lib import build_blockbench_animation, get_models, stable_uuid
+from creature_assets_lib import build_blockbench_animation, get_models, keyframes, stable_uuid
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -147,6 +147,66 @@ def joint_pivots(creature, parts):
     return {name: turn(value) for name, value in result.items()}
 
 
+def retarget_attacks(creature, animations):
+    def bones(name):
+        return animations[f"animation.{creature}.{name}"]["bones"]
+
+    def rotation(*samples):
+        return {"rotation": keyframes(*samples)}
+
+    if creature == "tyrant":
+        bones("punch")["upper_arm_r"] = rotation(
+            (0, [0, 0, 0]), (.5, [25, 0, 12]), (.8, [-55, 0, -8]),
+            (1.2, [-20, 0, 8]), (1.6, [0, 0, 0]))
+        bones("punch")["forearm_r"] = rotation(
+            (0, [0, 0, 0]), (.5, [-70, 0, 0]), (.8, [-20, 0, 0]), (1.6, [0, 0, 0]))
+        for action, names in {"shove": ("upper_arm_l", "upper_arm_r"),
+                              "break": ("upper_arm_r", "forearm_r"),
+                              "charge": ("torso",)}.items():
+            for name in names:
+                for value in bones(action)[name]["rotation"].values():
+                    value[0] = -value[0]
+    elif creature == "g1_birkin":
+        # Move descendants of the shoulder only: the exposed eye's ancestors
+        # are held at rest by CreatureModel and must not cancel the attack.
+        bones("slam").clear()
+        bones("slam").update({
+            "right_upper_arm": rotation((0, [0, 0, 0]), (.55, [120, 0, 0]),
+                                         (.9, [-35, 10, 0]), (1.2, [-35, 10, 0]), (1.8, [0, 0, 0])),
+            "right_forearm": rotation((0, [0, 0, 0]), (.55, [20, 0, 0]),
+                                       (.9, [5, 0, 0]), (1.2, [5, 0, 0]), (1.8, [0, 0, 0])),
+        })
+        bones("sweep").clear()
+        bones("sweep").update({
+            "right_upper_arm": rotation((0, [0, 0, 0]), (.65, [-20, -45, 0]),
+                                         (1, [-25, 50, 0]), (1.45, [-25, 65, 0]), (2, [0, 0, 0])),
+            "right_forearm": rotation((0, [0, 0, 0]), (.65, [-20, -20, 0]),
+                                       (1, [-25, 25, 0]), (1.45, [-25, 25, 0]), (2, [0, 0, 0])),
+        })
+        bones("grab").clear()
+        bones("grab").update({
+            "right_upper_arm": rotation((0, [0, 0, 0]), (.45, [15, -10, 0]),
+                                         (.75, [-30, 15, 0]), (1.3, [-10, 10, 0]),
+                                         (1.5, [-45, 15, 0]), (2, [0, 0, 0])),
+            "right_forearm": rotation((0, [0, 0, 0]), (.45, [-45, 0, 0]),
+                                       (.75, [-25, 0, 0]), (1.3, [-60, 0, 0]),
+                                       (1.5, [-5, 0, 0]), (2, [0, 0, 0])),
+            "right_hand": {"scale": keyframes((0, [1, 1, 1]), (.75, [1.1, 1.1, 1.1]),
+                                               (1.3, [.88, .88, .88]), (1.5, [1.1, 1.1, 1.1]), (2, [1, 1, 1]))},
+        })
+    else:
+        bones("claw").update({
+            "chest": rotation((0, [0, 0, 0]), (.25, [0, -5, 0]),
+                               (.45, [0, 0, 0]), (1, [0, 0, 0])),
+            "upper_arm_l": rotation((0, [0, 0, 0]), (.25, [10, -15, 8]),
+                                     (.45, [-25, 45, -8]), (1, [0, 0, 0])),
+            "forearm_l": rotation((0, [0, 0, 0]), (.25, [-60, 0, 0]),
+                                   (.45, [-15, 0, 0]), (1, [0, 0, 0])),
+            "claw_l": rotation((0, [0, 0, 0]), (.25, [0, 0, 15]),
+                                (.45, [0, 0, -10]), (1, [0, 0, 0])),
+        })
+
+
 def animation_data(spec):
     result = copy.deepcopy(spec.animations)
     # The approved mesh already contains its characteristic leaning/crouched pose.
@@ -165,6 +225,7 @@ def animation_data(spec):
                     elif channel == "position":
                         for value in samples.values():
                             value[0] = -value[0]
+    retarget_attacks(spec.creature_id, result)
     return {"format_version": "1.8.0", "animations": result}
 
 

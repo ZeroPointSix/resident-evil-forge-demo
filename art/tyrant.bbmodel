@@ -18613,9 +18613,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -72,
+                  "x": 25,
                   "y": 0,
-                  "z": 24
+                  "z": 12
                 }
               ],
               "uuid": "dfd6cdf4-6e67-588b-a367-b6a4cc859e9e",
@@ -18627,7 +18627,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 66,
+                  "x": -55,
                   "y": 0,
                   "z": -8
                 }
@@ -18641,7 +18641,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 26,
+                  "x": -20,
                   "y": 0,
                   "z": 8
                 }
@@ -18689,7 +18689,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -58,
+                  "x": -70,
                   "y": 0,
                   "z": 0
                 }
@@ -18703,7 +18703,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 42,
+                  "x": -20,
                   "y": 0,
                   "z": 0
                 }
@@ -18876,7 +18876,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -36,
+                  "x": 36,
                   "y": -25,
                   "z": -12
                 }
@@ -18890,7 +18890,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 48,
+                  "x": -48,
                   "y": 18,
                   "z": 10
                 }
@@ -18938,7 +18938,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -36,
+                  "x": 36,
                   "y": 25,
                   "z": 12
                 }
@@ -18952,7 +18952,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 48,
+                  "x": -48,
                   "y": -18,
                   "z": -10
                 }
@@ -19153,7 +19153,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -18,
+                  "x": 18,
                   "y": 0,
                   "z": 0
                 }
@@ -19167,7 +19167,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -28,
+                  "x": 28,
                   "y": 0,
                   "z": 0
                 }
@@ -19354,7 +19354,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -115,
+                  "x": 115,
                   "y": 0,
                   "z": 12
                 }
@@ -19368,7 +19368,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 62,
+                  "x": -62,
                   "y": 0,
                   "z": 0
                 }
@@ -19416,7 +19416,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -70,
+                  "x": 70,
                   "y": 0,
                   "z": 0
                 }
@@ -19430,7 +19430,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 55,
+                  "x": -55,
                   "y": 0,
                   "z": 0
                 }

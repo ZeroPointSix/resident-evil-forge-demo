@@ -440,16 +440,17 @@ class Capture:
         self.command(f"execute store result score {before} ce_health run data get entity {dummy} Health 100")
         self.confirm(f"if score {before} ce_health matches 100000", f"{entity}: stationary target at full health")
         path = self.output / f"{entity}-{scenario}.mp4"
+        clip_seconds = max(14, self.args.clip_seconds) if entity == "g1_birkin" else self.args.clip_seconds
         recorder = self.start(f"ffmpeg-{entity}", [
             "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
             "-f", "x11grab", "-framerate", "20", "-video_size", "1280x720", "-i", self.env["DISPLAY"],
-            "-t", str(self.args.clip_seconds), "-an", "-c:v", "libx264", "-preset", "ultrafast",
+            "-t", str(clip_seconds), "-an", "-c:v", "libx264", "-preset", "ultrafast",
             "-crf", "23", "-threads", "2", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path),
         ], self.work)
         time.sleep(1)
         self.command(f"data merge entity {selector} {{NoAI:0b}}")
         self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
-        deadline = time.monotonic() + self.args.clip_seconds + 40
+        deadline = time.monotonic() + clip_seconds + 40
         while recorder.poll() is None and time.monotonic() < deadline:
             self.alive()
             time.sleep(0.3)
@@ -463,7 +464,7 @@ class Capture:
         self.command(f"kill {dummy}")
         info = probe(path)
         duration = float(info["format"]["duration"])
-        if duration < self.args.clip_seconds - 1:
+        if duration < clip_seconds - 1:
             raise EvidenceError(f"Recording truncated for {entity}: {duration}s")
         metrics = check_frame(path)
         first, later = frame_pixels(path, 0.5), frame_pixels(path, min(4, duration - 1))
@@ -474,13 +475,16 @@ class Capture:
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
                                          scenario=scenario, initial_target_distance=target_distance))
 
-    def ranged_action_scenes(self) -> None:
-        # Fresh entities keep cooldowns from the close-range scenes out of these
-        # normal-AI range tests. No scripted animation or damage is substituted.
+    def isolated_action_scenes(self) -> None:
+        # Previously fought NoAI mobs still collide and can block the next actor.
+        # Each normal-AI scene gets a fresh actor and a single stationary target.
         for entity, _, _, _ in MOBS:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
         time.sleep(4)
-        for entity, scenario, distance in (("tyrant", "charge", 7.0),
+        for entity, scenario, distance in (("tyrant", "attack", 1.8),
+                                            ("g1_birkin", "attack", 1.8),
+                                            ("licker", "attack", 1.8),
+                                            ("tyrant", "charge", 7.0),
                                             ("licker", "tongue", 3.4),
                                             ("licker", "crawl", 12.0)):
             x = 4
@@ -489,8 +493,8 @@ class Capture:
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_{entity},limit=1]",
                          f"fresh normal-AI {scenario} scene")
             center = x + distance * 0.5
-            self.camera(center + 1, -3 if scenario == "tongue" else -6 if scenario == "charge" else -9,
-                        center, 65.1 if entity == "tyrant" else 64.6, 4,
+            self.camera(center + 1, -3 if scenario in ("tongue", "attack") else -6 if scenario == "charge" else -9,
+                        center, 64.6 if entity == "licker" else 65.1, 4,
                         f"{entity}: {scenario}")
             self.combat_clip(entity, x, scenario, distance)
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
@@ -505,8 +509,7 @@ class Capture:
             distance = 6.2 if entity == "licker" else 6.8
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
-            self.combat_clip(entity, x)
-        self.ranged_action_scenes()
+        self.isolated_action_scenes()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
                             r"(?:Unable|Failed|Could not|Missing).{0,100}(?:re_demo[:/]|assets/re_demo/))", re.I)

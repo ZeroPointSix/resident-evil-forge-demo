@@ -47,6 +47,50 @@ def vertices(cube):
     return points
 
 
+def sample(track, time, default):
+    if track is None:
+        return default
+    keys = sorted((float(key), value) for key, value in track.items())
+    if time <= keys[0][0]:
+        return keys[0][1]
+    for (a, start), (b, end) in zip(keys, keys[1:]):
+        if time <= b:
+            return [x + (y - x) * (time - a) / (b - a) for x, y in zip(start, end)]
+    return keys[-1][1]
+
+
+def posed_part(creature, part, action, time, eye_open=False):
+    """Independent forward kinematics, in GEO pixels with -Z facing the target."""
+    model = bones(ASSETS / "geo" / f"{creature}.geo.json")
+    animation = read(ASSETS / "animations" / f"{creature}.animation.json")
+    tracks = animation["animations"][f"animation.{creature}.{action}"]["bones"]
+    frozen = {"root", "pelvis", "torso", "chest", "right_shoulder", "eye_open"} if eye_open else set()
+    bone = model[part]
+    points = [p for cube in bone["cubes"] for p in vertices(cube)]
+    while bone:
+        state = {} if bone["name"] in frozen else tracks.get(bone["name"], {})
+        rx, ry, rz = sample(state.get("rotation"), time, [0, 0, 0])
+        # Return renderer-reflected X to GEO space after Bedrock rotation signs.
+        rx, ry, rz = map(math.radians, (-rx, ry, -rz))
+        scale = sample(state.get("scale"), time, [1, 1, 1])
+        offset = sample(state.get("position"), time, [0, 0, 0])
+        pivot = bone["pivot"]
+        transformed = []
+        for point in points:
+            x, y, z = [(v - p) * s for v, p, s in zip(point, pivot, scale)]
+            y, z = y * math.cos(rx) - z * math.sin(rx), y * math.sin(rx) + z * math.cos(rx)
+            x, z = x * math.cos(ry) + z * math.sin(ry), -x * math.sin(ry) + z * math.cos(ry)
+            x, y = x * math.cos(rz) - y * math.sin(rz), x * math.sin(rz) + y * math.cos(rz)
+            transformed.append([v + p + o for v, p, o in zip((x, y, z), pivot, offset)])
+        points = transformed
+        bone = model.get(bone.get("parent"))
+    return points
+
+
+def center(points):
+    return [(min(p[i] for p in points) + max(p[i] for p in points)) / 2 for i in range(3)]
+
+
 class ApprovedModelIntegrationTests(unittest.TestCase):
     def test_approved_source_is_unchanged(self):
         for creature, digest in HASHES.items():
@@ -140,6 +184,54 @@ class ApprovedModelIntegrationTests(unittest.TestCase):
         for creature, stats in report["creatures"].items():
             data = (ASSETS / "geo" / f"{creature}.geo.json").read_bytes()
             self.assertEqual(hashlib.sha256(data).hexdigest(), stats["runtime_geometry_sha256"])
+
+    def test_tyrant_fist_reaches_forward_at_damage_tick(self):
+        windup = center(posed_part("tyrant", "part_fist_-1", "punch", .5))
+        impact = center(posed_part("tyrant", "part_fist_-1", "punch", 16 / 20))
+        self.assertLess(impact[2], -18)
+        self.assertLess(impact[2], windup[2] - 15)
+        self.assertTrue(25 < impact[1] < 40)
+        for action, time in (("shove", .5), ("break", .7)):
+            self.assertLess(center(posed_part("tyrant", "part_fist_-1", action, time))[2], -10)
+
+    def test_charge_leans_head_and_hat_toward_travel(self):
+        for part in ("part_head", "part_hat_brim"):
+            # Root translates -15 at this sample; lean must independently be forward.
+            self.assertLess(center(posed_part("tyrant", part, "charge", 1.55))[2] + 15, -7)
+
+    def test_giant_arm_slam_descends_forward_without_eye_pose_snap(self):
+        for exposed in (False, True):
+            windup = center(posed_part("g1_birkin", "part_mutation_palm", "slam", .55, exposed))
+            impact = center(posed_part("g1_birkin", "part_mutation_palm", "slam", 18 / 20, exposed))
+            self.assertGreater(windup[1], 45)
+            self.assertTrue(5 < impact[1] < 25)
+            self.assertLess(impact[2], -12)
+        for action, time in (("slam", .9), ("sweep", 1), ("grab", .75)):
+            normal = posed_part("g1_birkin", "part_mutation_palm", action, time)
+            exposed = posed_part("g1_birkin", "part_mutation_palm", action, time, True)
+            for a, b in zip(normal, exposed):
+                self.assertLess(math.dist(a, b), 1e-6)
+
+    def test_giant_arm_sweeps_across_front_and_reaches_for_grab(self):
+        windup = center(posed_part("g1_birkin", "part_mutation_palm", "sweep", .65, True))
+        impact = center(posed_part("g1_birkin", "part_mutation_palm", "sweep", 20 / 20, True))
+        follow = center(posed_part("g1_birkin", "part_mutation_palm", "sweep", 1.45, True))
+        self.assertGreater(windup[0], 25)
+        self.assertLess(abs(impact[0]), 2)
+        self.assertLess(impact[2], -12)
+        self.assertLess(follow[0], -2)
+        grab = center(posed_part("g1_birkin", "part_mutation_palm", "grab", 15 / 20, True))
+        self.assertLess(grab[2], -15)
+        self.assertTrue(15 < grab[1] < 30)
+
+    def test_licker_claw_strikes_ahead_and_tongue_stays_above_floor(self):
+        claw = center(posed_part("licker", "part_front_hand_1", "claw", 9 / 20))
+        self.assertLess(claw[2], -24)
+        self.assertTrue(5 < claw[1] < 20)
+        tongue = posed_part("licker", "part_tongue_4", "tongue", 11 / 20)
+        rest = center(posed_part("licker", "part_tongue_4", "tongue", 0))
+        self.assertLess(center(tongue)[2], rest[2] - 25)
+        self.assertGreater(min(p[1] for p in tongue), 1)
 
 
 if __name__ == "__main__":

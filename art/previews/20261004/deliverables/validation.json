@@ -7,112 +7,112 @@
   ],
   "files": {
     "g1_birkin.mtl": {
-      "bytes": 2150,
-      "sha256": "0f64ab1806a4bff584e25c38e370f495adad15c224a21698ac93da4db68c7ad2"
+      "bytes": 2145,
+      "sha256": "f239a334fdf0d83bfc1392f1b770a8be3ef2fda3e49bd50ff3c752bf37be1522"
     },
     "g1_birkin.obj": {
-      "bytes": 100869,
-      "sha256": "eebc286d40780361d85f7ee439a39fb03629c799dd5a3e148cf2782c6a225022"
+      "bytes": 100864,
+      "sha256": "3c840de753420de9877dc608b9a106c095d332c0121b4c16776468d6d5676663"
     },
     "g1_birkin_back.png": {
-      "bytes": 232613,
-      "sha256": "0e84bc51c27d4dbd825c41e1140bac04f3d7a397a600750979a2a00bc05b97ca"
+      "bytes": 544888,
+      "sha256": "abbd73d43440102bcd96fd8b515aed5f42898a05e4149b35f422809b2475342b"
     },
     "g1_birkin_front.png": {
-      "bytes": 261196,
-      "sha256": "7f3a8b8f57c19e77666ed7bbd06828adc0fef083761d0cdcaefd7df1c9b3b860"
+      "bytes": 556102,
+      "sha256": "de54691a2e69ff86be1a2f5777ef43e1eab2e0337e30b321041c4f744e2cb14d"
     },
     "g1_birkin_side.png": {
-      "bytes": 138821,
-      "sha256": "39ced8fac2c5b85a0a905b2d06d4059b959a38d57d349a769902f783255843d9"
+      "bytes": 282078,
+      "sha256": "ef4e67848b0c8d3169660c12f099e7fcd0514a43149a677e0129f084c3fb041b"
     },
     "g1_birkin_three_quarter.png": {
-      "bytes": 301457,
-      "sha256": "fa10bc47095d74ee96466a80af16e0dd3b4698adc05b4fedf01c18a2173b4522"
+      "bytes": 943668,
+      "sha256": "ea3fbcbb476de85e32ef0960a6c33d3dc7572318f713f96741fed74485d39af5"
     },
     "g1_birkin_turnaround.png": {
-      "bytes": 658816,
-      "sha256": "28809135f2eb10752487eeec0fca7d833922450f71136970869352139135d31a"
+      "bytes": 1236435,
+      "sha256": "7df4d4714f6890e8ae603101f6e8d95a96b05c03ec4652e740c0fe6f6638d7aa"
     },
     "interchange_validation.json": {
       "bytes": 118,
       "sha256": "8f42eac087463c3be43506613661ec19812b75f4b3eaa31d65d9d962539618ae"
     },
     "licker.mtl": {
-      "bytes": 1206,
-      "sha256": "0b7a16ac78317db9b146d218bde44400d220189708c26899d0490aa954e1336f"
+      "bytes": 1201,
+      "sha256": "add266e10a50c25f8ab3237fd56dd58de02fe905a0689aa8616e0b0296b79cfc"
     },
     "licker.obj": {
-      "bytes": 159802,
-      "sha256": "185f901df836c93e095fd9da90477b0a9f93f5c84bb06f10acb26b32d60fb20c"
+      "bytes": 159797,
+      "sha256": "9fb4b176f3e60a71f0d7c494dc58d4170d735814b27f7bc549ac8602613cd6f9"
     },
     "licker_back.png": {
-      "bytes": 81109,
-      "sha256": "33563846d55b8efde0503ada59228d6fe3635610be613feb86466a124466637d"
+      "bytes": 114702,
+      "sha256": "1cfd2d4a2709758dda0b5c995681dba9e480a3aee2e9c120ede4fd96250254bb"
     },
     "licker_front.png": {
-      "bytes": 86453,
-      "sha256": "1dc72d00d907cc15982316fc3fb54cb9d4bffcfd32eea4e9e2c7f2996e044871"
+      "bytes": 120464,
+      "sha256": "99b0ae145f1c2feea3708be491be4a49c2727f6a95d8488690a58cd3f60a5865"
     },
     "licker_side.png": {
-      "bytes": 83738,
-      "sha256": "3bd1f62c54750330665e57db117a8022677f32eb9bb1e9006532e294a053a7f2"
+      "bytes": 104041,
+      "sha256": "5bf851465ce8503a0e3a9007ef74db5383cdfd4f7c3e68c03f33a1631b56fa5d"
     },
     "licker_three_quarter.png": {
-      "bytes": 209316,
-      "sha256": "80b2693e645d186a9fe1970333fd3a98f4e8752ef7bc71795535ca1d40fe420a"
+      "bytes": 748487,
+      "sha256": "06cf408b988c33c0ee7835dbd3760400e392c16a655954025a87999245e0e11a"
     },
     "licker_turnaround.png": {
-      "bytes": 291466,
-      "sha256": "ccc88ffcfbcd3ab296c0e105380bd0b3e3322c2136e02c1cfdb5e86bdfff200c"
+      "bytes": 1062836,
+      "sha256": "056c1ec44c08cb7bdb25c7770f3af53276fd1055c3fcb70b7b4c8dd6ae9f4b93"
     },
     "lineup.png": {
-      "bytes": 409468,
-      "sha256": "1c91cbedd28199f89e0ebdf2374386dff54b69dfbe233f175aa98cc7abaa569b"
+      "bytes": 678230,
+      "sha256": "dd725f4b0858fccb978f3441d5ec053ca98f9faf3d6d688e976cd56543d9d54b"
     },
     "lineup_review.png": {
-      "bytes": 448951,
-      "sha256": "a2ba2e6579d2d90712cf2a2d5d7307b19c224c2e286179926e55ebe792ab2f45"
+      "bytes": 703121,
+      "sha256": "2d9763c955b956d6c4e7d0cd5b2af53f40a98bfde3db8363e7ae9ad1ff652692"
     },
     "model_stats.json": {
-      "bytes": 2377,
-      "sha256": "db1e987fb36d1e7399bd2f407061d5f7bfbe17aae486169b605dd588add67264"
+      "bytes": 2419,
+      "sha256": "b44cf0866ed34d7ee03e5d90d5ea96fd77f3f840cac33ecc606b97d3c2fd5953"
     },
     "monster_blockouts.blend": {
-      "bytes": 166078,
-      "sha256": "55338efbab51e659325fb03b114e60e58f535da1883d408fd79f0ee63e8dc88c"
+      "bytes": 166131,
+      "sha256": "f9c922380817fa5cc251976bf9d2c72852fec8749b161eb5b35f20506e691a41"
     },
     "review_overview.png": {
-      "bytes": 850197,
-      "sha256": "6cf251fd13e74eac9977b683f60dd65afde719ad7d4a2c556ba85ea600b97e67"
+      "bytes": 2446788,
+      "sha256": "d255f2348be1e2c260d2982c558021f2840ffa44407235fec6b0dab8893d178a"
     },
     "tyrant.mtl": {
-      "bytes": 1203,
-      "sha256": "10fb10ed697a7c825610258533745f4c039ddcf0a55b97a10320ab28609c51fc"
+      "bytes": 1198,
+      "sha256": "1b59d664be0027e5286522f837767b5b7a5da947f5b7302dff7b6060f4ed9860"
     },
     "tyrant.obj": {
-      "bytes": 148294,
-      "sha256": "670ba3edcd439eb0e81d64d8556fb226a2edb0e6b119054ec9f727f08c2dbcc2"
+      "bytes": 148289,
+      "sha256": "983cc33934f09bdad25ebd3142b1fa458df3cb51d1f60f995daed47566d9e432"
     },
     "tyrant_back.png": {
-      "bytes": 177233,
-      "sha256": "ff6d60bec6c62719d801c11abf0d0f40d678695d95e7193669b96a34d16677c5"
+      "bytes": 383956,
+      "sha256": "274781efa0fcc6a56902496d2b47004c2dd44b21690557d8e59acf6a31bf523f"
     },
     "tyrant_front.png": {
-      "bytes": 205465,
-      "sha256": "38f4f16981edc7049627308f078d4004a8789c5a35cddd9cd6c0f9a284df5c00"
+      "bytes": 400338,
+      "sha256": "070f7d15d52160c82291ba407dc730bc27c6a6b14f8479408e717567463970e8"
     },
     "tyrant_side.png": {
-      "bytes": 114324,
-      "sha256": "f66c0dc13bad1d98a9a393ba9ba50045ea15d1b3e162d20fb796acd0bd0999a1"
+      "bytes": 213823,
+      "sha256": "da609eb5f64654e833e77ebc2db664afe59aa3c0991ac4b67c0328a94004ab8c"
     },
     "tyrant_three_quarter.png": {
-      "bytes": 278481,
-      "sha256": "8b69a95546dac79e03f36ec873537a78c2fe524ac5ac450c0ab8ca7b9cad5365"
+      "bytes": 836488,
+      "sha256": "b36de9a5ca03cf93c7aa112877e52748506b14708a4e9ace92914b168d94bd2f"
     },
     "tyrant_turnaround.png": {
-      "bytes": 535428,
-      "sha256": "3695311ffbf2b4f5d9d9277b18dcfa5046b5b04c6b93b5550ce689a922f2a1fa"
+      "bytes": 920884,
+      "sha256": "c586e37c0a4997d4e91f406ad4e0bfffae73826168fc2aa472703aed93201fd9"
     }
   },
   "game_runtime_tested": false,

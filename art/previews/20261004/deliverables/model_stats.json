@@ -1,8 +1,8 @@
 {
-  "tool": "Blender 4.2.20 LTS",
+  "tool": "Blender 4.3.2",
   "render_engine": "Cycles CPU",
-  "source_commit": "d8f60e821974fb1044f9bbf7dffd2885e5a9d228",
-  "source_sha256": "f659e24f313a07c08f9d49eb6d0fdae7fdec05f014b77ef8115ff50f19a6e72e",
+  "source_commit": "278a7b837c9e98d3675239931edc94e4773a10df",
+  "source_sha256": "6318d08991c58b3e8d34c995f8b31cba009f2c44f1f6ecce1dbdbc45347cd79d",
   "unit": "1 Blender unit = 1 proposed metre (not official canon)",
   "baseline": "deb10db8a08361041c07bd7a23abb1cf22812ba5",
   "status": "original silhouette blockout; not game-ready",
@@ -37,12 +37,12 @@
       "vertices": 992,
       "bounds_min": [
         -1.0173559188842773,
-        -0.7633644938468933,
+        -0.7633646726608276,
         0.0
       ],
       "bounds_max": [
         1.9003876447677612,
-        0.6733644604682922,
+        0.6733645796775818,
         2.9367246627807617
       ],
       "dimensions_xyz_m": [
@@ -77,6 +77,8 @@
       "orthographic_scale": 5.70096300125122
     }
   },
+  "render_samples": 128,
+  "denoising": false,
   "lineup": {
     "projection": "orthographic",
     "same_world_scale": true,

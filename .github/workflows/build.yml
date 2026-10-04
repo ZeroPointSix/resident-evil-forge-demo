@@ -27,7 +27,7 @@ jobs:
           set -o pipefail
           ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
       - name: Verify packaged asset contract
-        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.0.jar --report build/reports/asset-contract.json
+        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.1.jar --report build/reports/asset-contract.json
       - name: Run real Forge GameTests
         run: |
           set -o pipefail

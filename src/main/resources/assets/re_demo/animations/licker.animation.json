@@ -3,22 +3,22 @@
   "animations": {
     "animation.licker.idle": {
       "loop": true,
-      "animation_length": 2,
+      "animation_length": 2.0,
       "bones": {
         "chest": {
           "rotation": {
             "0": [
-              -5,
+              0,
               0,
               0
             ],
             "1": [
-              -1,
+              4,
               0,
               0
             ],
             "2": [
-              -5,
+              0,
               0,
               0
             ]
@@ -47,17 +47,17 @@
           "rotation": {
             "0": [
               0,
-              -8,
+              0,
               0
             ],
             "1": [
               0,
-              10,
+              18,
               0
             ],
             "2": [
               0,
-              -8,
+              0,
               0
             ]
           }
@@ -66,7 +66,7 @@
     },
     "animation.licker.walk": {
       "loop": true,
-      "animation_length": 1,
+      "animation_length": 1.0,
       "bones": {
         "upper_arm_l": {
           "rotation": {
@@ -339,7 +339,7 @@
     },
     "animation.licker.claw": {
       "loop": false,
-      "animation_length": 1,
+      "animation_length": 1.0,
       "bones": {
         "chest": {
           "rotation": {

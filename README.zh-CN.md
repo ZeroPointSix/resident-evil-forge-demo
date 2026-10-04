@@ -7,7 +7,7 @@ Minecraft Java Edition 1.20.1 的非官方同人怪物 Demo。实现范围为舔
 ## 安装目标
 
 1. 安装 Minecraft Java Edition **1.20.1** 和 **Forge 47.2.0**，使用 **64 位 Java 17**。
-2. 将最终构建的 `re_demo-0.1.0.jar` 与 **GeckoLib Forge 1.20.1 4.4.9** 放入同一实例的 `mods` 目录。不要混用 Fabric / NeoForge 或其他 Minecraft 版本。
+2. 将最终构建的 `re_demo-0.1.1.jar` 与 **GeckoLib Forge 1.20.1 4.4.9** 放入同一实例的 `mods` 目录，移除旧版 `re_demo` JAR，避免重复加载。不要混用 Fabric / NeoForge 或其他 Minecraft 版本。
 3. 多人游戏时客户端与服务端都安装相同版本的本模组和 GeckoLib。首次测试使用新建世界或备份世界，难度设为普通。
 4. 本项目不提供 Minecraft、Forge 或 GeckoLib 的许可证授权；各依赖按其官方渠道安装。
 

@@ -37,7 +37,7 @@ public final class G1BirkinEntity extends EncounterMob {
     public static final int SLAM = 1, SWEEP = 2, GRAB = 3, RAGE = 4;
     // Center of the visible eye cubes in the stable exposure pose, in model pixels.
     // GeckoLib reverses model Z when the entity faces Minecraft's positive Z.
-    public static final Vec3 EYE_LOCAL_CENTER = new Vec3(-11.5 / 16, 35.0 / 16, 4.6 / 16);
+    public static final Vec3 EYE_LOCAL_CENTER = new Vec3(9.600001 / 16, 38.080002 / 16, 9.800001 / 16);
     public static final String[] EXPOSURE_BONES = { "root", "pelvis", "torso", "chest", "right_shoulder", "eye_open" };
     private static final EntityDataAccessor<Boolean> EYE_OPEN = SynchedEntityData.defineId(G1BirkinEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> BERSERK = SynchedEntityData.defineId(G1BirkinEntity.class, EntityDataSerializers.BOOLEAN);

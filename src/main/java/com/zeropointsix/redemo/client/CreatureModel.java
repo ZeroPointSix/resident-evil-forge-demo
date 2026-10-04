@@ -62,6 +62,10 @@ public final class CreatureModel<T extends EncounterMob> extends GeoModel<T> {
 
     private void hide(String name, boolean hidden) {
         var bone = getAnimationProcessor().getBone(name);
-        if (bone != null) bone.setHidden(hidden);
+        if (bone != null) {
+            bone.setHidden(hidden);
+            // Approved parts are descendants of the animated phase wrapper.
+            bone.setChildrenHidden(hidden);
+        }
     }
 }

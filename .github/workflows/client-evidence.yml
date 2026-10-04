@@ -2,7 +2,7 @@ name: Controlled Real Client Evidence
 
 on:
   push:
-    branches: [test/runtime-acceptance]
+    branches: [test/runtime-acceptance, art/remodel-blender4-20261004]
   workflow_dispatch:
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
             --server-args="-screen 0 1280x720x24 -nolisten tcp +extension GLX +render -noreset" \
             python tools/qa/capture_client_evidence.py \
               --project . --output build/client-evidence \
-              --jar build/libs/re_demo-0.1.0.jar \
+              --jar build/libs/re_demo-0.1.1.jar \
               --accept-minecraft-eula
       - name: Summarize evidence scope
         if: always()

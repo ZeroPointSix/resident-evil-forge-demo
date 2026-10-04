@@ -470,7 +470,7 @@ class Capture:
         self.camera(8, -15, 8, 65.3, 4, "Three creatures")
         self.screenshot("00-three-creatures.png")
         for entity, label, x, focus_height in MOBS:
-            distance = 4.2 if entity == "licker" else 6.2
+            distance = 6.2 if entity == "licker" else 6.8
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
             self.combat_clip(entity, x)
@@ -526,7 +526,7 @@ def main() -> int:
     parser.add_argument("--project", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("build/client-evidence"),
                         help="Must not already exist; records only this run's evidence")
-    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.0.jar"))
+    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.1.jar"))
     parser.add_argument("--port", type=int, default=25575)
     parser.add_argument("--clip-seconds", type=int, default=10)
     parser.add_argument("--build-timeout", type=int, default=1500)

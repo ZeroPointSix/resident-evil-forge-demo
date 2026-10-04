@@ -3,7 +3,7 @@
 
 import json
 
-from creature_assets_lib import generate_all
+from integrate_approved_models import generate_all
 
 
 if __name__ == "__main__":

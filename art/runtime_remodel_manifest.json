@@ -1,0 +1,25 @@
+{
+  "source_commit": "d28b9bdd7abd56b8aadaf47fc7414212fd2eb181",
+  "source_directory": "art/blockbench/20261004",
+  "source_to_runtime_y_rotation_degrees": 180,
+  "creatures": {
+    "licker": {
+      "approved_geometry_sha256": "ed51c3bcb7dc7b900d86e30c6675581fd0c35418ce77c753f79846640b3ca13d",
+      "runtime_geometry_sha256": "18bbee71828053eb33846aaefb11d9dc9ea8f0969b49be9f1e02da6ec950d3d0",
+      "bones": 84,
+      "cubes": 305
+    },
+    "tyrant": {
+      "approved_geometry_sha256": "2be45369e25aae3923a59f56c2f12d304f3c71a67675cad5d1739308e56b3d8f",
+      "runtime_geometry_sha256": "9fe5d6593fa94af1d3cc8f06f0d7bfe19336c5d8f28af877315b711702937f5a",
+      "bones": 78,
+      "cubes": 192
+    },
+    "g1_birkin": {
+      "approved_geometry_sha256": "c3f850346a63e51d23c1387548709d956c41ee6002808c2de2c61ccac1880b0f",
+      "runtime_geometry_sha256": "23418a68e425852cbb073af15387956e83948ace21dce98125de26254a3898f8",
+      "bones": 69,
+      "cubes": 332
+    }
+  }
+}

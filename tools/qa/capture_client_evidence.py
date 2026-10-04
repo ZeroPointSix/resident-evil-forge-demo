@@ -158,7 +158,8 @@ class Capture:
             "visual_quality_review_required": True, "player_joined": False,
             "client_input_roundtrip_verified": False,
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
-                       "Stationary high-health golems are used as controlled attack targets.",
+                       "Stationary high-health golems are used as controlled attack targets, then the three "
+                       "creatures fight each other with aggro seeded by real mob_attack damage.",
             "screenshots": [], "clips": [], "confirmations": [],
         }
 
@@ -475,6 +476,75 @@ class Capture:
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
                                          scenario=scenario, initial_target_distance=target_distance))
 
+    def brawl_scene(self, seconds: int = 55) -> None:
+        # All three creatures fight each other under normal AI. Mutual aggro is
+        # seeded with real mob_attack damage packets, so every retaliation and
+        # attack animation is produced by the installed mod's own combat code.
+        triangle = (("tyrant", 4, 4), ("g1_birkin", 12, 4), ("licker", 8, -3))
+        for entity, x, z in triangle:
+            self.command(f"summon re_demo:{entity} {x} 64 {z} "
+                         f"{{Tags:[\"ce_brawl_{entity}\"],PersistenceRequired:1b,NoAI:1b,Health:3000.0f,"
+                         'Attributes:[{Name:"minecraft:generic.max_health",Base:3000.0d}]}')
+            self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1]",
+                         f"brawl arena: {entity} staged")
+            self.command(f"execute store result score before_brawl_{entity} ce_health "
+                         f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
+        self.camera(8, -10, 8, 64.6, 4, "three-way brawl")
+        path = self.output / "creature-brawl.mp4"
+        recorder = self.start("ffmpeg-brawl", [
+            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
+            "-f", "x11grab", "-framerate", "20", "-video_size", "1280x720", "-i", self.env["DISPLAY"],
+            "-t", str(seconds), "-an", "-c:v", "libx264", "-preset", "ultrafast",
+            "-crf", "25", "-threads", "2", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path),
+        ], self.work)
+        time.sleep(1)
+        for entity, _, _ in triangle:
+            self.command(f"data merge entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] {{NoAI:0b}}")
+        def seed(attacker: str, victim: str) -> None:
+            # Retaliation goals (and the licker's hurt->hear path) make the
+            # damaged creature hunt the credited attacker.
+            self.command(f"damage @e[type=re_demo:{victim},tag=ce_brawl_{victim},limit=1] "
+                         f"1 minecraft:mob_attack by @e[type=re_demo:{attacker},tag=ce_brawl_{attacker},limit=1]")
+        seed("g1_birkin", "tyrant")
+        seed("licker", "g1_birkin")
+        seed("tyrant", "licker")
+        reseed_at = time.monotonic() + seconds * 0.55
+        deadline = time.monotonic() + seconds + 40
+        while recorder.poll() is None and time.monotonic() < deadline:
+            self.alive()
+            if time.monotonic() >= reseed_at:
+                seed("tyrant", "g1_birkin")
+                seed("g1_birkin", "licker")
+                seed("licker", "tyrant")
+                reseed_at = float("inf")
+            time.sleep(0.3)
+        if recorder.poll() != 0:
+            raise EvidenceError("Brawl recording failed/timed out")
+        self.command("scoreboard players set brawl_damaged ce_health 0")
+        time.sleep(1)
+        for entity, _, _ in triangle:
+            self.command(f"execute store result score after_brawl_{entity} ce_health "
+                         f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
+            self.command(f"execute if score after_brawl_{entity} ce_health < before_brawl_{entity} ce_health "
+                         f"run scoreboard players add brawl_damaged ce_health 1")
+        time.sleep(1)
+        self.confirm("if score brawl_damaged ce_health matches 2..",
+                     "brawl: at least two creatures took real combat damage")
+        for entity, _, _ in triangle:
+            self.command(f"kill @e[type=re_demo:{entity},tag=ce_brawl_{entity}]")
+        info = probe(path)
+        duration = float(info["format"]["duration"])
+        if duration < seconds - 1:
+            raise EvidenceError(f"Brawl recording truncated: {duration}s")
+        metrics = check_frame(path)
+        first, later = frame_pixels(path, 0.5), frame_pixels(path, duration - 1)
+        difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
+        if difference < 0.05:
+            raise EvidenceError("Brawl recording appears frozen")
+        self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
+                                         sampled_motion=round(difference, 3), scenario="brawl",
+                                         mutual_combat_damage_verified=True))
+
     def isolated_action_scenes(self) -> None:
         # Previously fought NoAI mobs still collide and can block the next actor.
         # Each normal-AI scene gets a fresh actor and a single stationary target.
@@ -510,6 +580,7 @@ class Capture:
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
         self.isolated_action_scenes()
+        self.brawl_scene()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
                             r"(?:Unable|Failed|Could not|Missing).{0,100}(?:re_demo[:/]|assets/re_demo/))", re.I)
@@ -517,7 +588,7 @@ class Capture:
             match = errors.search(tail(path, 10_000_000))
             if match:
                 raise EvidenceError(f"Client rendering/resource error in {path.name}: {match.group(0)}")
-        if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 6:
+        if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 7:
             raise EvidenceError("Incomplete evidence set")
         self.report["installed_jar_client_verified"] = True
         self.report["passed"] = True

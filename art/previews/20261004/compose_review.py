@@ -1,6 +1,7 @@
 """Typeset review PNGs from actual Blender renders; never redraw model geometry."""
 
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -32,22 +33,41 @@ def backdrop(source, size):
 
 
 for index, (key, title, subtitle, accent) in enumerate(MODELS, 1):
-    canvas = backdrop(key+"_front.png", (3000, 1480))
+    model = STATS["models"][key]
+    dims = model["dimensions_xyz_m"]
+    is_low = key == "licker"
+    canvas = backdrop(key+"_front.png", (3000, 1900 if is_low else 1480))
     draw = ImageDraw.Draw(canvas)
     draw.rectangle((75, 64, 86, 175), fill=accent)
     write(draw, (115, 53), title, 70, bold=True)
     write(draw, (118, 148), "原创低模体块评审  /  "+subtitle, 30)
     write(draw, (2540, 79), "RE FORGE / 0"+str(index), 28, accent, True)
-    for i, (view, label) in enumerate([("front", "正面"), ("side", "右侧"), ("back", "背面")]):
-        image = Image.open(ROOT/(key+"_"+view+".png")).convert("RGB")
-        image = image.resize((960, 960), Image.Resampling.LANCZOS)
-        canvas.paste(image, (20+i*1000, 255))
-        write(draw, (76+i*1000, 215), label, 34, accent, True)
-    draw.line((75, 1270, 2925, 1270), fill=accent, width=3)
-    model = STATS["models"][key]
-    dims = model["dimensions_xyz_m"]
-    write(draw, (75, 1300), f'{model["polygons"]:,} 多边形  /  {model["triangles"]:,} 三角面  /  高 {dims[2]:.2f} m', 34, bold=True)
-    write(draw, (75, 1370), "同一模型、同一正交尺度；实体网格已检查。仅评审，不是游戏内截图，也不是可直接装包的 .geo.json。", 28)
+    if is_low:
+        pixels_per_m = 1024/model["orthographic_scale"]
+        half_h = math.ceil(dims[2]*pixels_per_m/2)+28
+        half_w = {"front": math.ceil(dims[0]*pixels_per_m/2)+28,
+                  "back": math.ceil(dims[0]*pixels_per_m/2)+28,
+                  "side": math.ceil(dims[1]*pixels_per_m/2)+28}
+        # One common enlargement preserves the orthographic scale across all views.
+        zoom = min(1320/(2*half_w["front"]), 2800/(2*half_w["side"]), 590/(2*half_h))
+        for view, label, cx, cy in [("front", "正面", 750, 605),
+                                    ("back", "背面", 2250, 605),
+                                    ("side", "右侧", 1500, 1300)]:
+            image = Image.open(ROOT/(key+"_"+view+".png")).convert("RGB")
+            image = image.crop((512-half_w[view], 512-half_h, 512+half_w[view], 512+half_h))
+            image = image.resize((round(image.width*zoom), round(image.height*zoom)), Image.Resampling.LANCZOS)
+            canvas.paste(image, (cx-image.width//2, cy-image.height//2))
+            write(draw, (cx-image.width//2+12, cy-image.height//2-58), label, 34, accent, True)
+    else:
+        for i, (view, label) in enumerate([("front", "正面"), ("side", "右侧"), ("back", "背面")]):
+            image = Image.open(ROOT/(key+"_"+view+".png")).convert("RGB")
+            image = image.resize((960, 960), Image.Resampling.LANCZOS)
+            canvas.paste(image, (20+i*1000, 255))
+            write(draw, (76+i*1000, 215), label, 34, accent, True)
+    footer = canvas.height-210
+    draw.line((75, footer, 2925, footer), fill=accent, width=3)
+    write(draw, (75, footer+30), f'{model["polygons"]:,} 多边形  /  {model["triangles"]:,} 三角面  /  高 {dims[2]:.2f} m', 34, bold=True)
+    write(draw, (75, footer+100), "同一模型、同一正交尺度；实体网格已检查。仅评审，不是游戏内截图，也不是可直接装包的 .geo.json。", 28)
     canvas.save(ROOT/(key+"_turnaround.png"), optimize=True)
 
 overview = backdrop("tyrant_three_quarter.png", (3000, 1540))

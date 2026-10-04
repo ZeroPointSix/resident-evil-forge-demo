@@ -1,0 +1,105 @@
+{
+  "tool": "Blender 4.2.20 LTS",
+  "render_engine": "Cycles CPU",
+  "source_commit": "d8f60e821974fb1044f9bbf7dffd2885e5a9d228",
+  "source_sha256": "f659e24f313a07c08f9d49eb6d0fdae7fdec05f014b77ef8115ff50f19a6e72e",
+  "unit": "1 Blender unit = 1 proposed metre (not official canon)",
+  "baseline": "deb10db8a08361041c07bd7a23abb1cf22812ba5",
+  "status": "original silhouette blockout; not game-ready",
+  "models": {
+    "tyrant": {
+      "objects": 50,
+      "polygons": 1124,
+      "triangles": 2104,
+      "vertices": 1152,
+      "bounds_min": [
+        -1.065351963043213,
+        -0.4788084626197815,
+        0.0
+      ],
+      "bounds_max": [
+        1.065351963043213,
+        0.4230000078678131,
+        3.3499999046325684
+      ],
+      "dimensions_xyz_m": [
+        2.1307,
+        0.9018,
+        3.35
+      ],
+      "all_parts_closed_manifold": true,
+      "orthographic_scale": 3.9529998874664303
+    },
+    "g1_birkin": {
+      "objects": 43,
+      "polygons": 842,
+      "triangles": 1812,
+      "vertices": 992,
+      "bounds_min": [
+        -1.0173559188842773,
+        -0.7633644938468933,
+        0.0
+      ],
+      "bounds_max": [
+        1.9003876447677612,
+        0.6733644604682922,
+        2.9367246627807617
+      ],
+      "dimensions_xyz_m": [
+        2.9177,
+        1.4367,
+        2.9367
+      ],
+      "all_parts_closed_manifold": true,
+      "orthographic_scale": 3.4653351020812986
+    },
+    "licker": {
+      "objects": 59,
+      "polygons": 1270,
+      "triangles": 2596,
+      "vertices": 1416,
+      "bounds_min": [
+        -1.4691861867904663,
+        -3.0794107913970947,
+        0.02123483456671238
+      ],
+      "bounds_max": [
+        1.4691861867904663,
+        1.7519137859344482,
+        1.1814135313034058
+      ],
+      "dimensions_xyz_m": [
+        2.9384,
+        4.8313,
+        1.1602
+      ],
+      "all_parts_closed_manifold": true,
+      "orthographic_scale": 5.70096300125122
+    }
+  },
+  "lineup": {
+    "projection": "orthographic",
+    "same_world_scale": true,
+    "vertical_axis": "Z",
+    "unit_m": 1,
+    "orthographic_width": 12.45349531173706,
+    "camera_bounds_verified": true,
+    "model_scales": {
+      "tyrant": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "g1_birkin": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "licker": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  }
+}

@@ -37,8 +37,8 @@ FORGE_VERSION = "47.2.0"
 GECKO_VERSION = "4.4.9"
 CAMERA = "EvidenceCamera"
 SIZE = (1280, 720)
-MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 8, 1.6),
-        ("g1_birkin", "G1 Birkin", 16, 1.7))
+MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 6, 1.6),
+        ("g1_birkin", "G1 Birkin", 12, 1.7))
 FORGE_URL = ("https://maven.minecraftforge.net/net/minecraftforge/forge/"
              f"{MC_VERSION}-{FORGE_VERSION}/forge-{MC_VERSION}-{FORGE_VERSION}-installer.jar")
 GECKO_NAME = f"geckolib-forge-{MC_VERSION}-{GECKO_VERSION}.jar"
@@ -375,6 +375,9 @@ class Capture:
         self.command("fill -8 64 8 24 71 8 minecraft:white_concrete")
         self.confirm("if block 0 63 4 minecraft:polished_andesite if block 16 66 8 minecraft:white_concrete",
                      "controlled arena built")
+        # Keep the review camera well lit even while generated-chunk skylight settles.
+        self.command(f"effect give {CAMERA} minecraft:night_vision 999999 0 true")
+        self.report["capture_lighting"] = "Daylight plus camera-only night vision; no texture or model edits"
         for entity, label, x, _ in MOBS:
             name = json.dumps({"text": label}, separators=(",", ":"))
             self.command(f"summon re_demo:{entity} {x} 64 4 "
@@ -405,6 +408,12 @@ class Capture:
         target = self.output / name
         shutil.copy2(source, target)
         metrics = check_frame(target)
+        pixels = frame_pixels(target)
+        center = [sum(pixels[(y * 64 + x) * 3:(y * 64 + x) * 3 + 3]) / 3
+                  for y in range(10, 21) for x in range(16, 48)]
+        metrics["center_mean_luminance"] = round(statistics.mean(center), 2)
+        if metrics["center_mean_luminance"] < 40:
+            raise EvidenceError(f"Model review area is too dark: {name}")
         self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2", pixels=metrics))
 
     def verify_in_world_input(self) -> None:
@@ -415,7 +424,7 @@ class Capture:
             time.sleep(0.8)
         finally:
             subprocess.run(["xdotool", "keyup", "w"], check=True, timeout=10)
-        self.confirm(f"positioned 8 64 -15 if entity @a[name={CAMERA}] "
+        self.confirm(f"positioned 6 64 -10 if entity @a[name={CAMERA}] "
                      f"unless entity @a[name={CAMERA},distance=..0.15]", "real client movement packet received")
         self.report["client_input_roundtrip_verified"] = True
 
@@ -480,7 +489,7 @@ class Capture:
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_{entity},limit=1]",
                          f"fresh normal-AI {scenario} scene")
             center = x + distance * 0.5
-            self.camera(center + 2, -6 if scenario != "crawl" else -9,
+            self.camera(center + 1, -3 if scenario == "tongue" else -6 if scenario == "charge" else -9,
                         center, 65.1 if entity == "tyrant" else 64.6, 4,
                         f"{entity}: {scenario}")
             self.combat_clip(entity, x, scenario, distance)
@@ -488,9 +497,9 @@ class Capture:
             time.sleep(4)
 
     def capture(self) -> None:
-        self.camera(8, -15, 8, 65.3, 4, "Three creatures")
+        self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.verify_in_world_input()
-        self.camera(8, -15, 8, 65.3, 4, "Three creatures")
+        self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.screenshot("00-three-creatures.png")
         for entity, label, x, focus_height in MOBS:
             distance = 6.2 if entity == "licker" else 6.8

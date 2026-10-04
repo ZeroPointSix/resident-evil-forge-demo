@@ -1,0 +1,142 @@
+{
+  "blockbench_version": "4.12.6",
+  "browser_version": "150.0.7871.181",
+  "source_commit": "98585964b9c1e96884b6b11ca8c5c9640b5a1cfb",
+  "source_blend_sha256": "f9c922380817fa5cc251976bf9d2c72852fec8749b161eb5b35f20506e691a41",
+  "format": "Bedrock 1.12.0 cube geometry, supported by GeckoLib 4",
+  "bbmodel_editor_format": "bedrock (opens in stock Blockbench, plugin optional)",
+  "game_runtime_tested": false,
+  "models": {
+    "tyrant": {
+      "source_vertices": 1152,
+      "source_parts": 50,
+      "cubes": 171,
+      "bones": 51,
+      "logical_vertices": 1368,
+      "render_vertices": 4104,
+      "quad_faces": 1026,
+      "triangles": 2052,
+      "bbmodel_reload_cubes": 171,
+      "bbmodel_embedded_textures": 1,
+      "geo_reload_cubes": 171,
+      "max_source_mapping_error_units": 0.000013021129253829517,
+      "max_geo_reload_vertex_error_units": 6.393730411384401e-7,
+      "bounds_bb": [
+        [
+          -16.376490052389517,
+          -2.8610229296788248e-8,
+          -6.768001079559326
+        ],
+        [
+          16.37649561634579,
+          53.599998474121094,
+          7.6609342310900015
+        ]
+      ],
+      "dimensions_m": [
+        2.0470616042959566,
+        3.3499999064207078,
+        0.901808456915583
+      ],
+      "bbmodel_roundtrip_identical": true,
+      "geo_reimport_passed": true,
+      "all_cubes_solid": true,
+      "all_faces_textured": true,
+      "no_poly_mesh": true,
+      "rest_pose_only": true
+    },
+    "g1_birkin": {
+      "source_vertices": 992,
+      "source_parts": 43,
+      "cubes": 315,
+      "bones": 44,
+      "logical_vertices": 2520,
+      "render_vertices": 7560,
+      "quad_faces": 1890,
+      "triangles": 3780,
+      "bbmodel_reload_cubes": 315,
+      "bbmodel_embedded_textures": 1,
+      "geo_reload_cubes": 315,
+      "max_source_mapping_error_units": 0.000007566810966570314,
+      "max_geo_reload_vertex_error_units": 6.450859149555993e-7,
+      "bounds_bb": [
+        [
+          -15.877072268196951,
+          0,
+          -9.015862324620812
+        ],
+        [
+          27.82159066299593,
+          45.954760356031514,
+          10.960000991821289
+        ]
+      ],
+      "dimensions_m": [
+        2.7311664331995553,
+        2.8721725222519696,
+        1.2484914572776313
+      ],
+      "bbmodel_roundtrip_identical": true,
+      "geo_reimport_passed": true,
+      "all_cubes_solid": true,
+      "all_faces_textured": true,
+      "no_poly_mesh": true,
+      "rest_pose_only": true
+    },
+    "licker": {
+      "source_vertices": 1416,
+      "source_parts": 59,
+      "cubes": 305,
+      "bones": 60,
+      "logical_vertices": 2440,
+      "render_vertices": 7320,
+      "quad_faces": 1830,
+      "triangles": 3660,
+      "bbmodel_reload_cubes": 305,
+      "bbmodel_embedded_textures": 1,
+      "geo_reload_cubes": 305,
+      "max_source_mapping_error_units": 0.000004254024717631255,
+      "max_geo_reload_vertex_error_units": 6.483959393803803e-7,
+      "bounds_bb": [
+        [
+          -22.980905576252006,
+          0.7987367629701401,
+          -27.76330268486576
+        ],
+        [
+          22.980901437604615,
+          18.570465944708104,
+          49.20064110156899
+        ]
+      ],
+      "dimensions_m": [
+        2.872612938366039,
+        1.1107330738586227,
+        4.810246486652172
+      ],
+      "bbmodel_roundtrip_identical": true,
+      "geo_reimport_passed": true,
+      "all_cubes_solid": true,
+      "all_faces_textured": true,
+      "no_poly_mesh": true,
+      "rest_pose_only": true
+    }
+  },
+  "app_errors": [
+    {
+      "message": "Object",
+      "stack": ""
+    }
+  ],
+  "file_sha256": {
+    "tyrant.geo.json": "2be45369e25aae3923a59f56c2f12d304f3c71a67675cad5d1739308e56b3d8f",
+    "tyrant.bbmodel": "df3ab852b8546d74c3f59db4081103c481602a7128cfb11277785e97b03aba20",
+    "tyrant_palette.png": "88820b555e9f87f783c07e711cd1ee45ce4ac7974ae0838ec0cae277c1585892",
+    "g1_birkin.geo.json": "c3f850346a63e51d23c1387548709d956c41ee6002808c2de2c61ccac1880b0f",
+    "g1_birkin.bbmodel": "2189903a2efb91e50b64a80690d751a69b01432df7db6749c209e3cc30741414",
+    "g1_birkin_palette.png": "88820b555e9f87f783c07e711cd1ee45ce4ac7974ae0838ec0cae277c1585892",
+    "licker.geo.json": "ed51c3bcb7dc7b900d86e30c6675581fd0c35418ce77c753f79846640b3ca13d",
+    "licker.bbmodel": "66409d116a63256946c8e0d11b5ef3c7493c5ad5c215b4f316436f3fca1a826c",
+    "licker_palette.png": "88820b555e9f87f783c07e711cd1ee45ce4ac7974ae0838ec0cae277c1585892"
+  }
+}

@@ -38,6 +38,7 @@ jobs:
           set -o pipefail
           blender --version
           blender -b --python-exit-code 1 --python art/previews/20261004/build_blockouts.py -- --output art/previews/20261004/deliverables 2>&1 | tee "$RUNNER_TEMP/blockouts.log"
+          blender -b art/previews/20261004/deliverables/monster_blockouts.blend --python-exit-code 1 --python art/previews/20261004/check_interchange.py
           python3 art/previews/20261004/compose_review.py art/previews/20261004/deliverables
           python3 art/previews/20261004/validate_preview.py art/previews/20261004/deliverables
       - name: Commit only preview assets to the independent branch

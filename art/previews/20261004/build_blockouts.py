@@ -304,6 +304,8 @@ def setup_studio():
     SCENE.render.threads = 4
     SCENE.render.image_settings.file_format = "PNG"
     SCENE.render.image_settings.color_mode = "RGB"
+    SCENE.render.image_settings.compression = 90
+    SCENE.render.dither_intensity = 0
     SCENE.render.film_transparent = False
     SCENE.view_settings.view_transform = "AgX"
     SCENE.world = bpy.data.worlds.new("Neutral studio")
@@ -335,7 +337,7 @@ def setup_studio():
     SCENE.unit_settings.scale_length = 1
 
 
-def render(filename, target, offset, scale, size=(1024, 1024)):
+def render(filename, target, offset, scale, size=(1024, 1024), auto_fit=False):
     camera = SCENE.camera
     camera.location = Vector(target)+Vector(offset)
     camera.rotation_euler = (Vector(target)-camera.location).to_track_quat("-Z", "Y").to_euler()
@@ -345,6 +347,18 @@ def render(filename, target, offset, scale, size=(1024, 1024)):
     SCENE.render.resolution_percentage = 100
     SCENE.render.filepath = str(OUT/filename)
     bpy.context.view_layer.update()
+    world_points = [obj.matrix_world @ v.co for model in MODELS.values()
+                    for obj in model["objects"] if not obj.hide_render
+                    for v in obj.data.vertices]
+    if auto_fit:
+        right = camera.rotation_euler.to_matrix() @ Vector((1, 0, 0))
+        up = camera.rotation_euler.to_matrix() @ Vector((0, 1, 0))
+        xs = [(p-Vector(target)).dot(right) for p in world_points]
+        ys = [(p-Vector(target)).dot(up) for p in world_points]
+        camera.location += right*((min(xs)+max(xs))/2) + up*((min(ys)+max(ys))/2)
+        camera.data.ortho_scale = max((max(xs)-min(xs))*1.18,
+                                     (max(ys)-min(ys))*(size[0]/size[1])*1.18)
+        bpy.context.view_layer.update()
     from bpy_extras.object_utils import world_to_camera_view
     projected = [world_to_camera_view(SCENE, camera, obj.matrix_world @ v.co)
                  for model in MODELS.values() for obj in model["objects"]
@@ -399,7 +413,7 @@ def main():
         stats["models"][name]["orthographic_scale"] = scale
         for label, offset in [("front", (0, -12, 0)), ("side", (12, 0, 0)), ("back", (0, 12, 0))]:
             render(name+"_"+label+".png", center, offset, scale)
-        render(name+"_three_quarter.png", center, (8, -12, 6), scale*.94)
+        render(name+"_three_quarter.png", center, (8, -12, 6), scale, auto_fit=True)
     visible(MODELS.keys())
     for name, x, angle in [("tyrant", -3.5, -12), ("g1_birkin", -.50, -15), ("licker", 3.15, 62)]:
         MODELS[name]["root"].location.x = x

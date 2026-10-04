@@ -36,12 +36,21 @@ assert stats["models"]["g1_birkin"]["dimensions_xyz_m"][2] > 2*stats["models"]["
 assert stats["lineup"]["same_world_scale"]
 assert stats["lineup"]["camera_bounds_verified"]
 assert all(scale == [1, 1, 1] for scale in stats["lineup"]["model_scales"].values())
+for filename in ("review_overview.png", "lineup.png", "lineup_review.png"):
+    with Image.open(root/filename) as image:
+        image.load()
+        assert min(image.size) >= 1000
+        assert max(ImageStat.Stat(image).stddev) > 10
+interchange = json.loads((root/"interchange_validation.json").read_text())
+assert interchange["blend_reopened"]
+assert all(interchange["obj_reimported"].values())
 assert (root/"monster_blockouts.blend").stat().st_size > 10000
 for path in sorted(root.iterdir()):
     if path.is_file() and path.name != "validation.json":
         report["files"][path.name] = {"bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 report["checks"].append("lineup: same unit scale, orthographic projection, all mesh vertices within frame")
 report["game_runtime_tested"] = False
+report["interchange"] = interchange
 report["approval_status"] = "awaiting user visual review"
 (root/"validation.json").write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n")
 print(json.dumps(report, ensure_ascii=False))

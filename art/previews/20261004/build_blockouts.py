@@ -297,8 +297,8 @@ def visible(names):
 def setup_studio():
     SCENE.render.engine = "CYCLES"
     SCENE.cycles.device = "CPU"
-    SCENE.cycles.samples = 32
-    SCENE.cycles.use_denoising = True
+    SCENE.cycles.use_denoising = os.environ.get("BLENDER_DENOISE", "1") == "1"
+    SCENE.cycles.samples = int(os.environ.get("BLENDER_SAMPLES", "32" if SCENE.cycles.use_denoising else "128"))
     SCENE.cycles.max_bounces = 5
     SCENE.render.threads_mode = "FIXED"
     SCENE.render.threads = 4
@@ -405,6 +405,8 @@ def main():
         bpy.ops.wm.obj_export(filepath=str(OUT/(name+".obj")), export_selected_objects=True,
                               export_materials=True, forward_axis="NEGATIVE_Y", up_axis="Z")
     setup_studio()
+    stats["render_samples"] = SCENE.cycles.samples
+    stats["denoising"] = SCENE.cycles.use_denoising
     for name, model in MODELS.items():
         visible([name])
         lo, hi = bounds(model)

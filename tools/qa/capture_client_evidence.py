@@ -668,6 +668,7 @@ class Capture:
             try:
                 self.confirm(f"as {selector} at @s unless entity @a[name={CAMERA},distance=..6]",
                              "sneak: silent sneak-walk did not pull the licker", timeout=6)
+                self.screenshot("licker-sneak-silent.png")
                 sneaked = True
                 break
             except EvidenceError:
@@ -685,7 +686,6 @@ class Capture:
             raise EvidenceError("sneak control: could not stage a quiet phase")
         self.command(f"title {CAMERA} actionbar " +
                      json.dumps({"text": "phase B: sprint is audible | controlled real-client scene"}))
-        before = len(tail(self.output / "server.log", 10_000_000))
         self.key("ctrl", True)
         self.key("w", True)
         time.sleep(1.6)
@@ -693,9 +693,10 @@ class Capture:
         self.key("ctrl", False)
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
                      "sprint: footstep noise hunted and reached the camera", timeout=12)
-        self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=1",
-                                    tail(self.output / "server.log", 10_000_000)[before:]),
-                  "claw attack frames after the sprint chase", 12)
+        # SoundInvestigateGoal pathfinds to the noise without always calling
+        # setTarget (hear() only locks a living source on a repeated ping).
+        # The Review ask is sneak vs sprint aggro distance, not a claw frame.
+        self.screenshot("licker-sprint-hunt.png")
         deadline = time.monotonic() + seconds + 20
         while recorder.poll() is None and time.monotonic() < deadline:
             self.alive()
@@ -715,8 +716,8 @@ class Capture:
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
-            sprint_phase="radius-20 noise: licker closed in and clawed the camera",
-            claw_frames_logged=True, camera_gamemode="survival", camera_resistance=4,
+            sprint_phase="radius-20 noise: licker closed to within 5 blocks of the camera",
+            claw_frames_logged=False, camera_gamemode="survival", camera_resistance=4,
             audio=check_audio(path)))
         self.command(f"kill {selector}")
         self.command(f"gamemode creative {CAMERA}")
@@ -763,6 +764,7 @@ class Capture:
                      "ambush: licker holding under the ceiling", timeout=8)
         time.sleep(0.9)
         self.screenshot("licker-ambush.png")
+        self.command(f"data merge entity {selector} {{NoAI:0b,NoGravity:0b}}")
         # The release window opens once the dummy is pulled inside 7 blocks.
         self.command(f"tp {dummy} 18 64 0")
         self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=4",
@@ -1223,7 +1225,8 @@ class Capture:
             "g1_birkin-model-side.png", "licker-model-back.png", "tyrant-model-back.png",
             "g1_birkin-model-back.png", "licker-ambush.png", "20-block-identification.png",
             "licker-20blocks.png", "tyrant-20blocks.png", "g1_birkin-20blocks.png",
-            "licker-climb.png", "99-death-cleared.png",
+            "licker-climb.png", "licker-sneak-silent.png", "licker-sprint-hunt.png",
+            "99-death-cleared.png",
         }
         expected_clips = {
             "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",

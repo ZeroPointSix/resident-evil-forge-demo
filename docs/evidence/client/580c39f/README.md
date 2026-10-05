@@ -61,7 +61,7 @@ passed. Each archived file is byte-identical to its source ZIP entry; see
 [provenance.json](provenance.json) and [sha256sums.txt](sha256sums.txt).
 
 Reports: [packaged client](capture-report.json) and
-[development client](devenv-report.json).
+[development client](devenv-report.json) (source ZIP entry `report.json`).
 
 Run from this directory:
 

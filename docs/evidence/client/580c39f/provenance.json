@@ -69,7 +69,7 @@
     {
       "file": "devenv-report.json",
       "artifact_id": 11363106025,
-      "zip_entry": "devenv-report.json",
+      "zip_entry": "report.json",
       "bytes": 2344,
       "sha256": "2a74497bfc8cc1ab9194846ba31b93ec5c29500c7d60e3734d46d902dcbd7164"
     },

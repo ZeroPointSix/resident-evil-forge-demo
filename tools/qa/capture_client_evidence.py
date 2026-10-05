@@ -424,7 +424,9 @@ class Capture:
             "chatVisibility:2\nshowSubtitles:false\nlang:en_us\n"
             "soundCategory_master:1.0\nsoundCategory_music:1.0\n"
             "soundCategory_hostile:1.0\nsoundCategory_neutral:1.0\n"
-            "soundCategory_player:1.0\nsoundCategory_block:1.0\n", encoding="utf-8")
+            "soundCategory_player:1.0\nsoundCategory_block:1.0\n"
+            "key_key.sprint:key.keyboard.left.control\n"
+            "key_key.sneak:key.keyboard.left.shift\n", encoding="utf-8")
         self.prepare_audio()
         self.run_logged("graphics", ["glxinfo", "-B"], self.work, 30)
         self.start("window-manager", ["openbox", "--sm-disable"], self.work)
@@ -718,7 +720,7 @@ class Capture:
                              "sneak: silent sneak-walk did not pull the licker", timeout=6)
                 self.command(f"data get entity {selector} Pos")
                 self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
-                self.screenshot("licker-sneak-silent.png")
+                self.screenshot("licker-sneak-silent.png", hide_gui=True)
                 sneaked = True
                 break
             except EvidenceError:
@@ -735,25 +737,26 @@ class Capture:
         if not sneaked:
             raise EvidenceError("sneak control: could not stage a quiet phase")
         self.command(f"title {CAMERA} actionbar " +
-                     json.dumps({"text": "phase B: audible jump/impact | controlled real-client scene"}))
-        # Put the camera back on the 8.5-block mark so closing-in can only be
-        # the Licker hunting the noise, not the player walking into it.
+                     json.dumps({"text": "phase B: sprint footsteps at 8.5 blocks | controlled real-client scene"}))
+        # Park on the 8.5-block mark so closing-in can only be the Licker
+        # hunting sprint footsteps (NoiseEvents radius 20). Short W bursts
+        # then re-tp keep the camera from walking into the licker. Do not mix
+        # jump, LivingHurt, or ownerless arrows into this clip.
         self.command(f"tp {CAMERA} 14.5 64 4 90 0")
         self.command(f"execute store result score sneak_lx0 ce_health run data get entity {selector} Pos[0] 100")
         time.sleep(0.4)
-        for _ in range(4):
-            self.key("space", True)
-            time.sleep(0.12)
-            self.key("space", False)
-            time.sleep(0.5)
-        # Ownerless arrows only set lastSound; LivingHurt on the parked camera
-        # is a repeated player-sourced ping so hear() can setTarget.
-        self.command(f"damage {CAMERA} 1 minecraft:generic")
-        time.sleep(0.35)
-        self.command(f"damage {CAMERA} 1 minecraft:generic")
-        self.command('summon minecraft:arrow 14.5 65.4 4 {Motion:[0.0,-0.6,0.0],pickup:0b}')
+        subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
+        for _ in range(6):
+            self.command(f"tp {CAMERA} 14.5 64 4 90 0")
+            self.key("Control_L", True)
+            self.key("w", True)
+            time.sleep(0.32)
+            self.key("w", False)
+            self.key("Control_L", False)
+            self.command(f"tp {CAMERA} 14.5 64 4 90 0")
+            time.sleep(0.18)
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
-                     "sprint: footstep/impact noise hunted and reached the camera", timeout=12)
+                     "sprint: sprint-footstep noise hunted and reached the camera", timeout=12)
         self.confirm("if score sneak_lx1 ce_health > sneak_lx0 ce_health",
                      "sprint: licker X moved toward the camera, not the camera into the licker",
                      prepare=f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
@@ -761,7 +764,7 @@ class Capture:
         self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
         self.command('tellraw @a [{"text":"CE_SNEAK_LX0 "},{"score":{"name":"sneak_lx0","objective":"ce_health"}},'
                      '{"text":" LX1 "},{"score":{"name":"sneak_lx1","objective":"ce_health"}}]')
-        self.screenshot("licker-sprint-hunt.png")
+        self.screenshot("licker-sprint-hunt.png", hide_gui=True)
         deadline = time.monotonic() + seconds + 20
         while recorder.poll() is None and time.monotonic() < deadline:
             self.alive()
@@ -781,7 +784,8 @@ class Capture:
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
-            sprint_phase="audible jump/arrow at 8.5 blocks: licker closed to within 5 and increased X",
+            sprint_phase="sprint-footstep bursts at 8.5 blocks: licker closed to within 5 and increased X",
+            loud_stimuli="sprint footsteps only; no jump/hurt/arrow",
             silent_min_distance_blocks=6, sprint_max_distance_blocks=5,
             silent_still="licker-sneak-silent.png", sprint_still="licker-sprint-hunt.png",
             hunter_moved="licker X increased toward a parked camera",
@@ -837,7 +841,7 @@ class Capture:
         self.command(f"data get entity {selector} Pos")
         self.command('tellraw @a [{"text":"CE_AMBUSH_HANG_Y "},{"score":{"name":"ambush_hang","objective":"ce_health"}}]')
         time.sleep(0.9)
-        self.screenshot("licker-ambush.png")
+        self.screenshot("licker-ambush.png", hide_gui=True)
         # Dummy must be inside 7 before AI is enabled, otherwise hangTicks>=50
         # starts AMBUSH at the far dummy and the strike never lands.
         self.command(f"tp {dummy} 18 64 0")
@@ -1143,7 +1147,7 @@ class Capture:
             self.command("execute if score climb_now ce_health >= climb_need ce_health run say CE_CLIMB_MID")
             if not climbed and re.search(r"\[Server\]\s+CE_CLIMB_MID\b", tail(self.output / "server.log")):
                 climbed = True
-                self.screenshot("licker-climb.png")
+                self.screenshot("licker-climb.png", hide_gui=True)
             time.sleep(0.4)
         if recorder.poll() != 0:
             raise EvidenceError("Licker climb recording failed/timed out")
@@ -1209,7 +1213,7 @@ class Capture:
                      "unless entity @e[type=re_demo:g1_birkin]",
                      "death cleanup: no remaining demo creatures", timeout=20)
         self.camera(6, -10, 6, 65.3, 4, "Cleared after death")
-        self.screenshot("99-death-cleared.png")
+        self.screenshot("99-death-cleared.png", hide_gui=True)
         self.report["death_audio_cleanup"] = dict(
             file_record(path), seconds=12, kill_window_seconds=6,
             whole_clip=audio, tail_rms_7_to_12s=tail_rms,
@@ -1287,7 +1291,7 @@ class Capture:
         self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.verify_in_world_input()
         self.camera(6, -10, 6, 65.3, 4, "Three creatures")
-        self.screenshot("00-three-creatures.png")
+        self.screenshot("00-three-creatures.png", hide_gui=True)
         self.command(f"item replace entity {CAMERA} hotbar.0 with re_demo:licker_spawn_egg")
         self.command(f"item replace entity {CAMERA} hotbar.1 with re_demo:tyrant_spawn_egg")
         self.command(f"item replace entity {CAMERA} hotbar.2 with re_demo:g1_birkin_spawn_egg")
@@ -1296,13 +1300,13 @@ class Capture:
         for entity, label, x, focus_height in MOBS:
             distance = 6.2 if entity == "licker" else 6.8
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
-            self.screenshot(f"{entity}-model.png")
+            self.screenshot(f"{entity}-model.png", hide_gui=True)
             self.camera(x + 6.4, 4, x, 64 + focus_height, 4, f"{label} side")
-            self.screenshot(f"{entity}-model-side.png")
+            self.screenshot(f"{entity}-model-side.png", hide_gui=True)
             # The studio wall is at z=8. Stay on its open side so the wall
             # cannot occlude the model while the camera looks at its back.
             self.camera(x - 0.5, 7.4, x, 64 + focus_height, 4, f"{label} back")
-            self.screenshot(f"{entity}-model-back.png")
+            self.screenshot(f"{entity}-model-back.png", hide_gui=True)
             if self.report["screenshots"][-1]["pixels"]["sample_colors"] < 500:
                 raise EvidenceError(f"{label} back view is flat or occluded")
         self.isolated_action_scenes()

@@ -1299,6 +1299,23 @@ class Capture:
         proof.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         self.report["animation_sync"] = dict(file_record(proof), **result)
 
+    def g1_eye_scene(self) -> None:
+        # A7: the shoulder eye is only rendered while EYE_OPEN. Stage a
+        # dedicated instance, drive health under the 30% berserk threshold so
+        # openWeakPoint(100) holds the exposure pose, and take a close-up of
+        # the open eye before the window lapses.
+        selector = '@e[type=re_demo:g1_birkin,tag=ce_eye,limit=1]'
+        self.command('summon re_demo:g1_birkin 12 64 4 '
+                     '{Tags:["ce_eye"],PersistenceRequired:1b,NoAI:1b,Rotation:[180.0f,0.0f]}')
+        self.confirm(f"if entity {selector}", "g1_eye: staged berserk candidate")
+        self.camera(13.4, 7.0, 11.4, 66.4, 4.55, "G1 shoulder eye open", cam_y=65.5)
+        # Below 30% of 480 HP so updatePhase() runs berserk and opens the eye.
+        self.command(f"data merge entity {selector} {{Health:140.0f}}")
+        time.sleep(1)
+        self.screenshot("g1_birkin-eye.png", hide_gui=True)
+        self.command(f"kill {selector}")
+        self.confirm(f"unless entity {selector}", "g1_eye: staged instance removed")
+
     def capture(self) -> None:
         self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.verify_in_world_input()
@@ -1321,6 +1338,7 @@ class Capture:
             self.screenshot(f"{entity}-model-back.png", hide_gui=True)
             if self.report["screenshots"][-1]["pixels"]["sample_colors"] < 500:
                 raise EvidenceError(f"{label} back view is flat or occluded")
+        self.g1_eye_scene()
         self.isolated_action_scenes()
         self.sneak_scene()
         self.ambush_scene()
@@ -1341,7 +1359,7 @@ class Capture:
             "00-three-creatures.png", "01-spawn-eggs.png", "licker-model.png", "tyrant-model.png",
             "g1_birkin-model.png", "licker-model-side.png", "tyrant-model-side.png",
             "g1_birkin-model-side.png", "licker-model-back.png", "tyrant-model-back.png",
-            "g1_birkin-model-back.png", "licker-ambush.png", "20-block-identification.png",
+            "g1_birkin-model-back.png", "g1_birkin-eye.png", "licker-ambush.png", "20-block-identification.png",
             "licker-20blocks.png", "tyrant-20blocks.png", "g1_birkin-20blocks.png",
             "licker-climb.png", "licker-sneak-silent.png", "licker-sprint-hunt.png",
             "99-death-cleared.png",

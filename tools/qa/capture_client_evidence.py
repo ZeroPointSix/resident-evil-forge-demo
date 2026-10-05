@@ -405,7 +405,9 @@ class Capture:
             "guiScale:2\nfov:0.0\ngamma:1.0\nviewBobbing:false\npauseOnLostFocus:false\n"
             "tutorialStep:none\nonboardAccessibility:false\nskipMultiplayerWarning:true\n"
             "chatVisibility:2\nshowSubtitles:false\nlang:en_us\n"
-            "soundCategory_master:1.0\nsoundCategory_music:1.0\n", encoding="utf-8")
+            "soundCategory_master:1.0\nsoundCategory_music:1.0\n"
+            "soundCategory_hostile:1.0\nsoundCategory_neutral:1.0\n"
+            "soundCategory_player:1.0\nsoundCategory_block:1.0\n", encoding="utf-8")
         self.prepare_audio()
         self.run_logged("graphics", ["glxinfo", "-B"], self.work, 30)
         self.start("window-manager", ["openbox", "--sm-disable"], self.work)
@@ -1120,6 +1122,10 @@ class Capture:
     def death_cleanup_scene(self) -> None:
         # Creature audio must not linger after death/removal: one-shot hurt and
         # death cues inside the kill window are expected, silence must follow.
+        # Park the listener next to the fixtures: the 20-block identify camera
+        # left EvidenceCamera ~14 blocks out, so 3b1f71a recorded a 12s zero wav.
+        self.command(f"stopsound {CAMERA}")
+        self.camera(6, 1.5, 6, 64.6, 4, "death cleanup listener")
         path = self.output / "death-cleanup-audio.wav"
         recorder = self.start("ffmpeg-death-audio", [
             "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",

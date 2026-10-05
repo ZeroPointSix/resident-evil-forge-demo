@@ -426,7 +426,8 @@ class Capture:
             "soundCategory_hostile:1.0\nsoundCategory_neutral:1.0\n"
             "soundCategory_player:1.0\nsoundCategory_block:1.0\n"
             "key_key.sprint:key.keyboard.left.control\n"
-            "key_key.sneak:key.keyboard.left.shift\n", encoding="utf-8")
+            "key_key.sneak:key.keyboard.left.shift\n"
+            "autoJump:false\n", encoding="utf-8")
         self.prepare_audio()
         self.run_logged("graphics", ["glxinfo", "-B"], self.work, 30)
         self.start("window-manager", ["openbox", "--sm-disable"], self.work)
@@ -737,28 +738,26 @@ class Capture:
         if not sneaked:
             raise EvidenceError("sneak control: could not stage a quiet phase")
         self.command(f"title {CAMERA} actionbar " +
-                     json.dumps({"text": "phase B: sprint footsteps at 8.5 blocks | controlled real-client scene"}))
+                     json.dumps({"text": "phase B: unsneaked walk at 8.5 blocks | controlled real-client scene"}))
         # Park on the 8.5-block mark so closing-in can only be the Licker
-        # hunting sprint footsteps (NoiseEvents radius 20). Short W bursts
-        # then re-tp keep the camera from walking into the licker. Do not mix
-        # jump, LivingHurt, or ownerless arrows into this clip.
+        # hunting unsneaked walk footsteps (NoiseEvents radius 9 vs sneak 0).
+        # Strafe on that ring so the camera does not walk into the licker.
+        # Do not mix jump, LivingHurt, or ownerless arrows into this clip.
         self.command(f"tp {CAMERA} 14.5 64 4 90 0")
         self.command(f"execute store result score sneak_lx0 ce_health run data get entity {selector} Pos[0] 100")
-        time.sleep(0.4)
+        time.sleep(0.5)
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
-        for _ in range(6):
-            self.command(f"tp {CAMERA} 14.5 64 4 90 0")
-            self.key("Control_L", True)
-            self.key("w", True)
-            time.sleep(0.32)
-            self.key("w", False)
-            self.key("Control_L", False)
-            self.command(f"tp {CAMERA} 14.5 64 4 90 0")
-            time.sleep(0.18)
+        self.key("a", True)
+        time.sleep(2.2)
+        self.key("a", False)
+        self.key("d", True)
+        time.sleep(2.2)
+        self.key("d", False)
+        self.command(f"tp {CAMERA} 14.5 64 4 90 0")
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
-                     "sprint: sprint-footstep noise hunted and reached the camera", timeout=12)
+                     "loud walk: unsneaked footsteps hunted and reached the camera", timeout=16)
         self.confirm("if score sneak_lx1 ce_health > sneak_lx0 ce_health",
-                     "sprint: licker X moved toward the camera, not the camera into the licker",
+                     "loud walk: licker X moved toward the camera, not the camera into the licker",
                      prepare=f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
         self.command(f"data get entity {selector} Pos")
         self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
@@ -784,8 +783,8 @@ class Capture:
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
-            sprint_phase="sprint-footstep bursts at 8.5 blocks: licker closed to within 5 and increased X",
-            loud_stimuli="sprint footsteps only; no jump/hurt/arrow",
+            sprint_phase="unsneaked walk-strafe at 8.5 blocks: licker closed to within 5 and increased X",
+            loud_stimuli="unsneaked walk footsteps only; no jump/hurt/arrow",
             silent_min_distance_blocks=6, sprint_max_distance_blocks=5,
             silent_still="licker-sneak-silent.png", sprint_still="licker-sprint-hunt.png",
             hunter_moved="licker X increased toward a parked camera",

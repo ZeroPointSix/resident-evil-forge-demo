@@ -107,6 +107,8 @@ def validate_animation_sync(client: str, server: str) -> dict:
     samples = sync_rows(client, "CLIENT")
     server_frames = {(r["uuid"], r["seq"], r["attack"], r["tick"]) for r in sync_rows(server, "SERVER")}
     late = {}
+    reentries = {}
+    seen_attacks = {}
     identities = {}
     for row in samples:
         identity = (row["uuid"], row["seq"], row["attack"], row["tick"])
@@ -126,12 +128,21 @@ def validate_animation_sync(client: str, server: str) -> dict:
         identities.setdefault(row["asset"], set()).add((row["uuid"], row["seq"]))
         if row["first"] == "true" and int(row["tick"]) >= 4:
             late.setdefault(row["asset"], row)
+        attack_identity = identity[:3]
+        previous_tick = seen_attacks.get(attack_identity)
+        if (row["resumed"] == "true" and row["first"] == "false"
+                and previous_tick is not None and int(row["tick"]) - previous_tick >= 4):
+            reentries.setdefault(row["asset"], row)
+        seen_attacks[attack_identity] = int(row["tick"])
     required = {mob[0] for mob in MOBS}
     if required - late.keys():
         raise EvidenceError(f"Missing real-client mid-attack first-frame samples: {sorted(required - late.keys())}")
+    if required - reentries.keys():
+        raise EvidenceError(f"Missing real-client same-attack re-entry samples: {sorted(required - reentries.keys())}")
     if any(len(identities.get(asset, ())) < 2 for asset in required):
         raise EvidenceError("Animation evidence must cover more than one attack identity per creature")
     return {"passed": True, "sample_count": len(samples), "late_first_frames": late,
+            "same_attack_reentries": reentries,
             "attack_identities": {k: len(v) for k, v in identities.items()},
             "source": "Actual GeckoLib 4.4.9 bone-animation queues in the installed real Forge client",
             "alignment": "(replicated ATTACK_TICK + render partialTick) * animation speed; unique attack sequence",
@@ -804,13 +815,30 @@ class Capture:
                     if succeeded:
                         break
                     time.sleep(0.1)
+                if succeeded:
+                    # Hide an already-rendered attack, then require the same sequence
+                    # to resume after a real gap in GeckoLib's render processing.
+                    self.command(f"tp {CAMERA} 6 64 -3 180 0")
+                    time.sleep(0.35)
+                    self.command(f"tp {CAMERA} 6 64 -3 0 0")
+                    succeeded = False
+                    deadline = time.monotonic() + 3
+                    while time.monotonic() < deadline:
+                        self.alive()
+                        rows = sync_rows(tail(self.output / "client.log", 10_000_000), "CLIENT")
+                        succeeded = any(r["uuid"] == frame["uuid"] and r["seq"] == frame["seq"]
+                                        and r["resumed"] == "true" and r["first"] == "false"
+                                        and int(r["tick"]) >= int(frame["tick"]) + 4 for r in rows)
+                        if succeeded:
+                            break
+                        time.sleep(0.1)
                 self.command(f"kill {actor}")
                 self.command(f"kill {target}")
                 time.sleep(4)
                 if succeeded:
                     break
             if not succeeded:
-                raise EvidenceError(f"{entity}: no first visible frame during an existing attack")
+                raise EvidenceError(f"{entity}: missing late first frame or same-attack visibility re-entry")
         result = validate_animation_sync(tail(self.output / "client.log", 10_000_000),
                                          tail(self.output / "server.log", 10_000_000))
         proof = self.output / "animation-sync.json"

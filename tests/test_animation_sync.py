@@ -13,12 +13,18 @@ class AnimationSyncEvidenceTests(unittest.TestCase):
                     f"RE_DEMO_SYNC_CLIENT uuid={asset} asset={asset} seq={seq} attack=1 tick=6 "
                     "partial=0.5 speed=1.0 clip=attack length=30 bone=arm prefix=5 point=1.5 "
                     "segment=5 last=false value=0.4 first=true resumed=false state=RUNNING")
+            servers.append(f"RE_DEMO_SYNC_SERVER uuid={asset} asset={asset} seq=1 attack=1 tick=11 speed=1.0")
+            clients.append(
+                f"RE_DEMO_SYNC_CLIENT uuid={asset} asset={asset} seq=1 attack=1 tick=11 "
+                "partial=0.5 speed=1.0 clip=attack length=30 bone=arm prefix=10 point=1.5 "
+                "segment=5 last=false value=0.8 first=false resumed=true state=RUNNING")
         return "\n".join(clients), "\n".join(servers)
 
     def test_accepts_actual_segment_samples_at_late_first_frame(self):
         result = validate_animation_sync(*self.logs())
-        self.assertEqual(result["sample_count"], 6)
+        self.assertEqual(result["sample_count"], 9)
         self.assertEqual(len(result["late_first_frames"]), 3)
+        self.assertEqual(len(result["same_attack_reentries"]), 3)
 
     def test_rejects_animation_restart_at_zero(self):
         client, server = self.logs()
@@ -42,8 +48,21 @@ class AnimationSyncEvidenceTests(unittest.TestCase):
 
     def test_handles_geckolib_final_segment_overrun(self):
         client, server = self.logs()
-        client = client.replace("point=1.5", "point=6.5").replace("segment=5", "segment=1").replace("last=false", "last=true")
+        client = client.replace("prefix=5 point=1.5", "prefix=5 point=6.5")
+        client = client.replace("prefix=10 point=1.5", "prefix=10 point=11.5")
+        client = client.replace("segment=5", "segment=1").replace("last=false", "last=true")
         self.assertTrue(validate_animation_sync(client, server)["passed"])
+
+    def test_rejects_missing_same_attack_reentry(self):
+        client, server = self.logs()
+        with self.assertRaises(EvidenceError):
+            validate_animation_sync(client.replace("resumed=true", "resumed=false"), server)
+
+    def test_new_attack_does_not_count_as_reentry(self):
+        client, server = self.logs()
+        with self.assertRaises(EvidenceError):
+            validate_animation_sync(client.replace("seq=1 attack=1 tick=11", "seq=3 attack=1 tick=11"),
+                                    server.replace("seq=1 attack=1 tick=11", "seq=3 attack=1 tick=11"))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 # 真实客户端证据（安装版 JAR）
 
-本目录是 **Minecraft 1.20.1 / Forge 47.2.0** 官方客户端对已安装 `re_demo-0.1.2.jar` 的原生画面，**不是** Blockbench / Three.js 离线预览。
+最新可内嵌实机图（HEAD `896df9f`，20 格无 HUD 三怪合影 + runClient 三怪 + 每只近景）：[896df9f/](896df9f/README.md)。
+
+本目录其余文件是更早的 **Minecraft 1.20.1 / Forge 47.2.0** 官方客户端对已安装 `re_demo-0.1.2.jar` 的原生画面，**不是** Blockbench / Three.js 离线预览。
 
 来源 CI：[Controlled Real Client Evidence run 37257038076](https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37257038076)（head `c7398661005b2ba63d6ccd172876074dd4d93384`，结论 success）。`report.json` 是该次流水线原件；`kind=controlled-real-client-scene`，`passed=true`，`origin=native Minecraft F2`。
 

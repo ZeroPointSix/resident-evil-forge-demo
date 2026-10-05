@@ -10,7 +10,10 @@ permissions:
 
 concurrency:
   group: client-evidence-${{ github.ref }}
-  cancel-in-progress: false
+  # A leftover devenv job (5ceb006 after capture already passed) held this
+  # group and blocked later HEAD captures. Cancel superseded runs so the
+  # live SHA can take the runner.
+  cancel-in-progress: true
 
 jobs:
   capture:

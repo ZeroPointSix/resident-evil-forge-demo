@@ -80,7 +80,7 @@ public final class CombatRegressionGameTests {
         h.runAfterDelay(68, h::succeed);
     }
 
-    @GameTest(template = "empty", timeoutTicks = 200)
+    @GameTest(template = "empty", timeoutTicks = 280)
     public static void tyrantWidensNarrowHoleAndPursuesThroughWall(GameTestHelper h) {
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
             h.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
@@ -96,11 +96,12 @@ public final class CombatRegressionGameTests {
         tyrant.setTarget(target);
         h.assertTrue(tyrant.hasBreakableAhead(), "Side columns must be found even when the center is air");
         double wallZ = h.absolutePos(new BlockPos(7, 1, 6)).getZ();
-        h.runAfterDelay(160, () -> {
+        // Snapshot-at-160 flakes on overloaded GameTestServer (CI has logged ~149 ticks
+        // behind before the batch). Retry until the body is past the wall, or time out.
+        h.succeedWhen(() -> {
             h.assertTrue(tyrant.getZ() > wallZ + 1.6, "Tyrant must physically cross the wall, not only break its center");
             h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(0, 1, 6))).is(Blocks.GLASS), "Breaking must remain bounded near the body");
             h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(7, 0, 6))).is(Blocks.STONE), "Non-whitelisted floor must remain intact");
-            h.succeed();
         });
     }
 

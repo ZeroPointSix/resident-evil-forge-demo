@@ -69,7 +69,9 @@ final class ServerTimedAnimationController extends AnimationController<Encounter
             if (Math.abs(point.animationStartValue() - point.animationEndValue()) < 1e-7) continue;
             double prefix = 0;
             for (int index = 0; index < frames.size(); index++) {
-                Keyframe<?> frame = (Keyframe<?>) frames.get(index);
+                // Even Keyframe<?> resolves its optional IValue bound at compile time.
+                @SuppressWarnings("rawtypes")
+                Keyframe frame = (Keyframe) frames.get(index);
                 if (frame == point.keyFrame()) {
                     // These are the actual points queued by GeckoLib's private sampler,
                     // not a second copy of the requested/expected progress.

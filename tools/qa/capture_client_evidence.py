@@ -345,7 +345,8 @@ class Capture:
         self.server.stdin.write(command + "\n")
         self.server.stdin.flush()
 
-    def confirm(self, condition: str, label: str, timeout: float = 30) -> None:
+    def confirm(self, condition: str, label: str, timeout: float = 30,
+                prepare: str | None = None) -> None:
         self.sequence += 1
         marker = f"CE_{self.nonce}_{self.sequence}"
         # `execute as <entity> ... run say` echoes with the entity's display
@@ -354,6 +355,10 @@ class Capture:
         pattern = re.compile(re.escape(marker) + r"\b")
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
+            # Snapshot scores once *before* the loop would freeze hang/land Y
+            # at the first sample (attack=4 starts at hang Y≈66.95).
+            if prepare:
+                self.command(prepare)
             self.command(f"execute {condition} run say {marker}")
             time.sleep(0.7)
             if pattern.search(tail(self.output / "server.log")):
@@ -698,14 +703,21 @@ class Capture:
             time.sleep(0.12)
             self.key("space", False)
             time.sleep(0.5)
+        # Ownerless arrows only set lastSound; LivingHurt on the parked camera
+        # is a repeated player-sourced ping so hear() can setTarget.
+        self.command(f"damage {CAMERA} 1 minecraft:generic")
+        time.sleep(0.35)
+        self.command(f"damage {CAMERA} 1 minecraft:generic")
         self.command('summon minecraft:arrow 14.5 65.4 4 {Motion:[0.0,-0.6,0.0],pickup:0b}')
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
                      "sprint: footstep/impact noise hunted and reached the camera", timeout=12)
-        self.command(f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
         self.confirm("if score sneak_lx1 ce_health > sneak_lx0 ce_health",
-                     "sprint: licker X moved toward the camera, not the camera into the licker")
+                     "sprint: licker X moved toward the camera, not the camera into the licker",
+                     prepare=f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
         self.command(f"data get entity {selector} Pos")
         self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
+        self.command('tellraw @a [{"text":"CE_SNEAK_LX0 "},{"score":{"name":"sneak_lx0","objective":"ce_health"}},'
+                     '{"text":" LX1 "},{"score":{"name":"sneak_lx1","objective":"ce_health"}}]')
         self.screenshot("licker-sprint-hunt.png")
         deadline = time.monotonic() + seconds + 20
         while recorder.poll() is None and time.monotonic() < deadline:
@@ -774,11 +786,14 @@ class Capture:
         time.sleep(0.8)
         self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
         # `y=/dy=` without x/z is a volume around the command origin (0,0,0),
-        # so it never matches the hanging licker at x=16. Use Pos[1]*100.
-        self.command(f"execute store result score ambush_hang ce_health run data get entity {selector} Pos[1] 100")
+        # so it never matches the hanging licker at x=16. Re-store Pos[1]*100
+        # every poll: attack=4 is logged at drop start while Y is still ~66.95.
+        hang_store = (f"execute store result score ambush_hang ce_health run "
+                      f"data get entity {selector} Pos[1] 100")
         self.confirm("if score ambush_hang ce_health matches 6600..6750",
-                     "ambush: licker holding under the ceiling", timeout=8)
+                     "ambush: licker holding under the ceiling", timeout=8, prepare=hang_store)
         self.command(f"data get entity {selector} Pos")
+        self.command('tellraw @a [{"text":"CE_AMBUSH_HANG_Y "},{"score":{"name":"ambush_hang","objective":"ce_health"}}]')
         time.sleep(0.9)
         self.screenshot("licker-ambush.png")
         self.command(f"data merge entity {selector} {{NoAI:0b,NoGravity:0b}}")
@@ -787,12 +802,16 @@ class Capture:
         self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=4",
                                     tail(self.output / "server.log", 10_000_000)[before:]),
                   "ambush release attack frames", 12)
-        self.command(f"execute store result score ambush_land ce_health run data get entity {selector} Pos[1] 100")
+        land_store = (f"execute store result score ambush_land ce_health run "
+                      f"data get entity {selector} Pos[1] 100")
         self.confirm("if score ambush_land ce_health matches ..6600",
-                     "ambush: licker dropped off the ceiling")
-        self.command(f"execute store result score ambush_hp ce_health run data get entity {dummy} Health 100")
+                     "ambush: licker dropped off the ceiling", timeout=12, prepare=land_store)
+        self.command(f"data get entity {selector} Pos")
+        self.command('tellraw @a [{"text":"CE_AMBUSH_LAND_Y "},{"score":{"name":"ambush_land","objective":"ce_health"}}]')
+        hp_store = (f"execute store result score ambush_hp ce_health run "
+                    f"data get entity {dummy} Health 100")
         self.confirm("if score ambush_hp ce_health matches ..98700",
-                     "ambush: release strike landed at least 13 damage", timeout=10)
+                     "ambush: release strike landed at least 13 damage", timeout=10, prepare=hp_store)
         deadline = time.monotonic() + seconds + 20
         while recorder.poll() is None and time.monotonic() < deadline:
             self.alive()

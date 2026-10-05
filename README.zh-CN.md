@@ -36,6 +36,17 @@ Minecraft Java Edition 1.20.1 的非官方同人怪物 Demo。实现范围为舔
 
 暴君默认只会破坏 `re_demo:tyrant_breakable` 标签中的木门、玻璃和玻璃板，每次最多处理前方三格高的一列；不拆地下方块、石头或带方块实体的容器。`mobGriefing=false` 会禁止拆障。
 
+## 原创短音乐
+
+新增原创合成配乐 **Containment Pulse（收容脉冲）**，时长 24 秒，不使用现成采样或官方音频。在声音设置中打开“主音量”和“音乐”，使用以下命令播放或停止：
+
+```text
+/playsound re_demo:encounter_theme music @s ~ ~ ~ 0.65
+/stopsound @s music re_demo:encounter_theme
+```
+
+需要作弊或管理员权限；配乐按命令单次播放，不会自动替换原版背景音乐。源曲谱、合成脚本和许可说明见 `art/audio/README.md`。
+
 ## 配置
 
 首次启动后生成 `config/re_demo-common.toml`：

@@ -9,12 +9,14 @@ import com.zeropointsix.redemo.entity.TyrantEntity;
 import com.zeropointsix.redemo.entity.ai.NoiseEvents;
 import com.zeropointsix.redemo.registry.ModEntities;
 import com.zeropointsix.redemo.registry.ModItems;
+import com.zeropointsix.redemo.registry.ModSounds;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
@@ -34,11 +36,23 @@ import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.registries.ForgeRegistries;
 
 @GameTestHolder(ResidentEvilMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class CreatureGameTests {
     private CreatureGameTests() { }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void originalMusicIsRegistered(GameTestHelper h) {
+        var id = new ResourceLocation(ResidentEvilMod.MOD_ID, "encounter_theme");
+        h.assertTrue(ForgeRegistries.SOUND_EVENTS.getValue(id) == ModSounds.ENCOUNTER_THEME.get(),
+                "Original music event must resolve through the live Forge sound registry");
+        h.assertTrue(CreatureGameTests.class.getResource(
+                "/assets/re_demo/sounds/music/containment_pulse.ogg") != null,
+                "Original Ogg must be packaged in the running mod");
+        h.succeed();
+    }
 
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void entitiesAndAttributes(GameTestHelper h) {

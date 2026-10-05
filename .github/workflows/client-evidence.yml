@@ -37,7 +37,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            xvfb xauth openbox xdotool ffmpeg mesa-utils \
+            xvfb xauth openbox xdotool ffmpeg mesa-utils pulseaudio pulseaudio-utils \
             libgl1-mesa-dri libglx-mesa0 libasound2 libxrandr2 \
             libxcursor1 libxi6 libxinerama1 libxxf86vm1
       - name: Run installed-JAR server and installed-JAR client

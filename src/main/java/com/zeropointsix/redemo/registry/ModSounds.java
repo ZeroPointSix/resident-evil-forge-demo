@@ -14,6 +14,7 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> IMPACT = sound("impact");
     public static final RegistryObject<SoundEvent> RAGE = sound("rage");
     public static final RegistryObject<SoundEvent> EYE_OPEN = sound("eye_open");
+    public static final RegistryObject<SoundEvent> ENCOUNTER_THEME = sound("encounter_theme");
 
     private static RegistryObject<SoundEvent> sound(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ResidentEvilMod.MOD_ID, name)));

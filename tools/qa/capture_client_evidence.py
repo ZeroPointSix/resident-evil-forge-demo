@@ -11,6 +11,7 @@ Requires Java 17, Python 3.11+, Xvfb, Openbox, xdotool, Mesa and ffmpeg/ffprobe.
 from __future__ import annotations
 
 import argparse
+from array import array
 import configparser
 import hashlib
 import json
@@ -35,6 +36,7 @@ import zipfile
 MC_VERSION = "1.20.1"
 FORGE_VERSION = "47.2.0"
 GECKO_VERSION = "4.4.9"
+MUSIC_EVENT = "re_demo:encounter_theme"
 CAMERA = "EvidenceCamera"
 SIZE = (1280, 720)
 MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 6, 1.6),
@@ -134,6 +136,62 @@ def check_frame(path: Path) -> dict:
     return {"sample_colors": unique, "luminance_stddev": round(deviation, 2)}
 
 
+def check_audio(path: Path) -> dict:
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_streams",
+         "-of", "json", str(path)], check=True, capture_output=True, text=True, timeout=30)
+    streams = json.loads(result.stdout).get("streams", [])
+    if not streams:
+        raise EvidenceError(f"No recorded client audio: {path.name}")
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(path), "-vn", "-ac", "1", "-ar", "8000",
+         "-f", "f32le", "-"], check=True, capture_output=True, timeout=30)
+    samples = array("f")
+    samples.frombytes(result.stdout)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    rms = math.sqrt(sum(v * v for v in samples) / max(1, len(samples)))
+    if not math.isfinite(rms) or rms < 0.001:
+        raise EvidenceError(f"Silent or invalid client audio: {path.name} (RMS={rms})")
+    return {"codec": streams[0]["codec_name"], "rms": round(rms, 6),
+            "peak": round(max(abs(v) for v in samples), 6),
+            "source": "live Forge client output via isolated PulseAudio monitor; no overdub"}
+
+
+def match_music(recording: Path, original: Path) -> dict:
+    def envelope(path):
+        decoded = subprocess.run(
+            ["ffmpeg", "-v", "error", "-i", str(path), "-t", "8", "-vn", "-ac", "1",
+             "-ar", "4000", "-f", "f32le", "-"], check=True, capture_output=True, timeout=30)
+        samples = array("f")
+        samples.frombytes(decoded.stdout)
+        if sys.byteorder != "little":
+            samples.byteswap()
+        return [math.sqrt(sum(v * v for v in samples[i:i + 160]) / 160)
+                for i in range(0, len(samples) - 159, 160)]
+
+    # A normalized four-second amplitude fingerprint tolerates device latency
+    # and gain changes, while rejecting silence and unrelated background audio.
+    reference, captured = envelope(original)[:100], envelope(recording)
+    if len(reference) != 100 or len(captured) < 100:
+        raise EvidenceError("Music identity check needs at least four recorded seconds")
+    centered = [v - statistics.mean(reference) for v in reference]
+    norm = sum(v * v for v in centered)
+    best, delay = -1.0, 0
+    for offset in range(len(captured) - len(reference) + 1):
+        window = captured[offset:offset + len(reference)]
+        mean = statistics.mean(window)
+        current = [v - mean for v in window]
+        denominator = math.sqrt(norm * sum(v * v for v in current))
+        correlation = sum(a * b for a, b in zip(centered, current)) / denominator if denominator else 0
+        if correlation > best:
+            best, delay = correlation, offset
+    if not math.isfinite(best) or best < 0.8:
+        raise EvidenceError(f"Recorded audio does not match the original cue: correlation={best:.3f}")
+    return {"envelope_correlation": round(best, 4), "matched_window_offset_seconds": round(delay * 0.04, 2),
+            "matched_seconds": 4, "reference_sha256": file_record(original)["sha256"]}
+
+
 class Capture:
     def __init__(self, args: argparse.Namespace):
         self.args = args
@@ -145,6 +203,8 @@ class Capture:
         self.work: Path | None = None
         self.server: subprocess.Popen | None = None
         self.client: subprocess.Popen | None = None
+        self.audio: subprocess.Popen | None = None
+        self.audio_temp = None
         self.nonce = uuid.uuid4().hex[:12]
         self.sequence = 0
         self.report = {
@@ -172,7 +232,7 @@ class Capture:
         return proc
 
     def alive(self) -> None:
-        for name, process in (("server", self.server), ("client", self.client)):
+        for name, process in (("server", self.server), ("client", self.client), ("audio", self.audio)):
             if process is not None and process.poll() is not None:
                 raise EvidenceError(f"{name} exited unexpectedly ({process.returncode}); inspect {name}.log")
 
@@ -232,7 +292,7 @@ class Capture:
                            ("geckolib_version", GECKO_VERSION), ("mod_id", "re_demo")):
             if config["project"].get(key) != value:
                 raise EvidenceError(f"This fixture requires {key}={value}")
-        for tool in ("java", "ffmpeg", "ffprobe", "xdotool", "openbox", "glxinfo"):
+        for tool in ("java", "ffmpeg", "ffprobe", "xdotool", "openbox", "glxinfo", "pulseaudio", "pactl"):
             if shutil.which(tool) is None:
                 raise EvidenceError(f"Required executable not found: {tool}")
         if not os.environ.get("DISPLAY"):
@@ -254,13 +314,71 @@ class Capture:
             "graphicsMode:0\nclouds:false\nparticles:1\nentityShadows:true\n"
             "guiScale:2\nfov:0.0\ngamma:1.0\nviewBobbing:false\npauseOnLostFocus:false\n"
             "tutorialStep:none\nonboardAccessibility:false\nskipMultiplayerWarning:true\n"
-            "chatVisibility:2\nshowSubtitles:false\nlang:en_us\n", encoding="utf-8")
+            "chatVisibility:2\nshowSubtitles:false\nlang:en_us\n"
+            "soundCategory_master:1.0\nsoundCategory_music:1.0\n", encoding="utf-8")
+        self.prepare_audio()
         self.run_logged("graphics", ["glxinfo", "-B"], self.work, 30)
         self.start("window-manager", ["openbox", "--sm-disable"], self.work)
         self.run_logged("build", self.gradle("build"),
                         self.project, self.args.build_timeout)
         self.install_server()
         self.install_client()
+
+    def prepare_audio(self) -> None:
+        # A short private /tmp path avoids AF_UNIX's 108-byte socket limit.
+        # No default sound server or shared desktop audio settings are changed.
+        self.audio_temp = tempfile.TemporaryDirectory(prefix="ce-audio-")
+        runtime = Path(self.audio_temp.name)
+        endpoint = runtime / "native"
+        self.env.update(PULSE_SERVER=f"unix:{endpoint}", PULSE_RUNTIME_PATH=str(runtime),
+                        PULSE_SINK="re_demo_capture", ALSOFT_DRIVERS="pulse")
+        config = runtime / "capture.pa"
+        config.write_text(
+            f"load-module module-native-protocol-unix socket={endpoint} auth-anonymous=1\n"
+            "load-module module-null-sink sink_name=re_demo_capture rate=44100 channels=2\n"
+            "set-default-sink re_demo_capture\n"
+            "set-default-source re_demo_capture.monitor\n", encoding="utf-8")
+        self.audio = self.start("pulseaudio", [
+            "pulseaudio", "--daemonize=no", "--exit-idle-time=-1", "--use-pid-file=no",
+            "--disable-shm=yes", "--log-target=stderr", "-n", "-F", str(config)], runtime)
+        self.wait(lambda: endpoint.exists(), "private audio socket", 20)
+        self.run_logged("audio-device", ["pactl", "info"], runtime, 15)
+        self.report["audio_capture"] = "private local Unix socket and null-sink monitor; no TCP listener"
+
+    def record_video(self, path: Path, seconds: int) -> subprocess.Popen:
+        return self.start(f"ffmpeg-{path.stem}", [
+            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
+            "-thread_queue_size", "1024", "-f", "x11grab", "-framerate", "20",
+            "-video_size", "1280x720", "-i", self.env["DISPLAY"],
+            "-thread_queue_size", "1024", "-f", "pulse", "-i", "re_demo_capture.monitor",
+            "-t", str(seconds), "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+            "-threads", "2", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
+            "-ar", "44100", "-ac", "2", "-movflags", "+faststart", str(path)], self.work)
+
+    def play_music(self) -> None:
+        self.command(f"stopsound {CAMERA} music")
+        self.command(f"execute at {CAMERA} store success score ce_music ce_health run "
+                     f"playsound {MUSIC_EVENT} music {CAMERA} ~ ~ ~ 0.65 1")
+        self.confirm("if score ce_music ce_health matches 1", "registered music event sent to installed client")
+
+    def verify_music_playback(self) -> None:
+        # No creatures remain after isolated_action_scenes. Record a separate
+        # quiet sound check before the brawl so combat sounds cannot mask silence.
+        self.command(f"stopsound {CAMERA}")
+        time.sleep(1)
+        path = self.output / "original-music-client.wav"
+        recorder = self.start("ffmpeg-music-check", [
+            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
+            "-f", "pulse", "-i", "re_demo_capture.monitor", "-t", "8",
+            "-c:a", "pcm_s16le", "-ar", "44100", "-ac", "2", str(path)], self.work)
+        time.sleep(1)
+        self.play_music()
+        if recorder.wait(timeout=25) != 0:
+            raise EvidenceError("Client music sound check failed")
+        original = self.project / "src/main/resources/assets/re_demo/sounds/music/containment_pulse.ogg"
+        self.report["original_music"] = dict(file_record(path), event=MUSIC_EVENT, audio=check_audio(path),
+                                               identity=match_music(path, original))
+        self.command(f"stopsound {CAMERA} music {MUSIC_EVENT}")
 
     def install_server(self) -> None:
         assert self.work is not None
@@ -442,12 +560,7 @@ class Capture:
         self.confirm(f"if score {before} ce_health matches 100000", f"{entity}: stationary target at full health")
         path = self.output / f"{entity}-{scenario}.mp4"
         clip_seconds = max(14, self.args.clip_seconds) if entity == "g1_birkin" else self.args.clip_seconds
-        recorder = self.start(f"ffmpeg-{entity}", [
-            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
-            "-f", "x11grab", "-framerate", "20", "-video_size", "1280x720", "-i", self.env["DISPLAY"],
-            "-t", str(clip_seconds), "-an", "-c:v", "libx264", "-preset", "ultrafast",
-            "-crf", "23", "-threads", "2", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path),
-        ], self.work)
+        recorder = self.record_video(path, clip_seconds)
         time.sleep(1)
         self.command(f"data merge entity {selector} {{NoAI:0b}}")
         self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
@@ -474,7 +587,8 @@ class Capture:
             raise EvidenceError(f"Recording appears frozen for {entity}")
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
-                                         scenario=scenario, initial_target_distance=target_distance))
+                                         scenario=scenario, initial_target_distance=target_distance,
+                                         audio=check_audio(path)))
 
     def brawl_scene(self, seconds: int = 55) -> None:
         # All three creatures fight each other under normal AI. Mutual aggro is
@@ -489,15 +603,13 @@ class Capture:
                          f"brawl arena: {entity} staged")
             self.command(f"execute store result score before_brawl_{entity} ce_health "
                          f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
+            # Two scripted 1-HP aggro hits must not pass the real-damage check.
+            self.command(f"scoreboard players remove before_brawl_{entity} ce_health 200")
         self.camera(8, -10, 8, 64.6, 4, "three-way brawl")
         path = self.output / "creature-brawl.mp4"
-        recorder = self.start("ffmpeg-brawl", [
-            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
-            "-f", "x11grab", "-framerate", "20", "-video_size", "1280x720", "-i", self.env["DISPLAY"],
-            "-t", str(seconds), "-an", "-c:v", "libx264", "-preset", "ultrafast",
-            "-crf", "25", "-threads", "2", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(path),
-        ], self.work)
+        recorder = self.record_video(path, seconds)
         time.sleep(1)
+        self.play_music()
         for entity, _, _ in triangle:
             self.command(f"data merge entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] {{NoAI:0b}}")
         def seed(attacker: str, victim: str) -> None:
@@ -527,9 +639,10 @@ class Capture:
                          f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
             self.command(f"execute if score after_brawl_{entity} ce_health < before_brawl_{entity} ce_health "
                          f"run scoreboard players add brawl_damaged ce_health 1")
+            self.command(f"data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health")
         time.sleep(1)
         self.confirm("if score brawl_damaged ce_health matches 2..",
-                     "brawl: at least two creatures took real combat damage")
+                     "brawl: at least two creatures lost more than the maximum 2 HP of scripted aggro damage")
         for entity, _, _ in triangle:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_brawl_{entity}]")
         info = probe(path)
@@ -543,7 +656,8 @@ class Capture:
             raise EvidenceError("Brawl recording appears frozen")
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), scenario="brawl",
-                                         mutual_combat_damage_verified=True))
+                                         mutual_combat_damage_verified=True, seed_damage_excluded_hp=2,
+                                         audio=check_audio(path)))
 
     def isolated_action_scenes(self) -> None:
         # Previously fought NoAI mobs still collide and can block the next actor.
@@ -580,6 +694,7 @@ class Capture:
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
         self.isolated_action_scenes()
+        self.verify_music_playback()
         self.brawl_scene()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
@@ -590,6 +705,17 @@ class Capture:
                 raise EvidenceError(f"Client rendering/resource error in {path.name}: {match.group(0)}")
         if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 7:
             raise EvidenceError("Incomplete evidence set")
+        ordered = ["creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",
+                   "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
+        playlist = self.output / "showcase-concat.txt"
+        playlist.write_text("".join(f"file '{name}'\n" for name in ordered), encoding="utf-8")
+        showcase = self.output / "encounter-showcase.mp4"
+        self.run_logged("ffmpeg-showcase", ["ffmpeg", "-v", "warning", "-nostdin", "-y",
+                        "-f", "concat", "-safe", "1", "-i", str(playlist), "-c", "copy",
+                        "-movflags", "+faststart", str(showcase)], self.work, 60)
+        self.report["showcase"] = dict(file_record(showcase), order=ordered,
+                                        duration_seconds=float(probe(showcase)["format"]["duration"]),
+                                        audio=check_audio(showcase))
         self.report["installed_jar_client_verified"] = True
         self.report["passed"] = True
 
@@ -613,6 +739,8 @@ class Capture:
                     proc.wait(timeout=10)
         for handle in self.handles:
             handle.close()
+        if self.audio_temp is not None:
+            self.audio_temp.cleanup()
         if self.work is not None:
             for role in ("client", "server"):
                 for folder in ("logs", "crash-reports"):

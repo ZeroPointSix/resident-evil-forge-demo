@@ -56,6 +56,15 @@ def vector(value: Any, length: int = 3) -> bool:
     return isinstance(value, list) and len(value) == length and all(number(v) for v in value)
 
 
+def file_sha256(fp: IO[bytes]) -> str:
+    # hashlib.file_digest is 3.11+; chunked streaming hash works on every
+    # supported Python and never loads the whole JAR into memory.
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: fp.read(1 << 20), b""):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
 def load_json(data: bytes) -> dict:
     require(len(data) <= MAX_FILE_BYTES, "JSON exceeds size limit")
     # Explicit, version-independent nesting limit: CPython's recursive parser
@@ -350,7 +359,7 @@ def validate(root: Path, jar: Path | None = None) -> dict:
             packed.fp.seek(0)
             report["jar_resource_check"].update({
                 "name": jar.name,
-                "sha256": hashlib.file_digest(packed.fp, "sha256").hexdigest(),
+                "sha256": file_sha256(packed.fp),
                 "bytes": size,
             })
             require(len(packed.namelist()) == len(set(packed.namelist())), "JAR contains duplicate entries")

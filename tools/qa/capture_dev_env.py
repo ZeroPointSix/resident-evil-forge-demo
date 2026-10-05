@@ -35,9 +35,18 @@ class EvidenceError(RuntimeError):
     pass
 
 
+def stream_digest(stream, algorithm: str) -> str:
+    # hashlib.file_digest is 3.11+; chunked streaming works on every
+    # supported Python and never holds the whole file in memory.
+    digest = hashlib.new(algorithm)
+    for chunk in iter(lambda: stream.read(1 << 20), b""):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
 def file_record(path: Path) -> dict:
     with path.open("rb") as stream:
-        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        digest = stream_digest(stream, "sha256")
     return {"name": path.name, "bytes": path.stat().st_size, "sha256": digest}
 
 

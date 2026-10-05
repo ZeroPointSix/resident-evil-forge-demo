@@ -54,18 +54,35 @@ INSTALL_CLIENT = r"""
 import shutil
 import subprocess
 import sys
+import time
 from minecraft_launcher_lib import mod_loader
-try:
-    profile = mod_loader.get_mod_loader('forge').install(
-        sys.argv[2], sys.argv[1], loader_version=sys.argv[3],
-        java=shutil.which('java'), callback={'setStatus': lambda s: print(s, flush=True)})
-    print('Installed official Forge client profile:', profile, flush=True)
-except subprocess.CalledProcessError as exc:
+
+def dump_called_process(exc):
     if exc.stdout:
         print(exc.stdout.decode(errors='replace') if isinstance(exc.stdout, bytes) else exc.stdout)
     if exc.stderr:
         print(exc.stderr.decode(errors='replace') if isinstance(exc.stderr, bytes) else exc.stderr)
-    raise
+
+last = None
+for attempt in range(1, 5):
+    try:
+        profile = mod_loader.get_mod_loader('forge').install(
+            sys.argv[2], sys.argv[1], loader_version=sys.argv[3],
+            java=shutil.which('java'), callback={'setStatus': lambda s: print(s, flush=True)})
+        print('Installed official Forge client profile:', profile, flush=True)
+        last = None
+        break
+    except subprocess.CalledProcessError as exc:
+        dump_called_process(exc)
+        last = exc
+        print(f'client-install attempt {attempt}/4 failed CalledProcessError', flush=True)
+    except Exception as exc:
+        last = exc
+        print(f'client-install attempt {attempt}/4 failed {type(exc).__name__}: {exc}', flush=True)
+    if attempt < 4:
+        time.sleep(2 * attempt)
+if last is not None:
+    raise last
 """
 
 
@@ -532,8 +549,23 @@ class Capture:
         from minecraft_launcher_lib import command, mod_loader, utils
 
         self.report["launcher_library"] = {"name": "minecraft-launcher-lib", "version": version("minecraft-launcher-lib")}
-        self.run_logged("client-install", [sys.executable, "-c", INSTALL_CLIENT, str(self.client_dir),
+        # Forge library fetches flake on truncated HTTP (IncompleteRead). Retry the
+        # whole installer subprocess so a truncated cache file can be replaced.
+        last_install_error: EvidenceError | None = None
+        for attempt in range(1, 4):
+            log_name = "client-install" if attempt == 1 else f"client-install-{attempt}"
+            try:
+                self.run_logged(log_name, [sys.executable, "-c", INSTALL_CLIENT, str(self.client_dir),
                                            MC_VERSION, FORGE_VERSION], self.client_dir, self.args.build_timeout)
+                last_install_error = None
+                break
+            except EvidenceError as exc:
+                last_install_error = exc
+                print(f"{log_name} failed ({attempt}/3): {exc}", flush=True)
+                if attempt < 3:
+                    time.sleep(3 * attempt)
+        if last_install_error is not None:
+            raise last_install_error
         profile = mod_loader.get_mod_loader("forge").get_installed_version(MC_VERSION, FORGE_VERSION)
         profile_json = self.client_dir / "versions" / profile / f"{profile}.json"
         if not profile_json.is_file() or json.loads(profile_json.read_text()).get("id") != profile:

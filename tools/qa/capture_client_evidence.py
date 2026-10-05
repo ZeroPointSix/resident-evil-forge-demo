@@ -1299,8 +1299,12 @@ class Capture:
             self.screenshot(f"{entity}-model.png")
             self.camera(x + 6.4, 4, x, 64 + focus_height, 4, f"{label} side")
             self.screenshot(f"{entity}-model-side.png")
-            self.camera(x - 0.5, 10.4, x, 64 + focus_height, 4, f"{label} back")
+            # The studio wall is at z=8. Stay on its open side so the wall
+            # cannot occlude the model while the camera looks at its back.
+            self.camera(x - 0.5, 7.4, x, 64 + focus_height, 4, f"{label} back")
             self.screenshot(f"{entity}-model-back.png")
+            if self.report["screenshots"][-1]["pixels"]["sample_colors"] < 500:
+                raise EvidenceError(f"{label} back view is flat or occluded")
         self.isolated_action_scenes()
         self.sneak_scene()
         self.ambush_scene()

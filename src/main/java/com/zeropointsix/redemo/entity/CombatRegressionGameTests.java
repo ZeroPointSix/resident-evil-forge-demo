@@ -130,28 +130,24 @@ public final class CombatRegressionGameTests {
         for (G1BirkinEntity mob : mobs) {
             G1BirkinEntity[] one = {mob};
             for (int frame : new int[] {20, 29}) {
-                atAttackFrame(h, mob, frame, () -> {
-                    if (arrow) shootAtEyeHeight(h, one, fromFront);
-                    else meleeAtEyeHeight(h, one, fromFront);
-                    h.runAfterDelay(arrow ? 3 : 1, () -> {
-                        if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1);
-                        if (++completed[0] == mobs.length * 2) h.succeed();
-                    });
-                });
+                // GameTest sequences poll once per tick without scheduling
+                // new callbacks while the pending-callback map is iterated.
+                h.startSequence()
+                        .thenWaitUntil(() -> h.assertTrue(
+                                mob.attack() == G1BirkinEntity.SWEEP && mob.attackTick() == frame,
+                                "Weak-point probe must run at exact sweep frame " + frame
+                                        + ", actual=" + mob.attackTick()))
+                        .thenExecute(() -> {
+                            if (arrow) shootAtEyeHeight(h, one, fromFront);
+                            else meleeAtEyeHeight(h, one, fromFront);
+                        })
+                        .thenIdle(arrow ? 3 : 1)
+                        .thenExecute(() -> {
+                            if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1);
+                            if (++completed[0] == mobs.length * 2) h.succeed();
+                        });
             }
         }
-    }
-
-    private static void atAttackFrame(GameTestHelper h, G1BirkinEntity mob, int frame, Runnable sample) {
-        // Entity activation can lag the GameTest clock by a tick. Sample the
-        // real attack frame instead of assuming both clocks started together.
-        if (mob.attackTick() < frame) {
-            h.runAfterDelay(1, () -> atAttackFrame(h, mob, frame, sample));
-            return;
-        }
-        h.assertTrue(mob.attack() == G1BirkinEntity.SWEEP && mob.attackTick() == frame,
-                "Weak-point probe must run at exact sweep frame " + frame + ", actual=" + mob.attackTick());
-        sample.run();
     }
 
     private static G1BirkinEntity[] sweepFixtures(GameTestHelper h) {

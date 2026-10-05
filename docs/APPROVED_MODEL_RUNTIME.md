@@ -45,7 +45,7 @@ than the moving jaw, preserving its forward extension above the floor.
 python tools/integrate_approved_models.py
 python -m unittest discover -s tests -v
 ./gradlew build runGameTestServer
-python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.2.jar
+python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.3.jar
 ```
 
 The independent tests check source hashes, transformed cube vertices, original
@@ -68,7 +68,7 @@ and retain the workflow report alongside the installable artifact.
 ## Install
 
 Use Minecraft Java 1.20.1, Forge 47.2.0, Java 17 and GeckoLib Forge 4.4.9.
-Place `re_demo-0.1.2.jar` and GeckoLib in the instance's `mods` directory and
+Place `re_demo-0.1.3.jar` and GeckoLib in the instance's `mods` directory and
 remove the older `re_demo` JAR. Client and server need matching versions.
 Test in a new or backed-up world. Spawn IDs are `re_demo:tyrant`,
 `re_demo:g1_birkin` and `re_demo:licker`; combat targets must not be creative or

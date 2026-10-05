@@ -754,7 +754,7 @@ class Capture:
                      json.dumps({"text": "phase B: sprint footsteps at 8.5 blocks | controlled real-client scene"}))
         # Park on the 8.5-block mark so closing-in can only be the Licker
         # hunting sprint footsteps (NoiseEvents radius 20 vs sneak 0).
-        # Face along +Z while sprinting: stay in radius 20 without moving
+        # Face along -Z, away from the z=8 backdrop, without moving
         # into the Licker, then return to the fixed observation mark.
         # Do not mix jump, LivingHurt, or ownerless arrows into this clip.
         self.command(f"tp {CAMERA} 14.5 64 4 90 0")
@@ -762,7 +762,7 @@ class Capture:
         time.sleep(0.5)
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
         for _ in range(2):
-            self.command(f"tp {CAMERA} 14.5 64 4 0 0")
+            self.command(f"tp {CAMERA} 14.5 64 4 180 0")
             time.sleep(0.25)
             self.sprint_forward()
             self.command(f"tp {CAMERA} 14.5 64 4 90 0")

@@ -42,6 +42,9 @@ CAMERA = "EvidenceCamera"
 SIZE = (1280, 720)
 MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 6, 1.6),
         ("g1_birkin", "G1 Birkin", 12, 1.7))
+# A nearby licker can land its normal claw before the tyrant's charge wind-up.
+# Otherwise G1 and the licker can lock onto each other and never hit the tyrant.
+BRAWL_POSITIONS = (("tyrant", 4, 4), ("g1_birkin", 12, 4), ("licker", 4, 2.2))
 FORGE_URL = ("https://maven.minecraftforge.net/net/minecraftforge/forge/"
              f"{MC_VERSION}-{FORGE_VERSION}/forge-{MC_VERSION}-{FORGE_VERSION}-installer.jar")
 GECKO_NAME = f"geckolib-forge-{MC_VERSION}-{GECKO_VERSION}.jar"
@@ -606,11 +609,11 @@ class Capture:
         # All three creatures fight each other under normal AI. Mutual aggro is
         # seeded with real mob_attack damage packets, so every retaliation and
         # attack animation is produced by the installed mod's own combat code.
-        triangle = (("tyrant", 4, 4), ("g1_birkin", 12, 4), ("licker", 8, -3))
+        triangle = BRAWL_POSITIONS
         for entity, x, z in triangle:
             self.command(f"summon re_demo:{entity} {x} 64 {z} "
-                         f"{{Tags:[\"ce_brawl_{entity}\"],PersistenceRequired:1b,NoAI:1b,Health:3000.0f,"
-                         'Attributes:[{Name:"minecraft:generic.max_health",Base:3000.0d}]}')
+                         f"{{Tags:[\"ce_brawl_{entity}\"],PersistenceRequired:1b,NoAI:1b,Health:1000.0f,"
+                         'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d}]}')
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1]",
                          f"brawl arena: {entity} staged")
             self.command(f"execute store result score before_brawl_{entity} ce_health "
@@ -670,6 +673,7 @@ class Capture:
                                          sampled_motion=round(difference, 3), scenario="brawl",
                                          mutual_combat_damage_verified=True, seed_damage_excluded_hp=2,
                                          all_three_damaged=True, minimum_loss_hp=5,
+                                         initial_positions=BRAWL_POSITIONS,
                                          audio=check_audio(path)))
 
     def isolated_action_scenes(self) -> None:

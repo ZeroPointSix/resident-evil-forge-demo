@@ -137,6 +137,9 @@ public final class LickerEntity extends EncounterMob {
             setNoGravity(true);
             setDeltaMovement(Vec3.ZERO);
             getNavigation().stop();
+            // NoAI staging (capture hang still) must not run the 50-tick auto-drop:
+            // LivingEntity skips travel() while NoAI, so AMBUSH would freeze at hang Y.
+            if (isNoAi()) return;
             hangTicks++;
             if (!solidCeiling || hangTicks >= 50 || getTarget() != null && hangTicks >= 20 && distanceTo(getTarget()) < 7) {
                 entityData.set(HANGING, false);

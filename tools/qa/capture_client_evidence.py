@@ -780,7 +780,6 @@ class Capture:
         seconds = 16
         recorder = self.record_video(path, seconds)
         time.sleep(1)
-        before = len(tail(self.output / "server.log", 10_000_000))
         # A real projectile impact is a noise event the Licker must record.
         self.command('summon minecraft:arrow 16 69.6 0 {Motion:[0.0,-0.4,0.0],pickup:0b}')
         time.sleep(0.8)
@@ -796,9 +795,11 @@ class Capture:
         self.command('tellraw @a [{"text":"CE_AMBUSH_HANG_Y "},{"score":{"name":"ambush_hang","objective":"ce_health"}}]')
         time.sleep(0.9)
         self.screenshot("licker-ambush.png")
-        self.command(f"data merge entity {selector} {{NoAI:0b,NoGravity:0b}}")
-        # The release window opens once the dummy is pulled inside 7 blocks.
+        # Dummy must be inside 7 before AI is enabled, otherwise hangTicks>=50
+        # starts AMBUSH at the far dummy and the strike never lands.
         self.command(f"tp {dummy} 18 64 0")
+        before = len(tail(self.output / "server.log", 10_000_000))
+        self.command(f"data merge entity {selector} {{NoAI:0b,NoGravity:0b}}")
         self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=4",
                                     tail(self.output / "server.log", 10_000_000)[before:]),
                   "ambush release attack frames", 12)

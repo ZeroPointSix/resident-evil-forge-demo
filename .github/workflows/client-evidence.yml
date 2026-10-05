@@ -17,10 +17,10 @@ concurrency:
 
 jobs:
   capture:
-    # Capture is the required evidence job. Start it immediately so a
-    # starved ubuntu-22.04 queue cannot cancel it after 15 minutes while
-    # devenv holds the only runner (8491694 job 111954803199).
-    runs-on: ubuntu-22.04
+    # ubuntu-22.04 hosted runners starved this job for 15 minutes then
+    # cancelled it (327da82 job 111967988520). ubuntu-latest is the same
+    # pool Build already uses successfully.
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       LIBGL_ALWAYS_SOFTWARE: "1"
@@ -44,8 +44,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth openbox xdotool ffmpeg mesa-utils pulseaudio pulseaudio-utils \
-            libgl1-mesa-dri libglx-mesa0 libasound2 libxrandr2 \
-            libxcursor1 libxi6 libxinerama1 libxxf86vm1
+            libgl1-mesa-dri libxrandr2 libxcursor1 libxi6 libxinerama1 libxxf86vm1
+          sudo apt-get install -y --no-install-recommends libglx-mesa0 || true
+          sudo apt-get install -y --no-install-recommends libasound2t64 \
+            || sudo apt-get install -y --no-install-recommends libasound2
       - name: Run installed-JAR server and installed-JAR client
         run: |
           xvfb-run --auto-servernum \
@@ -88,9 +90,7 @@ jobs:
 
   dev-env:
     name: Dev environment evidence (gradlew runServer + runClient)
-    needs: [capture]
-    if: always()
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
       LIBGL_ALWAYS_SOFTWARE: "1"
@@ -112,8 +112,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth openbox xdotool mesa-utils \
-            libgl1-mesa-dri libglx-mesa0 libasound2 libxrandr2 \
-            libxcursor1 libxi6 libxinerama1 libxxf86vm1
+            libgl1-mesa-dri libxrandr2 libxcursor1 libxi6 libxinerama1 libxxf86vm1
+          sudo apt-get install -y --no-install-recommends libglx-mesa0 || true
+          sudo apt-get install -y --no-install-recommends libasound2t64 \
+            || sudo apt-get install -y --no-install-recommends libasound2
       - name: Run dev Forge server and dev client (gradlew runServer + runClient)
         run: |
           xvfb-run --auto-servernum \

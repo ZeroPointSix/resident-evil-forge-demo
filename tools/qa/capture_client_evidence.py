@@ -848,15 +848,22 @@ class Capture:
         self.command("kill @e[type=minecraft:arrow]")
         time.sleep(2)
         self.command(f"effect clear {CAMERA} minecraft:night_vision")
+        # z=8 is the white backdrop wall itself — spawn on the open side at
+        # z=6 so the camera sees bodies, not a wall. The mossy climb wall at
+        # z=-11 spans x>=8, so all three lanes stay below x=8 to keep the
+        # 20-block sightline clear; |camera z=-14 -> mob z=6| is exactly 20.
+        lanes = {"licker": -6, "tyrant": 0, "g1_birkin": 6}
         for entity, _, x, _ in MOBS:
-            self.command(f"summon re_demo:{entity} {x} 64 8 "
+            lane = lanes.get(entity, x)
+            self.command(f"summon re_demo:{entity} {lane} 64 6 "
                          f'{{Tags:["ce_id"],PersistenceRequired:1b,NoAI:1b,Rotation:[180.0f,0.0f]}}')
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_id,limit=1]",
                          f"identification: unnamed {entity} staged")
-        self.camera(6, -12, 6, 64.8, 8, "three creatures, 20 blocks, daylight, no name tags")
+        self.camera(0, -14, 0, 64.8, 6, "three creatures, 20 blocks, daylight, no name tags")
         self.screenshot("20-block-identification.png")
         for entity, label, x, height in MOBS:
-            self.camera(x, -12, x, 64 + height, 8, f"{label} at 20 blocks")
+            lane = lanes.get(entity, x)
+            self.camera(lane, -14, lane, 64 + height, 6, f"{label} at 20 blocks")
             self.screenshot(f"{entity}-20blocks.png")
         self.command(f"effect give {CAMERA} minecraft:night_vision 999999 0 true")
         self.command("kill @e[tag=ce_id]")

@@ -1,6 +1,8 @@
 # 三只怪模型证据说明
 
-本目录中的图片和 GIF 均为脚本直接读取本 PR 内的 GeckoLib `.geo.json`、`.animation.json` 与 PNG 贴图后进行的离线模型预览，**不是游戏截图**，也不代表 Forge 客户端内的最终光照、粒子或命中判定表现。每张 PNG 的元数据都写入源 geometry 与 texture 的 SHA-256；每个 GIF 的 comment 字段写入同类来源哈希和动画名，可用验证脚本核对。
+本目录根下的三视图 PNG 和攻击 GIF 均为脚本直接读取本 PR 内的 GeckoLib `.geo.json`、`.animation.json` 与 PNG 贴图后进行的离线模型预览，**不是游戏截图**，也不代表 Forge 客户端内的最终光照、粒子或命中判定表现。每张 PNG 的元数据都写入源 geometry 与 texture 的 SHA-256；每个 GIF 的 comment 字段写入同类来源哈希和动画名，可用验证脚本核对。
+
+真实 Minecraft 1.20.1 Forge 客户端的原生 F2 截图与攻击录像抽帧在 [client/](client/README.md)，不要把下面的离线预览当成实机验收。
 
 ## 预览索引
 

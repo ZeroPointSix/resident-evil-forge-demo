@@ -1308,7 +1308,10 @@ class Capture:
         self.command('summon re_demo:g1_birkin 12 64 4 '
                      '{Tags:["ce_eye"],PersistenceRequired:1b,NoAI:1b,Rotation:[180.0f,0.0f]}')
         self.confirm(f"if entity {selector}", "g1_eye: staged berserk candidate")
-        self.camera(13.4, 7.0, 11.4, 66.4, 4.55, "G1 shoulder eye open", cam_y=65.5)
+        # Rotation 180 faces -Z; the eye sits on the model's front-right at
+        # local (+0.6, 2.4, -0.5) -> world north-west, so frame it from the
+        # north-west at eye level.
+        self.camera(10.2, 1.4, 11.4, 66.4, 3.5, "G1 shoulder eye open", cam_y=65.8)
         # Below 30% of 480 HP so updatePhase() runs berserk and opens the eye.
         self.command(f"data merge entity {selector} {{Health:140.0f}}")
         time.sleep(1)

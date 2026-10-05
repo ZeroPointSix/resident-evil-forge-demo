@@ -229,8 +229,8 @@ class Capture:
             "visual_quality_review_required": True, "player_joined": False,
             "client_input_roundtrip_verified": False,
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
-                       "Stationary high-health golems are used as controlled attack targets, then the three "
-                       "creatures fight each other with aggro seeded by real mob_attack damage.",
+                       "The three creatures attack separate stationary high-health golems in one group scene; "
+                       "targets receive no scripted damage and retaliation is seeded on each attacker.",
             "screenshots": [], "clips": [], "confirmations": [],
         }
 
@@ -761,7 +761,8 @@ class Capture:
                              "end_seconds": round(elapsed + duration, 3)})
             elapsed += duration
         self.report["showcase"]["timeline"] = timeline
-        self.report["showcase"]["editing"] = "Brawl followed by separately staged normal-AI close-ups; no overdub"
+        self.report["showcase"]["editing"] = ("Controlled three-creature combat followed by separately staged "
+                                                       "normal-AI close-ups; no overdub")
         self.report["installed_jar_client_verified"] = True
         self.report["passed"] = True
 

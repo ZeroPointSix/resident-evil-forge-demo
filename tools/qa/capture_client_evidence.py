@@ -648,10 +648,6 @@ class Capture:
         # Put all three installed creatures in one real-client combat scene.
         # Each creature gets its own stationary high-health target so target
         # selection cannot make one participant's damage assertion flaky.
-        for entity, _, _, _ in MOBS:
-            self.command(f"kill @e[type=re_demo:{entity}]")
-        self.command("kill @e[type=minecraft:iron_golem]")
-        time.sleep(2)
         lineup = (("tyrant", 2, 4), ("g1_birkin", 8, 4), ("licker", 14, 4))
         actors = {
             entity: f"@e[type=re_demo:{entity},tag=ce_group_{entity},limit=1]"
@@ -662,10 +658,8 @@ class Capture:
             for entity, _, _ in lineup
         }
         for entity, x, z in lineup:
-            # Face +X toward the dummy. Default yaw 0 points the Licker into
-            # the backdrop wall and lets WallClimberNavigation climb instead.
             self.command(f"summon re_demo:{entity} {x} 64 {z} "
-                         f'{{Tags:["ce_group_{entity}"],PersistenceRequired:1b,NoAI:1b,Rotation:[-90.0f,0.0f]}}')
+                         f'{{Tags:["ce_group_{entity}"],PersistenceRequired:1b,NoAI:1b}}')
             self.command(f"summon minecraft:iron_golem {x + 1.8} 64 {z} "
                          f'{{Tags:["ce_group_dummy_{entity}"],NoAI:1b,PersistenceRequired:1b,Health:1000.0f,'
                          'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
@@ -704,13 +698,16 @@ class Capture:
         time.sleep(1)
         for entity, _, _ in lineup:
             self.command(f"data merge entity {actors[entity]} {{NoAI:1b}}")
+            self.command(f"data get entity {actors[entity]} Pos")
+            self.command(f"data get entity {targets[entity]} Pos")
+            self.command(f"data get entity {targets[entity]} UUID")
             self.command(f"execute store result score after_group_{entity} ce_health "
                          f"run data get entity {targets[entity]} Health 100")
-            self.command(f"data get entity {targets[entity]} Health")
             self.confirm(f"if score after_group_{entity} ce_health < target_threshold_{entity} ce_health "
                          f"if score after_group_{entity} ce_health matches 1..",
                          f"group combat: {entity} dealt more than 5 HP of real AI damage")
             self.command("scoreboard players add group_attackers_verified ce_health 1")
+            self.command(f"data get entity {targets[entity]} Health")
         self.confirm("if score group_attackers_verified ce_health matches 3",
                      "group combat: all three creatures independently dealt more than 5 HP")
         for entity, _, _ in lineup:

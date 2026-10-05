@@ -63,7 +63,7 @@ final class ServerTimedAnimationController extends AnimationController<Encounter
             var point = queue == null ? null : queue.rotationXQueue().peek();
             var frames = animation.rotationKeyFrames().xKeyframes();
             if (point == null || point.keyFrame() == null || frames.size() < 2) continue;
-            if (frames.stream().noneMatch(frame -> Math.abs(frame.startValue().get() - frame.endValue().get()) > 1e-7)) continue;
+            if (Math.abs(point.animationStartValue() - point.animationEndValue()) < 1e-7) continue;
             double prefix = 0;
             for (int index = 0; index < frames.size(); index++) {
                 var frame = frames.get(index);

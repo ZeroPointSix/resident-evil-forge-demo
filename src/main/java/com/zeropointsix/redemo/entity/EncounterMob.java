@@ -92,9 +92,15 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     }
 
     private void traceAttackFrame(int frame) {
-        if (ANIMATION_TRACE) LogUtils.getLogger().info(
-                "RE_DEMO_SYNC_SERVER uuid={} asset={} seq={} attack={} tick={} speed={}",
-                getUUID(), assetId(), attackSequence(), attack(), frame, animationSpeed());
+        if (ANIMATION_TRACE) {
+            LivingEntity target = getTarget();
+            LogUtils.getLogger().info(
+                    "RE_DEMO_SYNC_SERVER uuid={} asset={} seq={} attack={} tick={} speed={} x={} y={} z={} yaw={} target={} tx={} ty={} tz={} health={}",
+                    getUUID(), assetId(), attackSequence(), attack(), frame, animationSpeed(),
+                    getX(), getY(), getZ(), attackYaw, target == null ? "none" : target.getUUID(),
+                    target == null ? 0 : target.getX(), target == null ? 0 : target.getY(),
+                    target == null ? 0 : target.getZ(), target == null ? 0 : target.getHealth());
+        }
     }
 
     @Override
@@ -155,6 +161,9 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
             if (!clearAttackLine(victim) || attackHits.contains(victim.getUUID())) continue;
             if (victim.hurt(damageSources().mobAttack(this), damage * CommonConfig.DAMAGE_SCALE.get().floatValue())) {
                 attackHits.add(victim.getUUID());
+                if (ANIMATION_TRACE) LogUtils.getLogger().info(
+                        "RE_DEMO_HIT uuid={} asset={} seq={} attack={} tick={} target={} health={}",
+                        getUUID(), assetId(), attackSequence(), attack(), attackTick(), victim.getUUID(), victim.getHealth());
                 if (knockback > 0) victim.knockback(knockback, -offset.x, -offset.z);
                 playSound(ModSounds.IMPACT.get(), 1, 0.8F);
             }

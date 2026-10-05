@@ -668,6 +668,8 @@ class Capture:
             try:
                 self.confirm(f"as {selector} at @s unless entity @a[name={CAMERA},distance=..6]",
                              "sneak: silent sneak-walk did not pull the licker", timeout=6)
+                self.command(f"data get entity {selector} Pos")
+                self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
                 self.screenshot("licker-sneak-silent.png")
                 sneaked = True
                 break
@@ -696,6 +698,8 @@ class Capture:
         # SoundInvestigateGoal pathfinds to the noise without always calling
         # setTarget (hear() only locks a living source on a repeated ping).
         # The Review ask is sneak vs sprint aggro distance, not a claw frame.
+        self.command(f"data get entity {selector} Pos")
+        self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
         self.screenshot("licker-sprint-hunt.png")
         deadline = time.monotonic() + seconds + 20
         while recorder.poll() is None and time.monotonic() < deadline:
@@ -717,6 +721,8 @@ class Capture:
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
             sprint_phase="radius-20 noise: licker closed to within 5 blocks of the camera",
+            silent_min_distance_blocks=6, sprint_max_distance_blocks=5,
+            silent_still="licker-sneak-silent.png", sprint_still="licker-sprint-hunt.png",
             claw_frames_logged=False, camera_gamemode="survival", camera_resistance=4,
             audio=check_audio(path)))
         self.command(f"kill {selector}")

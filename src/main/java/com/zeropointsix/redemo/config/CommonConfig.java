@@ -18,7 +18,7 @@ public final class CommonConfig {
                 .define("tyrantBreakSoftBlocks", true);
         DAMAGE_SCALE = b.comment("Multiplier for this mod's outgoing attack damage.")
                 .defineInRange("damageScale", 1.0, 0.1, 5.0);
-        SOUND_MEMORY_TICKS = b.comment("Licker forgets a silent target after this many ticks.")
+        SOUND_MEMORY_TICKS = b.comment("Licker forgets a sound-hunt investigation after this many silent ticks. Hurt/combat lock is independent.")
                 .defineInRange("lickerSoundMemoryTicks", 120, 40, 600);
         SPEC = b.build();
     }

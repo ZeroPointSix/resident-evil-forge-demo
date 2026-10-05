@@ -15,13 +15,22 @@ public final class SoundInvestigateGoal extends Goal {
     }
 
     @Override
-    public boolean canUse() { return licker.investigationPoint() != null && !licker.attacking() && !licker.isHanging(); }
+    public boolean canUse() {
+        return !licker.attacking() && !licker.isHanging()
+                && (licker.investigationPoint() != null || EncounterMob.validTarget(licker.getTarget()));
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        return canUse();
+    }
 
     @Override
     public void tick() {
-        Vec3 point = licker.investigationPoint();
+        Vec3 point = EncounterMob.validTarget(licker.getTarget())
+                ? licker.getTarget().position()
+                : licker.investigationPoint();
         if (point == null) return;
-        if (EncounterMob.validTarget(licker.getTarget())) point = licker.getTarget().position();
         licker.getLookControl().setLookAt(point.x, point.y + 0.5, point.z, 25, 25);
         if (licker.tickCount % 5 == 0) licker.getNavigation().moveTo(point.x, point.y, point.z, licker.getTarget() == null ? 0.8 : 1.2);
     }

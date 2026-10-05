@@ -29,6 +29,7 @@ public final class LickerEntity extends EncounterMob {
     private static final EntityDataAccessor<Boolean> HANGING = SynchedEntityData.defineId(LickerEntity.class, EntityDataSerializers.BOOLEAN);
     private Vec3 lastSound;
     private int lastSoundTick = -10000;
+    private boolean combatLock;
     private int hangTicks;
     private int leapCooldown;
     private int tongueCooldown;
@@ -64,6 +65,7 @@ public final class LickerEntity extends EncounterMob {
 
     public boolean isHanging() { return entityData.get(HANGING); }
     public Vec3 investigationPoint() { return lastSound; }
+    public boolean hasCombatLock() { return combatLock; }
 
     public void hear(Vec3 position, LivingEntity source, double radius) {
         if (level().isClientSide || !isAlive() || position.distanceToSqr(position()) > radius * radius) return;
@@ -77,10 +79,11 @@ public final class LickerEntity extends EncounterMob {
     public boolean hurt(DamageSource source, float amount) {
         boolean damaged = super.hurt(source, amount);
         if (damaged && isAlive() && !level().isClientSide && source.getEntity() instanceof LivingEntity attacker && validTarget(attacker)) {
-            hear(attacker.position(), attacker, 100);
+            // Hurt chase is independent of the 6s sound-memory hunt. Silent
+            // NoAI dummies never emit footsteps, so routing retaliation through
+            // hear() used to drop the claw target when SOUND_MEMORY_TICKS elapsed.
+            combatLock = true;
             setTarget(attacker);
-            lastSound = attacker.position();
-            lastSoundTick = tickCount;
         }
         return damaged;
     }
@@ -88,6 +91,7 @@ public final class LickerEntity extends EncounterMob {
     @Override
     public void die(DamageSource source) {
         lastSound = null;
+        combatLock = false;
         entityData.set(CLIMBING, false);
         entityData.set(HANGING, false);
         setNoGravity(false);
@@ -101,19 +105,20 @@ public final class LickerEntity extends EncounterMob {
         leapCooldown = Math.max(0, leapCooldown - 1);
         tongueCooldown = Math.max(0, tongueCooldown - 1);
         hangCooldown = Math.max(0, hangCooldown - 1);
-        boolean melee = validTarget(getTarget()) && distanceTo(getTarget()) <= 2.3;
+        boolean hasTarget = validTarget(getTarget());
+        boolean melee = hasTarget && distanceTo(getTarget()) <= 2.3;
         // Collision with the current claw target is not a wall. Climbing it
         // lifts the Licker off the hit arc and the group-combat dummy never
         // takes the required damage.
         entityData.set(CLIMBING, !melee && horizontalCollision && (!onGround() || lastSound != null));
-        if (melee || (attacking() && validTarget(getTarget()))) {
-            lastSound = getTarget().position();
-            lastSoundTick = tickCount;
-        } else if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
+        if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
             lastSound = null;
-            setTarget(null);
+            if (!combatLock && !melee && !attacking()) setTarget(null);
         }
-        if (!validTarget(getTarget())) setTarget(null);
+        if (!validTarget(getTarget())) {
+            setTarget(null);
+            combatLock = false;
+        }
         if (onClimbable() && lastSound != null && !isHanging() && !attacking() && !melee) {
             setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
         }

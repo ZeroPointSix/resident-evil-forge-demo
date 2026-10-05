@@ -343,6 +343,28 @@ public final class CreatureGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 160)
+    public static void lickerHurtAggroIgnoresExpiredSoundMemory(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(2, 1, 2));
+        var attacker = h.spawn(EntityType.IRON_GOLEM, new BlockPos(10, 1, 2));
+        attacker.setNoAi(true);
+        licker.setNoAi(true);
+        licker.hurt(licker.damageSources().mobAttack(attacker), 1);
+        h.assertTrue(licker.getTarget() == attacker, "Hurt must lock combat independently of sound hunt");
+        h.assertTrue(licker.hasCombatLock(), "Hurt must set combat lock");
+        h.assertTrue(licker.investigationPoint() == null, "Hurt chase must not open a sound-memory investigation");
+        h.runAfterDelay(130, () -> {
+            h.assertTrue(licker.investigationPoint() == null,
+                    "Sound memory must expire without a hear() investigation");
+            h.assertTrue(licker.getTarget() == attacker && licker.hasCombatLock(),
+                    "Hurt chase must keep the silent attacker after SOUND_MEMORY_TICKS");
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void threeSilentDummiesEachTakeFiveHp(GameTestHelper h) {
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {

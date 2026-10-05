@@ -133,7 +133,7 @@ class DevEnvCapture:
             "renderDistance:8\nsimulationDistance:5\nmaxFps:30\ngraphicsMode:0\nclouds:false\n"
             "guiScale:2\nfov:0.0\ngamma:1.0\nviewBobbing:false\npauseOnLostFocus:false\n"
             "tutorialStep:none\nonboardAccessibility:false\nskipMultiplayerWarning:true\n"
-            "chatVisibility:2\nlang:en_us\n", encoding="utf-8")
+            "chatVisibility:0\nlang:en_us\n", encoding="utf-8")
         # The dev client joins offline-mode as "Dev"; ops let its console summon.
         dev_uuid = subprocess.run(
             [sys.executable, "-c",

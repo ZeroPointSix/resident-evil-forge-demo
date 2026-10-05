@@ -611,14 +611,21 @@ class Capture:
         self.command(f"title {CAMERA} actionbar " + json.dumps({"text": f"{label} | controlled real-client scene"}))
         time.sleep(3)
 
-    def screenshot(self, name: str) -> None:
+    def screenshot(self, name: str, hide_gui: bool = False) -> None:
         screenshots = self.client_dir / "screenshots"
         previous = set(screenshots.glob("*.png"))
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
+        if hide_gui:
+            # F1 hides hotbar and boss bars so identification is model-only.
+            subprocess.run(["xdotool", "key", "--clearmodifiers", "F1"], check=True, timeout=10)
+            time.sleep(0.35)
         subprocess.run(["xdotool", "key", "--clearmodifiers", "F2"], check=True, timeout=10)
         source = self.wait(lambda: next(iter(set(screenshots.glob("*.png")) - previous), None),
                            f"native Minecraft F2 screenshot: {name}", 30)
         time.sleep(1)
+        if hide_gui:
+            subprocess.run(["xdotool", "key", "--clearmodifiers", "F1"], check=True, timeout=10)
+            time.sleep(0.2)
         target = self.output / name
         shutil.copy2(source, target)
         metrics = check_frame(target)
@@ -628,6 +635,8 @@ class Capture:
         metrics["center_mean_luminance"] = round(statistics.mean(center), 2)
         if metrics["center_mean_luminance"] < 40:
             raise EvidenceError(f"Model review area is too dark: {name}")
+        if hide_gui:
+            metrics["hide_gui"] = True
         self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2", pixels=metrics))
 
     def key(self, name: str, down: bool) -> None:
@@ -848,10 +857,17 @@ class Capture:
         self.command("kill @e[type=minecraft:arrow]")
         time.sleep(2)
         self.command(f"effect clear {CAMERA} minecraft:night_vision")
+        # Climb wall (x>=8, z~-11) sits 3 blocks in front of a z=-14 camera.
+        # Ambush roof leftover also crossed the right sightline. Clear both;
+        # keep the z=8 white concrete as a studio backdrop behind z=6.
+        self.command("fill 8 64 -13 28 69 -10 minecraft:air")
+        self.command("fill 12 64 -2 20 68 2 minecraft:air")
+        self.confirm("unless block 18 64 -10 minecraft:mossy_cobblestone "
+                     "unless block 16 68 0 minecraft:stone",
+                     "identification: leftover climb wall and ambush roof cleared")
         # z=8 is the white backdrop wall itself — spawn on the open side at
-        # z=6 so the camera sees bodies, not a wall. The mossy climb wall at
-        # z=-11 spans x>=8, so all three lanes stay below x=8 to keep the
-        # 20-block sightline clear; |camera z=-14 -> mob z=6| is exactly 20.
+        # z=6 so the camera sees bodies, not a wall. |camera z=-14 -> mob z=6|
+        # is exactly 20 blocks.
         lanes = {"licker": -6, "tyrant": 0, "g1_birkin": 6}
         for entity, _, x, _ in MOBS:
             lane = lanes.get(entity, x)
@@ -860,11 +876,11 @@ class Capture:
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_id,limit=1]",
                          f"identification: unnamed {entity} staged")
         self.camera(0, -14, 0, 64.8, 6, "three creatures, 20 blocks, daylight, no name tags")
-        self.screenshot("20-block-identification.png")
+        self.screenshot("20-block-identification.png", hide_gui=True)
         for entity, label, x, height in MOBS:
             lane = lanes.get(entity, x)
             self.camera(lane, -14, lane, 64 + height, 6, f"{label} at 20 blocks")
-            self.screenshot(f"{entity}-20blocks.png")
+            self.screenshot(f"{entity}-20blocks.png", hide_gui=True)
         self.command(f"effect give {CAMERA} minecraft:night_vision 999999 0 true")
         self.command("kill @e[tag=ce_id]")
         time.sleep(2)

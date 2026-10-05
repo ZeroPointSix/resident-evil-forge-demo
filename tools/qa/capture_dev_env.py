@@ -174,6 +174,19 @@ class DevEnvCapture:
         self.report["window_visible"] = True
         time.sleep(8)
 
+    def type_command(self, command: str) -> None:
+        # Gradle runServer does not reliably forward stdin to Minecraft, so the
+        # opped Dev client types the command. Avoid NBT braces: xdotool cannot
+        # type `{` with modifiers cleared.
+        subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
+        subprocess.run(["xdotool", "key", "--clearmodifiers", "Escape"], check=True, timeout=10)
+        time.sleep(0.25)
+        subprocess.run(["xdotool", "key", "--clearmodifiers", "t"], check=True, timeout=10)
+        time.sleep(0.45)
+        subprocess.run(["xdotool", "type", "--delay", "18", "--", command], check=True, timeout=30)
+        subprocess.run(["xdotool", "key", "Return"], check=True, timeout=10)
+        time.sleep(0.45)
+
     def capture(self) -> None:
         self.wait(lambda: re.search(r"re_demo", tail(self.output / "dev-client.log", 10_000_000)),
                   "re_demo in dev client mod log", 30)
@@ -182,25 +195,46 @@ class DevEnvCapture:
         console = self.server_command(f"say {marker}")
         try:
             console = console and bool(self.wait(
-                lambda: marker in tail(self.output / "dev-server.log"), "server console roundtrip", 30))
+                lambda: marker in tail(self.output / "dev-server.log"), "server console roundtrip", 8))
         except EvidenceError:
             console = False
         self.report["server_console_roundtrip"] = console
-        if console:
-            self.server_command("execute at Dev run summon re_demo:licker ~ ~ ~ {NoAI:1b}")
-            self.report["console_creature_summon"] = True
-            time.sleep(4)
+        self.type_command("/kill @e[type=re_demo:licker]")
+        self.type_command("/kill @e[type=re_demo:tyrant]")
+        self.type_command("/kill @e[type=re_demo:g1_birkin]")
+        self.type_command("/tp @s 0 64 -6 0 12")
+        self.type_command("/summon re_demo:licker -5 64 8")
+        self.type_command("/summon re_demo:tyrant 0 64 8")
+        self.type_command("/summon re_demo:g1_birkin 5 64 8")
+        def summoned() -> bool:
+            text = tail(self.output / "dev-server.log", 4_000_000)
+            return all(f"Summoned new {name}" in text
+                       for name in ("Licker", "Tyrant", "G1 William Birkin"))
+        try:
+            self.wait(summoned, "dev client summoned all three creatures", 20)
+        except EvidenceError as exc:
+            raise EvidenceError("dev client did not summon Licker+Tyrant+G1 Birkin; "
+                                "runClient F2 would be an empty superflat") from exc
+        self.report["console_creature_summon"] = True
+        self.report["three_creatures_summoned"] = True
+        time.sleep(5)
         screenshots = self.run_dir / "screenshots"
         previous = set(screenshots.glob("*.png")) if screenshots.is_dir() else set()
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
+        subprocess.run(["xdotool", "key", "--clearmodifiers", "F1"], check=True, timeout=10)
+        time.sleep(0.35)
         subprocess.run(["xdotool", "key", "--clearmodifiers", "F2"], check=True, timeout=10)
         shot = self.wait(lambda: next(iter(set(screenshots.glob("*.png")) - previous), None)
                          if screenshots.is_dir() else None,
                          "native F2 screenshot in dev client", 30)
         time.sleep(1)
+        subprocess.run(["xdotool", "key", "--clearmodifiers", "F1"], check=True, timeout=10)
         target = self.output / "dev-client-in-world.png"
         shutil.copy2(shot, target)
-        self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2"))
+        if target.stat().st_size < 80_000:
+            raise EvidenceError("dev-client F2 is too small to be a three-creature world shot")
+        self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2",
+                                               hide_gui=True, three_creatures=True))
         self.report["run_client_reached_world"] = True
         self.report["passed"] = True
 

@@ -45,7 +45,7 @@ than the moving jaw, preserving its forward extension above the floor.
 python tools/integrate_approved_models.py
 python -m unittest discover -s tests -v
 ./gradlew build runGameTestServer
-python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.1.jar
+python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.2.jar
 ```
 
 The independent tests check source hashes, transformed cube vertices, original
@@ -68,8 +68,23 @@ and retain the workflow report alongside the installable artifact.
 ## Install
 
 Use Minecraft Java 1.20.1, Forge 47.2.0, Java 17 and GeckoLib Forge 4.4.9.
-Place `re_demo-0.1.1.jar` and GeckoLib in the instance's `mods` directory and
+Place `re_demo-0.1.2.jar` and GeckoLib in the instance's `mods` directory and
 remove the older `re_demo` JAR. Client and server need matching versions.
 Test in a new or backed-up world. Spawn IDs are `re_demo:tyrant`,
 `re_demo:g1_birkin` and `re_demo:licker`; combat targets must not be creative or
 spectator players. See `README.zh-CN.md` for installation and summon commands.
+
+## 20261004 新线程交付说明
+
+0.1.2 保留 `5a4ef124` 的原创短曲 `Containment Pulse`、注册、命令播放和真实客户端
+音频指纹验证。未替换该提交的音乐、合成脚本或测试；未改模型、贴图、骨骼与攻击动画。
+使用 `/playsound re_demo:encounter_theme music @s ~ ~ ~ 0.65` 播放，关闭主音量或音乐
+音量会静音。音乐不是后期配入录像，也不会自动替换原版背景音乐。
+
+三怪对打在临时平地场景中使用高血量和正常 AI；开战与中途小额伤害只用于引发仇恨。
+三只怪物必须各损失超过 5 HP，排除总计最多 2 HP 的仇恨种子伤害。JAR 检查禁止内嵌
+GeckoLib，客户端和服务端均需单独安装 Forge 版 4.4.9。
+
+`encounter-showcase.mp4` 先展示三怪对打，再拼接独立布置的正常 AI 动作特写。
+具体片段顺序和时间线记入 `report.json`，不将其冒充同一场战斗的连续视角。
+验收仍需目视核对挥拳、冲撞、砸击、爬行和吐舌；自动通过不等于完整人工生存试玩。

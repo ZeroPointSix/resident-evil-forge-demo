@@ -14,6 +14,7 @@ import argparse
 from array import array
 import configparser
 import hashlib
+import io
 import json
 import math
 import os
@@ -70,6 +71,16 @@ except subprocess.CalledProcessError as exc:
 
 class EvidenceError(RuntimeError):
     pass
+
+
+def check_external_geckolib(archive: zipfile.ZipFile) -> None:
+    if any(name.startswith("software/bernie/geckolib/") for name in archive.namelist()):
+        raise EvidenceError("Release JAR must not bundle GeckoLib; install 4.4.9 separately")
+    for name in archive.namelist():
+        if name.startswith("META-INF/jarjar/") and name.endswith(".jar"):
+            with zipfile.ZipFile(io.BytesIO(archive.read(name))) as nested:
+                if any(path.startswith("software/bernie/geckolib/") for path in nested.namelist()):
+                    raise EvidenceError("Release JAR must not embed GeckoLib as a jar-in-jar dependency")
 
 
 def file_record(path: Path) -> dict:
@@ -402,6 +413,7 @@ class Capture:
         with zipfile.ZipFile(jar) as archive:
             if "META-INF/mods.toml" not in archive.namelist():
                 raise EvidenceError("Release JAR lacks Forge mods.toml")
+            check_external_geckolib(archive)
         mods = self.server_dir / "mods"
         mods.mkdir(exist_ok=True)
         shutil.copy2(jar, mods / jar.name)
@@ -603,8 +615,8 @@ class Capture:
                          f"brawl arena: {entity} staged")
             self.command(f"execute store result score before_brawl_{entity} ce_health "
                          f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
-            # Two scripted 1-HP aggro hits must not pass the real-damage check.
-            self.command(f"scoreboard players remove before_brawl_{entity} ce_health 200")
+            # Require more than 5 HP loss, beyond the two scripted 1-HP aggro hits.
+            self.command(f"scoreboard players remove before_brawl_{entity} ce_health 500")
         self.camera(8, -10, 8, 64.6, 4, "three-way brawl")
         path = self.output / "creature-brawl.mp4"
         recorder = self.record_video(path, seconds)
@@ -641,8 +653,8 @@ class Capture:
                          f"run scoreboard players add brawl_damaged ce_health 1")
             self.command(f"data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health")
         time.sleep(1)
-        self.confirm("if score brawl_damaged ce_health matches 2..",
-                     "brawl: at least two creatures lost more than the maximum 2 HP of scripted aggro damage")
+        self.confirm("if score brawl_damaged ce_health matches 3",
+                     "brawl: all three creatures lost more than 5 HP, excluding the maximum 2 HP of aggro seeds")
         for entity, _, _ in triangle:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_brawl_{entity}]")
         info = probe(path)
@@ -657,6 +669,7 @@ class Capture:
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), scenario="brawl",
                                          mutual_combat_damage_verified=True, seed_damage_excluded_hp=2,
+                                         all_three_damaged=True, minimum_loss_hp=5,
                                          audio=check_audio(path)))
 
     def isolated_action_scenes(self) -> None:
@@ -716,6 +729,14 @@ class Capture:
         self.report["showcase"] = dict(file_record(showcase), order=ordered,
                                         duration_seconds=float(probe(showcase)["format"]["duration"]),
                                         audio=check_audio(showcase))
+        elapsed, timeline = 0.0, []
+        for name in ordered:
+            duration = float(probe(self.output / name)["format"]["duration"])
+            timeline.append({"source_clip": name, "start_seconds": round(elapsed, 3),
+                             "end_seconds": round(elapsed + duration, 3)})
+            elapsed += duration
+        self.report["showcase"]["timeline"] = timeline
+        self.report["showcase"]["editing"] = "Brawl followed by separately staged normal-AI close-ups; no overdub"
         self.report["installed_jar_client_verified"] = True
         self.report["passed"] = True
 
@@ -761,7 +782,7 @@ def main() -> int:
     parser.add_argument("--project", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("build/client-evidence"),
                         help="Must not already exist; records only this run's evidence")
-    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.1.jar"))
+    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.2.jar"))
     parser.add_argument("--port", type=int, default=25575)
     parser.add_argument("--clip-seconds", type=int, default=10)
     parser.add_argument("--build-timeout", type=int, default=1500)

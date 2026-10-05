@@ -106,46 +106,52 @@ public final class CombatRegressionGameTests {
 
     @GameTest(template = "empty", timeoutTicks = 55)
     public static void sweepEyeAcceptsRealArrowsAtOpeningAndPeak(GameTestHelper h) {
-        G1BirkinEntity[] mobs = sweepFixtures(h);
-        h.runAfterDelay(20, () -> shootEyes(h, mobs));
-        h.runAfterDelay(23, () -> assertArrowDamage(h, mobs));
-        h.runAfterDelay(29, () -> shootEyes(h, mobs));
-        h.runAfterDelay(32, () -> {
-            assertArrowDamage(h, mobs);
-            h.succeed();
-        });
+        exerciseSweepHits(h, true, true);
     }
 
     @GameTest(template = "empty", timeoutTicks = 55)
     public static void sweepEyeAcceptsPlayerMeleeAtOpeningAndPeak(GameTestHelper h) {
-        G1BirkinEntity[] mobs = sweepFixtures(h);
-        h.runAfterDelay(20, () -> meleeEyes(h, mobs));
-        h.runAfterDelay(29, () -> {
-            meleeEyes(h, mobs);
-            h.succeed();
-        });
+        exerciseSweepHits(h, false, true);
     }
 
     @GameTest(template = "empty", timeoutTicks = 55)
     public static void openEyeDoesNotAmplifyRearBodyArrows(GameTestHelper h) {
-        G1BirkinEntity[] mobs = sweepFixtures(h);
-        h.runAfterDelay(20, () -> shootAtEyeHeight(h, mobs, false));
-        h.runAfterDelay(23, () -> assertArrowDamage(h, mobs, 1));
-        h.runAfterDelay(29, () -> shootAtEyeHeight(h, mobs, false));
-        h.runAfterDelay(32, () -> {
-            assertArrowDamage(h, mobs, 1);
-            h.succeed();
-        });
+        exerciseSweepHits(h, true, false);
     }
 
     @GameTest(template = "empty", timeoutTicks = 55)
     public static void openEyeDoesNotAmplifyRearBodyMelee(GameTestHelper h) {
+        exerciseSweepHits(h, false, false);
+    }
+
+    private static void exerciseSweepHits(GameTestHelper h, boolean arrow, boolean fromFront) {
         G1BirkinEntity[] mobs = sweepFixtures(h);
-        h.runAfterDelay(20, () -> meleeAtEyeHeight(h, mobs, false));
-        h.runAfterDelay(29, () -> {
-            meleeAtEyeHeight(h, mobs, false);
-            h.succeed();
-        });
+        int[] completed = {0};
+        for (G1BirkinEntity mob : mobs) {
+            G1BirkinEntity[] one = {mob};
+            for (int frame : new int[] {20, 29}) {
+                atAttackFrame(h, mob, frame, () -> {
+                    if (arrow) shootAtEyeHeight(h, one, fromFront);
+                    else meleeAtEyeHeight(h, one, fromFront);
+                    h.runAfterDelay(arrow ? 3 : 1, () -> {
+                        if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1);
+                        if (++completed[0] == mobs.length * 2) h.succeed();
+                    });
+                });
+            }
+        }
+    }
+
+    private static void atAttackFrame(GameTestHelper h, G1BirkinEntity mob, int frame, Runnable sample) {
+        // Entity activation can lag the GameTest clock by a tick. Sample the
+        // real attack frame instead of assuming both clocks started together.
+        if (mob.attackTick() < frame) {
+            h.runAfterDelay(1, () -> atAttackFrame(h, mob, frame, sample));
+            return;
+        }
+        h.assertTrue(mob.attack() == G1BirkinEntity.SWEEP && mob.attackTick() == frame,
+                "Weak-point probe must run at exact sweep frame " + frame + ", actual=" + mob.attackTick());
+        sample.run();
     }
 
     private static G1BirkinEntity[] sweepFixtures(GameTestHelper h) {
@@ -166,10 +172,6 @@ public final class CombatRegressionGameTests {
         return new Vec3(0, 0, 1).yRot(-mob.yBodyRot * Mth.DEG_TO_RAD);
     }
 
-    private static void shootEyes(GameTestHelper h, G1BirkinEntity[] mobs) {
-        shootAtEyeHeight(h, mobs, true);
-    }
-
     private static void shootAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront) {
         for (G1BirkinEntity mob : mobs) {
             h.assertTrue(mob.isEyeOpen(), "Sweep must expose the eye at ticks 20 and 29");
@@ -187,10 +189,6 @@ public final class CombatRegressionGameTests {
         }
     }
 
-    private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs) {
-        assertArrowDamage(h, mobs, 1.75F);
-    }
-
     private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs, float multiplier) {
         float expected = CombatRules.getDamageAfterAbsorb(6, 8, 0) * multiplier;
         for (G1BirkinEntity mob : mobs) {
@@ -198,10 +196,6 @@ public final class CombatRegressionGameTests {
                     "Moving vanilla arrow must respect the first hit region, multiplier=" + multiplier
                             + " yaw=" + mob.yBodyRot + " actual=" + (mob.getMaxHealth() - mob.getHealth()));
         }
-    }
-
-    private static void meleeEyes(GameTestHelper h, G1BirkinEntity[] mobs) {
-        meleeAtEyeHeight(h, mobs, true);
     }
 
     private static void meleeAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront) {

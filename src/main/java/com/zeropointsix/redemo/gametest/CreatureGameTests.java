@@ -451,7 +451,9 @@ public final class CreatureGameTests {
         // PR Build 37347424963 failed a snapshot at tick 160 while the GameTestServer
         // was 69 ticks behind: Tyrant Y briefly exceeded startY+1.5 during melee
         // collision. Keep the 5 HP / same-dummy / no-wall-climb checks; retry until timeout.
-        h.succeedWhen(() -> {
+        // Polling starts after the 120-tick sound-memory window so the hurt-aggro
+        // assert still proves the lock survived expiry instead of passing early.
+        h.runAfterDelay(130, () -> h.succeedWhen(() -> {
             for (int i = 0; i < attackers.length; i++) {
                 h.assertTrue(original[i] - dummies[i].getHealth() >= 5,
                         attackers[i].assetId() + " must deal at least 5 HP to its own silent dummy");
@@ -463,7 +465,7 @@ public final class CreatureGameTests {
             }
             h.assertTrue(attackers[2].getTarget() == dummies[2],
                     "Licker hurt aggro must still point at its silent dummy after sound memory");
-        });
+        }));
     }
 
     @GameTest(template = "empty", timeoutTicks = 50)

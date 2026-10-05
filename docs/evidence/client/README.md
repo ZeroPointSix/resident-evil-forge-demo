@@ -1,6 +1,6 @@
 # 真实客户端证据（安装版 JAR）
 
-最新可内嵌实机图（捕获源 `580c39f`，新增正/侧/背三面、20 格无 HUD 三怪合影、runClient 三怪、逐场景静态图）：[580c39f/](580c39f/README.md)。更早的捕获源档案：[896df9f/](896df9f/README.md)。
+最新可内嵌实机图（捕获源 `5ceb006`，近景/伏击/爬墙/潜行/死亡 **F1 无 HUD**，潜行对照为步行脚步而非跳跃/受伤/箭）：[5ceb006/](5ceb006/README.md)。上一档（含 runClient 三怪同框）：[580c39f/](580c39f/README.md)。更早：[896df9f/](896df9f/README.md)。
 
 本目录其余文件是更早的 **Minecraft 1.20.1 / Forge 47.2.0** 官方客户端对已安装 `re_demo-0.1.2.jar` 的原生画面，**不是** Blockbench / Three.js 离线预览。
 

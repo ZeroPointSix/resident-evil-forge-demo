@@ -1,0 +1,1566 @@
+{
+  "kind": "controlled-real-client-scene",
+  "passed": true,
+  "source_revision": "5ceb006714a0347ce771ebaf9f1d4c7c40f966e2",
+  "minecraft": "1.20.1",
+  "forge": "47.2.0",
+  "geckolib": "4.4.9",
+  "client_mode": "Official Forge client profile; release JAR and original GeckoLib in mods/",
+  "server_mode": "Official Forge installer; release JAR and original GeckoLib in mods/",
+  "installed_jar_server_verified": true,
+  "installed_jar_client_verified": true,
+  "manual_playtest": false,
+  "full_gameplay_acceptance": false,
+  "visual_quality_review_required": true,
+  "player_joined": true,
+  "client_input_roundtrip_verified": true,
+  "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. The three creatures attack separate stationary high-health golems in one group scene; targets receive no scripted damage and retaliation is seeded on each attacker. Licker wall-climb is a separate mossy-cobblestone obstacle with a blocked target. Sneak-vs-sprint runs the same camera in survival mode; the ceiling ambush stages a hovering licker beneath a lit stone roof.",
+  "dev_client_launch": "Official Forge 1.20.1-47.2.0 client profile via minecraft-launcher-lib (not Gradle runClient). Same installed release JAR as the dedicated server.",
+  "dev_env_launch": "Separate same-workflow artifact: gradlew runServer + gradlew runClient -PdevEvidence enters the dev world.",
+  "screenshots": [
+    {
+      "name": "00-three-creatures.png",
+      "bytes": 170411,
+      "sha256": "87e2e253fbfc39621340cdb5b237f9408e5da4a2b9c65cd687c5274bfc81d811",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 542,
+        "luminance_stddev": 33.07,
+        "center_mean_luminance": 148.24,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "01-spawn-eggs.png",
+      "bytes": 204601,
+      "sha256": "8574f3d3d1ad1950a26e278480f810e922fd59b059efc4063f7e1b18b76e1ce3",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 1240,
+        "luminance_stddev": 47.27,
+        "center_mean_luminance": 148.48
+      }
+    },
+    {
+      "name": "licker-model.png",
+      "bytes": 270270,
+      "sha256": "b4f296f75ca7dbcd33497461bb5e994e88dc8f115da01f9d9944ec03173d37ce",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 722,
+        "luminance_stddev": 35.46,
+        "center_mean_luminance": 152.88,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-model-side.png",
+      "bytes": 202111,
+      "sha256": "79b701f8d14d2c6c39e2311525379432e43fbfb4280e928a9682b3c6928c7d30",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 723,
+        "luminance_stddev": 44.89,
+        "center_mean_luminance": 165.49,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-model-back.png",
+      "bytes": 181212,
+      "sha256": "bb7ebc39949e55772336fa4b678adcec5c9abae650aaf0bd627b225f8d78823a",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 860,
+        "luminance_stddev": 42.77,
+        "center_mean_luminance": 144.79,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "tyrant-model.png",
+      "bytes": 289642,
+      "sha256": "e09fec8cbf2164a064d2803b67e7d38de2a185c18cffa38cddc16fd44e359267",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 799,
+        "luminance_stddev": 38.07,
+        "center_mean_luminance": 145.18,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "tyrant-model-side.png",
+      "bytes": 196697,
+      "sha256": "926e2bddc48d33279128399f075b92ebf544877261791f181274e58a603e2a2e",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 677,
+        "luminance_stddev": 53.91,
+        "center_mean_luminance": 168.63,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "tyrant-model-back.png",
+      "bytes": 183322,
+      "sha256": "3e5b2e1edb348dd42e26518bc29eaae810807634b111b4c89a00ffd8a16e5e0a",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 718,
+        "luminance_stddev": 62.99,
+        "center_mean_luminance": 110.59,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "g1_birkin-model.png",
+      "bytes": 309803,
+      "sha256": "6645b048c54195c5bfb8df37d12609a729102bb679509003c516b60e79674d61",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 691,
+        "luminance_stddev": 32.19,
+        "center_mean_luminance": 143.68,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "g1_birkin-model-side.png",
+      "bytes": 245790,
+      "sha256": "cbb68d1b186c897ff1cbd4b2cd8c6ed5d034f1f2bdaa52570f069b08889ba404",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 588,
+        "luminance_stddev": 35.54,
+        "center_mean_luminance": 173.79,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "g1_birkin-model-back.png",
+      "bytes": 183359,
+      "sha256": "9985979b79fd5348d5fbed17de136bac6489572f68a3025a64cd68572a56bf3c",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 806,
+        "luminance_stddev": 53.81,
+        "center_mean_luminance": 119.5,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-sneak-silent.png",
+      "bytes": 230769,
+      "sha256": "77c494228990012aa04906d0b3d68253723a0353244848202d7bc8725f8ad2f1",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 581,
+        "luminance_stddev": 32.81,
+        "center_mean_luminance": 184.62,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-sprint-hunt.png",
+      "bytes": 193269,
+      "sha256": "8a176433eff81aa7ba56cde5f2a4156ad66c77f466a2758897102f4d7473b339",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 683,
+        "luminance_stddev": 38.13,
+        "center_mean_luminance": 184.08,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-ambush.png",
+      "bytes": 371312,
+      "sha256": "251fb679bd44b0e3ad7e99c6ef7614b29dc072b6e3f763d0e191482d7166d45b",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 907,
+        "luminance_stddev": 39.27,
+        "center_mean_luminance": 139.07,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-climb.png",
+      "bytes": 373279,
+      "sha256": "c0547508834d57d5f144f8139efbb7a94446586eecc0f19bac1767144a32d819",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 1091,
+        "luminance_stddev": 49.36,
+        "center_mean_luminance": 120.08,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "20-block-identification.png",
+      "bytes": 228666,
+      "sha256": "8de82bc65c52f5fedfa54a268ac49244cfc025174ceb9f31c93b3f071cb5cdd4",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 733,
+        "luminance_stddev": 52.72,
+        "center_mean_luminance": 84.68,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "licker-20blocks.png",
+      "bytes": 204635,
+      "sha256": "6465895da2f13aa2927caa52819e417fdb853d62b8d8915754883a4802acc4bc",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 699,
+        "luminance_stddev": 53.53,
+        "center_mean_luminance": 111.22,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "tyrant-20blocks.png",
+      "bytes": 229846,
+      "sha256": "fea511593711a311c6242588d722650b67ac1fae79e2de22858c2e4fcf98e62c",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 706,
+        "luminance_stddev": 53.26,
+        "center_mean_luminance": 81.16,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "g1_birkin-20blocks.png",
+      "bytes": 232656,
+      "sha256": "913e5b5db9fbf5da4030942ace993e8e6041edfcde6732315d176d50fb18b246",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 693,
+        "luminance_stddev": 52.86,
+        "center_mean_luminance": 62.88,
+        "hide_gui": true
+      }
+    },
+    {
+      "name": "99-death-cleared.png",
+      "bytes": 150414,
+      "sha256": "e8eb235cf8bf793c530e5cda18e49a651d7fa312ffc1569127cf06e6979770e2",
+      "origin": "native Minecraft F2",
+      "pixels": {
+        "sample_colors": 535,
+        "luminance_stddev": 31.01,
+        "center_mean_luminance": 156.7,
+        "hide_gui": true
+      }
+    }
+  ],
+  "clips": [
+    {
+      "name": "tyrant-attack.mp4",
+      "bytes": 1684642,
+      "sha256": "7a05ec5ff89f98f01982eff835edfc1a68f75c4cd8cbcbb7462e07fe6bb3527a",
+      "duration_seconds": 10.0,
+      "pixels": {
+        "sample_colors": 869,
+        "luminance_stddev": 42.4
+      },
+      "sampled_motion": 10.678,
+      "server_target_damaged": true,
+      "scenario": "attack",
+      "initial_target_distance": 1.8,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.041474,
+        "peak": 0.465346,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "g1_birkin-attack.mp4",
+      "bytes": 2496917,
+      "sha256": "28afb8e9e14bb66bab7c864726a8ed7d573bca05ccdc1b744fd1ac754b1846c4",
+      "duration_seconds": 14.0,
+      "pixels": {
+        "sample_colors": 816,
+        "luminance_stddev": 45.01
+      },
+      "sampled_motion": 3.638,
+      "server_target_damaged": true,
+      "scenario": "attack",
+      "initial_target_distance": 1.8,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.040507,
+        "peak": 0.428442,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-attack.mp4",
+      "bytes": 2002724,
+      "sha256": "77985b00027b73d81d82a30a4cd8fdf102224b23307bd667ed1644c140ce6e26",
+      "duration_seconds": 10.0,
+      "pixels": {
+        "sample_colors": 728,
+        "luminance_stddev": 44.06
+      },
+      "sampled_motion": 2.297,
+      "server_target_damaged": true,
+      "scenario": "attack",
+      "initial_target_distance": 1.8,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.017841,
+        "peak": 0.271662,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "tyrant-charge.mp4",
+      "bytes": 1423936,
+      "sha256": "f192a0eed3f4bedb544349d17a20b0eb49e780a795081d64601d9680b62f35fe",
+      "duration_seconds": 10.0,
+      "pixels": {
+        "sample_colors": 841,
+        "luminance_stddev": 47.08
+      },
+      "sampled_motion": 4.121,
+      "server_target_damaged": true,
+      "scenario": "charge",
+      "initial_target_distance": 7.0,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.023561,
+        "peak": 0.247105,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-tongue.mp4",
+      "bytes": 2164922,
+      "sha256": "81f1d56181f6beaf7af58e488e133b2d66810c29423486f6b8577d953f3967d0",
+      "duration_seconds": 10.0,
+      "pixels": {
+        "sample_colors": 737,
+        "luminance_stddev": 43.66
+      },
+      "sampled_motion": 2.977,
+      "server_target_damaged": true,
+      "scenario": "tongue",
+      "initial_target_distance": 3.4,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.033249,
+        "peak": 0.397589,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-crawl.mp4",
+      "bytes": 1458096,
+      "sha256": "c56de22862eccfc654777ab231e4f27fba0adccd2bc0282de005a092eb8c705b",
+      "duration_seconds": 10.0,
+      "pixels": {
+        "sample_colors": 812,
+        "luminance_stddev": 49.79
+      },
+      "sampled_motion": 2.204,
+      "server_target_damaged": true,
+      "scenario": "crawl",
+      "initial_target_distance": 12.0,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.005232,
+        "peak": 0.073732,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-sneak-vs-sprint.mp4",
+      "bytes": 8551546,
+      "sha256": "15c58b5be3d88acd74c741cd7667ef43df038cb7576ebeeda802cc9828599d8e",
+      "duration_seconds": 30.0,
+      "pixels": {
+        "sample_colors": 1180,
+        "luminance_stddev": 50.06
+      },
+      "sampled_motion": 31.636,
+      "scenario": "sneak-vs-sprint",
+      "sneak_phase": "silent sneak-walk: licker stayed beyond 6 blocks",
+      "sprint_phase": "unsneaked forward walk at 8.5 blocks: licker closed to within 5 and increased X",
+      "loud_stimuli": "unsneaked walk footsteps only; no jump/hurt/arrow",
+      "silent_min_distance_blocks": 6,
+      "sprint_max_distance_blocks": 5,
+      "silent_still": "licker-sneak-silent.png",
+      "sprint_still": "licker-sprint-hunt.png",
+      "hunter_moved": "licker X increased toward a parked camera",
+      "claw_frames_logged": false,
+      "camera_gamemode": "survival",
+      "camera_resistance": 4,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.001585,
+        "peak": 0.106393,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-ambush.mp4",
+      "bytes": 2904101,
+      "sha256": "a956743cb5f06ee2754789730b2049059dcc5220c086054046e9026f3fb8c0de",
+      "duration_seconds": 16.0,
+      "pixels": {
+        "sample_colors": 1313,
+        "luminance_stddev": 51.29
+      },
+      "sampled_motion": 6.916,
+      "scenario": "ceiling-ambush",
+      "roof": "minecraft:stone+glowstone at y=68",
+      "release_attack_logged": "attack=4",
+      "target_min_damage_hp": 13,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.019017,
+        "peak": 0.263747,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "licker-climb.mp4",
+      "bytes": 5672427,
+      "sha256": "09c87ea60540528e29ba54a1a49447f6a019ea8ac4549f5761e583596d920f9f",
+      "duration_seconds": 22.0,
+      "pixels": {
+        "sample_colors": 1286,
+        "luminance_stddev": 55.82
+      },
+      "sampled_motion": 9.665,
+      "scenario": "wall-climb",
+      "obstacle": "minecraft:mossy_cobblestone",
+      "wall_height_blocks": 6,
+      "wall_thickness_blocks": 2,
+      "dummy_on_wall_top": true,
+      "required_y_gain_blocks": 2.5,
+      "server_y_gain_confirmed": true,
+      "target_blocked_los": true,
+      "audio": {
+        "codec": "aac",
+        "rms": 0.009963,
+        "peak": 0.163725,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    },
+    {
+      "name": "creature-brawl.mp4",
+      "bytes": 6871350,
+      "sha256": "3abc3922a80298fd3f5e65b7a1982388eeb4eddf83a12496540265f4f5cc1ba4",
+      "duration_seconds": 55.0,
+      "pixels": {
+        "sample_colors": 1245,
+        "luminance_stddev": 52.93
+      },
+      "sampled_motion": 14.229,
+      "scenario": "three-creature-combat",
+      "controlled_targets_damaged": true,
+      "all_three_attackers_verified": true,
+      "minimum_target_loss_hp": 5,
+      "scripted_target_damage_hp": 0,
+      "retaliation_seed_hp": 1,
+      "target_type": "minecraft:iron_golem",
+      "controlled_attack_lanes": [
+        {
+          "attacker": "tyrant",
+          "target": "minecraft:iron_golem"
+        },
+        {
+          "attacker": "g1_birkin",
+          "target": "minecraft:iron_golem"
+        },
+        {
+          "attacker": "licker",
+          "target": "minecraft:iron_golem"
+        }
+      ],
+      "audio": {
+        "codec": "aac",
+        "rms": 0.037202,
+        "peak": 0.327915,
+        "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+      }
+    }
+  ],
+  "confirmations": [
+    {
+      "check": "real creative camera joined",
+      "server_marker": "CE_47f419869093_1"
+    },
+    {
+      "check": "all arena chunks loaded",
+      "server_marker": "CE_47f419869093_2"
+    },
+    {
+      "check": "controlled arena built",
+      "server_marker": "CE_47f419869093_3"
+    },
+    {
+      "check": "release JAR entity summoned: licker",
+      "server_marker": "CE_47f419869093_4"
+    },
+    {
+      "check": "release JAR entity summoned: tyrant",
+      "server_marker": "CE_47f419869093_5"
+    },
+    {
+      "check": "release JAR entity summoned: g1_birkin",
+      "server_marker": "CE_47f419869093_6"
+    },
+    {
+      "check": "camera positioned: Three creatures",
+      "server_marker": "CE_47f419869093_7"
+    },
+    {
+      "check": "real client movement packet received",
+      "server_marker": "CE_47f419869093_8"
+    },
+    {
+      "check": "camera positioned: Three creatures",
+      "server_marker": "CE_47f419869093_9"
+    },
+    {
+      "check": "camera positioned: Spawn eggs on camera hotbar",
+      "server_marker": "CE_47f419869093_10"
+    },
+    {
+      "check": "camera positioned: Licker",
+      "server_marker": "CE_47f419869093_11"
+    },
+    {
+      "check": "camera positioned: Licker side",
+      "server_marker": "CE_47f419869093_12"
+    },
+    {
+      "check": "camera positioned: Licker back",
+      "server_marker": "CE_47f419869093_13"
+    },
+    {
+      "check": "camera positioned: Tyrant",
+      "server_marker": "CE_47f419869093_14"
+    },
+    {
+      "check": "camera positioned: Tyrant side",
+      "server_marker": "CE_47f419869093_15"
+    },
+    {
+      "check": "camera positioned: Tyrant back",
+      "server_marker": "CE_47f419869093_16"
+    },
+    {
+      "check": "camera positioned: G1 Birkin",
+      "server_marker": "CE_47f419869093_17"
+    },
+    {
+      "check": "camera positioned: G1 Birkin side",
+      "server_marker": "CE_47f419869093_18"
+    },
+    {
+      "check": "camera positioned: G1 Birkin back",
+      "server_marker": "CE_47f419869093_19"
+    },
+    {
+      "check": "fresh normal-AI attack scene",
+      "server_marker": "CE_47f419869093_20"
+    },
+    {
+      "check": "camera positioned: tyrant: attack",
+      "server_marker": "CE_47f419869093_21"
+    },
+    {
+      "check": "tyrant: controlled target summoned",
+      "server_marker": "CE_47f419869093_22"
+    },
+    {
+      "check": "tyrant: stationary target at full health",
+      "server_marker": "CE_47f419869093_23"
+    },
+    {
+      "check": "tyrant: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_24"
+    },
+    {
+      "check": "fresh normal-AI attack scene",
+      "server_marker": "CE_47f419869093_25"
+    },
+    {
+      "check": "camera positioned: g1_birkin: attack",
+      "server_marker": "CE_47f419869093_26"
+    },
+    {
+      "check": "g1_birkin: controlled target summoned",
+      "server_marker": "CE_47f419869093_27"
+    },
+    {
+      "check": "g1_birkin: stationary target at full health",
+      "server_marker": "CE_47f419869093_28"
+    },
+    {
+      "check": "g1_birkin: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_29"
+    },
+    {
+      "check": "fresh normal-AI attack scene",
+      "server_marker": "CE_47f419869093_30"
+    },
+    {
+      "check": "camera positioned: licker: attack",
+      "server_marker": "CE_47f419869093_31"
+    },
+    {
+      "check": "licker: controlled target summoned",
+      "server_marker": "CE_47f419869093_32"
+    },
+    {
+      "check": "licker: stationary target at full health",
+      "server_marker": "CE_47f419869093_33"
+    },
+    {
+      "check": "licker: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_34"
+    },
+    {
+      "check": "fresh normal-AI charge scene",
+      "server_marker": "CE_47f419869093_35"
+    },
+    {
+      "check": "camera positioned: tyrant: charge",
+      "server_marker": "CE_47f419869093_36"
+    },
+    {
+      "check": "tyrant: controlled target summoned",
+      "server_marker": "CE_47f419869093_37"
+    },
+    {
+      "check": "tyrant: stationary target at full health",
+      "server_marker": "CE_47f419869093_38"
+    },
+    {
+      "check": "tyrant: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_39"
+    },
+    {
+      "check": "fresh normal-AI tongue scene",
+      "server_marker": "CE_47f419869093_40"
+    },
+    {
+      "check": "camera positioned: licker: tongue",
+      "server_marker": "CE_47f419869093_41"
+    },
+    {
+      "check": "licker: controlled target summoned",
+      "server_marker": "CE_47f419869093_42"
+    },
+    {
+      "check": "licker: stationary target at full health",
+      "server_marker": "CE_47f419869093_43"
+    },
+    {
+      "check": "licker: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_44"
+    },
+    {
+      "check": "fresh normal-AI crawl scene",
+      "server_marker": "CE_47f419869093_45"
+    },
+    {
+      "check": "camera positioned: licker: crawl",
+      "server_marker": "CE_47f419869093_46"
+    },
+    {
+      "check": "licker: controlled target summoned",
+      "server_marker": "CE_47f419869093_47"
+    },
+    {
+      "check": "licker: stationary target at full health",
+      "server_marker": "CE_47f419869093_48"
+    },
+    {
+      "check": "licker: real server attack dealt damage",
+      "server_marker": "CE_47f419869093_49"
+    },
+    {
+      "check": "sneak control: live-AI licker staged",
+      "server_marker": "CE_47f419869093_50"
+    },
+    {
+      "check": "sneak control: camera 8.5 blocks from the licker",
+      "server_marker": "CE_47f419869093_51"
+    },
+    {
+      "check": "sneak: silent sneak-walk did not pull the licker",
+      "server_marker": "CE_47f419869093_52"
+    },
+    {
+      "check": "loud walk: unsneaked footsteps hunted and reached the camera",
+      "server_marker": "CE_47f419869093_53"
+    },
+    {
+      "check": "loud walk: licker X moved toward the camera, not the camera into the licker",
+      "server_marker": "CE_47f419869093_54"
+    },
+    {
+      "check": "ambush: lit stone roof placed",
+      "server_marker": "CE_47f419869093_55"
+    },
+    {
+      "check": "ambush: hovering licker under the roof, distant target",
+      "server_marker": "CE_47f419869093_56"
+    },
+    {
+      "check": "camera positioned: Licker ceiling ambush",
+      "server_marker": "CE_47f419869093_57"
+    },
+    {
+      "check": "ambush: licker holding under the ceiling",
+      "server_marker": "CE_47f419869093_58"
+    },
+    {
+      "check": "ambush: licker dropped off the ceiling",
+      "server_marker": "CE_47f419869093_59"
+    },
+    {
+      "check": "ambush: release strike landed at least 13 damage",
+      "server_marker": "CE_47f419869093_60"
+    },
+    {
+      "check": "licker climb: 6-block mossy wall and height ruler placed",
+      "server_marker": "CE_47f419869093_61"
+    },
+    {
+      "check": "licker climb: actor on floor and dummy on wall top",
+      "server_marker": "CE_47f419869093_62"
+    },
+    {
+      "check": "licker climb: actor started on the arena floor",
+      "server_marker": "CE_47f419869093_63"
+    },
+    {
+      "check": "camera positioned: Licker wall climb",
+      "server_marker": "CE_47f419869093_64"
+    },
+    {
+      "check": "licker climb: server Y gained at least 2.5 blocks on the wall",
+      "server_marker": "CE_47f419869093_65"
+    },
+    {
+      "check": "registered music event sent to installed client",
+      "server_marker": "CE_47f419869093_66"
+    },
+    {
+      "check": "group combat: tyrant staged",
+      "server_marker": "CE_47f419869093_67"
+    },
+    {
+      "check": "group combat: tyrant target staged",
+      "server_marker": "CE_47f419869093_68"
+    },
+    {
+      "check": "group combat: tyrant target at full health",
+      "server_marker": "CE_47f419869093_69"
+    },
+    {
+      "check": "group combat: g1_birkin staged",
+      "server_marker": "CE_47f419869093_70"
+    },
+    {
+      "check": "group combat: g1_birkin target staged",
+      "server_marker": "CE_47f419869093_71"
+    },
+    {
+      "check": "group combat: g1_birkin target at full health",
+      "server_marker": "CE_47f419869093_72"
+    },
+    {
+      "check": "group combat: licker staged",
+      "server_marker": "CE_47f419869093_73"
+    },
+    {
+      "check": "group combat: licker target staged",
+      "server_marker": "CE_47f419869093_74"
+    },
+    {
+      "check": "group combat: licker target at full health",
+      "server_marker": "CE_47f419869093_75"
+    },
+    {
+      "check": "camera positioned: three-creature controlled combat",
+      "server_marker": "CE_47f419869093_76"
+    },
+    {
+      "check": "registered music event sent to installed client",
+      "server_marker": "CE_47f419869093_77"
+    },
+    {
+      "check": "group combat: tyrant dealt more than 5 HP of real AI damage",
+      "server_marker": "CE_47f419869093_78"
+    },
+    {
+      "check": "group combat: g1_birkin dealt more than 5 HP of real AI damage",
+      "server_marker": "CE_47f419869093_79"
+    },
+    {
+      "check": "group combat: licker dealt more than 5 HP of real AI damage",
+      "server_marker": "CE_47f419869093_80"
+    },
+    {
+      "check": "group combat: all three creatures independently dealt more than 5 HP",
+      "server_marker": "CE_47f419869093_81"
+    },
+    {
+      "check": "licker: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_82"
+    },
+    {
+      "check": "tyrant: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_83"
+    },
+    {
+      "check": "g1_birkin: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_84"
+    },
+    {
+      "check": "g1_birkin: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_85"
+    },
+    {
+      "check": "g1_birkin: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_86"
+    },
+    {
+      "check": "g1_birkin: hidden live-AI fixture",
+      "server_marker": "CE_47f419869093_87"
+    },
+    {
+      "check": "identification: leftover climb wall and ambush roof cleared",
+      "server_marker": "CE_47f419869093_88"
+    },
+    {
+      "check": "identification: unnamed licker staged",
+      "server_marker": "CE_47f419869093_89"
+    },
+    {
+      "check": "identification: unnamed tyrant staged",
+      "server_marker": "CE_47f419869093_90"
+    },
+    {
+      "check": "identification: unnamed g1_birkin staged",
+      "server_marker": "CE_47f419869093_91"
+    },
+    {
+      "check": "camera positioned: three creatures, 20 blocks, daylight, no name tags",
+      "server_marker": "CE_47f419869093_92"
+    },
+    {
+      "check": "camera positioned: Licker at 20 blocks",
+      "server_marker": "CE_47f419869093_93"
+    },
+    {
+      "check": "camera positioned: Tyrant at 20 blocks",
+      "server_marker": "CE_47f419869093_94"
+    },
+    {
+      "check": "camera positioned: G1 Birkin at 20 blocks",
+      "server_marker": "CE_47f419869093_95"
+    },
+    {
+      "check": "camera positioned: death cleanup listener",
+      "server_marker": "CE_47f419869093_96"
+    },
+    {
+      "check": "death cleanup: three live fixtures",
+      "server_marker": "CE_47f419869093_97"
+    },
+    {
+      "check": "death cleanup: no remaining demo creatures",
+      "server_marker": "CE_47f419869093_98"
+    },
+    {
+      "check": "camera positioned: Cleared after death",
+      "server_marker": "CE_47f419869093_99"
+    }
+  ],
+  "audio_capture": "private local Unix socket and null-sink monitor; no TCP listener",
+  "forge_installer": {
+    "name": "forge-installer.jar",
+    "bytes": 5973950,
+    "sha256": "bc2a0f7b161a2d8284df3d603f7f2b22313b246f026ad77511cbd35bcd01caac",
+    "url": "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.2.0/forge-1.20.1-47.2.0-installer.jar",
+    "official_sha1": "ded43dd18b3a1dd5098b114c28432224d72bd9f7"
+  },
+  "installed_mod": {
+    "name": "re_demo-0.1.3.jar",
+    "bytes": 245752,
+    "sha256": "8f0edd185c642c75a4c754789f8f76de051977daa5974ac2d244642fe6af0196"
+  },
+  "installed_geckolib": {
+    "name": "geckolib-forge-1.20.1-4.4.9.jar",
+    "bytes": 991553,
+    "sha256": "b6b2f421daf4e87d3bc6011f734310c6dd46988ba18f9cbb9737f5ddb531d6df",
+    "upstream": "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/software/bernie/geckolib/geckolib-forge-1.20.1/4.4.9/geckolib-forge-1.20.1-4.4.9.jar",
+    "source": "original Gradle cache"
+  },
+  "launcher_library": {
+    "name": "minecraft-launcher-lib",
+    "version": "8.0"
+  },
+  "client_profile": "1.20.1-forge-47.2.0",
+  "client_installed_mod": {
+    "name": "re_demo-0.1.3.jar",
+    "bytes": 245752,
+    "sha256": "8f0edd185c642c75a4c754789f8f76de051977daa5974ac2d244642fe6af0196"
+  },
+  "capture_lighting": "Daylight plus camera-only night vision; capture does not edit textures or models",
+  "original_music": {
+    "name": "original-music-client.wav",
+    "bytes": 1411630,
+    "sha256": "1ad7c762454b97b9b0e18a442ad06ad45b7af3dd07c9e83c0a33c3b15e2bc0f0",
+    "event": "re_demo:encounter_theme",
+    "audio": {
+      "codec": "pcm_s16le",
+      "rms": 0.047808,
+      "peak": 0.284097,
+      "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+    },
+    "identity": {
+      "envelope_correlation": 1.0,
+      "matched_window_offset_seconds": 1.08,
+      "matched_seconds": 4,
+      "reference_sha256": "6a59c4edb771dd3ac42de69cdbeae68e50745e0f18b32f46fa029e5c1c7b9db0"
+    }
+  },
+  "animation_sync": {
+    "name": "animation-sync.json",
+    "bytes": 3736,
+    "sha256": "bd8c511af3ac815a1d761c5144a38037e9967c859fe3a06ce94ec253782762fb",
+    "passed": true,
+    "sample_count": 3390,
+    "late_first_frames": {
+      "licker": {
+        "uuid": "e6c31a93-867e-4835-8ab3-04f16edfcc07",
+        "asset": "licker",
+        "seq": "1",
+        "attack": "3",
+        "tick": "4",
+        "partial": "0.40009641647338867",
+        "speed": "1.0",
+        "clip": "animation.licker.tongue",
+        "length": "24.0",
+        "bone": "jaw",
+        "prefix": "0.0",
+        "point": "4.400096416473389",
+        "segment": "5.0",
+        "last": "false",
+        "value": "-0.43005855128692005",
+        "first": "true",
+        "resumed": "false",
+        "state": "RUNNING"
+      },
+      "tyrant": {
+        "uuid": "f1dc566c-1b44-45fb-9ac8-3783424db499",
+        "asset": "tyrant",
+        "seq": "1",
+        "attack": "1",
+        "tick": "9",
+        "partial": "0.06009554862976074",
+        "speed": "1.0",
+        "clip": "animation.tyrant.punch",
+        "length": "32.0",
+        "bone": "upper_arm_r",
+        "prefix": "0.0",
+        "point": "9.06009554862976",
+        "segment": "10.0",
+        "last": "false",
+        "value": "-0.3953212446721784",
+        "first": "true",
+        "resumed": "false",
+        "state": "RUNNING"
+      },
+      "g1_birkin": {
+        "uuid": "5f681a7d-d628-4cb9-8a45-df2ab1ed2603",
+        "asset": "g1_birkin",
+        "seq": "1",
+        "attack": "1",
+        "tick": "9",
+        "partial": "0.060097455978393555",
+        "speed": "1.0",
+        "clip": "animation.g1_birkin.slam",
+        "length": "36.0",
+        "bone": "right_upper_arm",
+        "prefix": "0.0",
+        "point": "9.060097455978394",
+        "segment": "11.0",
+        "last": "false",
+        "value": "-1.725038521727836",
+        "first": "true",
+        "resumed": "false",
+        "state": "RUNNING"
+      }
+    },
+    "same_attack_reentries": {
+      "licker": {
+        "uuid": "e6c31a93-867e-4835-8ab3-04f16edfcc07",
+        "asset": "licker",
+        "seq": "1",
+        "attack": "3",
+        "tick": "16",
+        "partial": "0.32009613513946533",
+        "speed": "1.0",
+        "clip": "animation.licker.tongue",
+        "length": "24.0",
+        "bone": "jaw",
+        "prefix": "5.0",
+        "point": "11.320096135139465",
+        "segment": "12.0",
+        "last": "false",
+        "value": "-0.521621015425157",
+        "first": "false",
+        "resumed": "true",
+        "state": "RUNNING"
+      },
+      "tyrant": {
+        "uuid": "f1dc566c-1b44-45fb-9ac8-3783424db499",
+        "asset": "tyrant",
+        "seq": "1",
+        "attack": "1",
+        "tick": "21",
+        "partial": "0.12009537220001221",
+        "speed": "1.0",
+        "clip": "animation.tyrant.punch",
+        "length": "32.0",
+        "bone": "upper_arm_r",
+        "prefix": "16.0",
+        "point": "5.120095372200012",
+        "segment": "7.999999999999998",
+        "last": "false",
+        "value": "0.5689700537049416",
+        "first": "false",
+        "resumed": "true",
+        "state": "RUNNING"
+      },
+      "g1_birkin": {
+        "uuid": "bc656764-dddb-4ba8-bb71-a0501d965775",
+        "asset": "g1_birkin",
+        "seq": "1",
+        "attack": "1",
+        "tick": "15",
+        "partial": "0.18010079860687256",
+        "speed": "1.0",
+        "clip": "animation.g1_birkin.slam",
+        "length": "36.0",
+        "bone": "right_upper_arm",
+        "prefix": "11.0",
+        "point": "4.180100798606873",
+        "segment": "7.0",
+        "last": "false",
+        "value": "-0.47892925808679276",
+        "first": "false",
+        "resumed": "true",
+        "state": "RUNNING"
+      }
+    },
+    "attack_identities": {
+      "tyrant": 41,
+      "g1_birkin": 26,
+      "licker": 74
+    },
+    "source": "Actual GeckoLib 4.4.9 bone-animation queues in the installed real Forge client",
+    "alignment": "(replicated ATTACK_TICK + render partialTick) * animation speed; unique attack sequence",
+    "scope": "Received server state, not zero network latency; Tyrant integer-duration rounding remains sub-tick"
+  },
+  "death_audio_cleanup": {
+    "name": "death-cleanup-audio.wav",
+    "bytes": 2115982,
+    "sha256": "c4de3cd72d36402f1ad02e042c369bd750a39a29d4fe1cfd9173c7ba2f90f806",
+    "seconds": 12,
+    "kill_window_seconds": 6,
+    "whole_clip": {
+      "codec": "pcm_s16le",
+      "rms": 0.058225,
+      "peak": 0.807673,
+      "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+    },
+    "tail_rms_7_to_12s": 0.0,
+    "scope": "Client output returns to silence after creature deaths; one-shot hurt/death cues are allowed inside the kill window. Does not claim the mod stops externally-played music."
+  },
+  "showcase": {
+    "name": "encounter-showcase.mp4",
+    "bytes": 35218944,
+    "sha256": "e6cdd772eaaea305afbc70562e66bef462afb0bfe450d69bafe7a02ee13a7140",
+    "order": [
+      "creature-brawl.mp4",
+      "licker-climb.mp4",
+      "licker-ambush.mp4",
+      "licker-sneak-vs-sprint.mp4",
+      "tyrant-attack.mp4",
+      "tyrant-charge.mp4",
+      "g1_birkin-attack.mp4",
+      "licker-crawl.mp4",
+      "licker-tongue.mp4",
+      "licker-attack.mp4"
+    ],
+    "duration_seconds": 187.024,
+    "audio": {
+      "codec": "aac",
+      "rms": 0.027771,
+      "peak": 0.468676,
+      "source": "live Forge client output via isolated PulseAudio monitor; no overdub"
+    },
+    "timeline": [
+      {
+        "source_clip": "creature-brawl.mp4",
+        "start_seconds": 0.0,
+        "end_seconds": 55.0
+      },
+      {
+        "source_clip": "licker-climb.mp4",
+        "start_seconds": 55.0,
+        "end_seconds": 77.0
+      },
+      {
+        "source_clip": "licker-ambush.mp4",
+        "start_seconds": 77.0,
+        "end_seconds": 93.0
+      },
+      {
+        "source_clip": "licker-sneak-vs-sprint.mp4",
+        "start_seconds": 93.0,
+        "end_seconds": 123.0
+      },
+      {
+        "source_clip": "tyrant-attack.mp4",
+        "start_seconds": 123.0,
+        "end_seconds": 133.0
+      },
+      {
+        "source_clip": "tyrant-charge.mp4",
+        "start_seconds": 133.0,
+        "end_seconds": 143.0
+      },
+      {
+        "source_clip": "g1_birkin-attack.mp4",
+        "start_seconds": 143.0,
+        "end_seconds": 157.0
+      },
+      {
+        "source_clip": "licker-crawl.mp4",
+        "start_seconds": 157.0,
+        "end_seconds": 167.0
+      },
+      {
+        "source_clip": "licker-tongue.mp4",
+        "start_seconds": 167.0,
+        "end_seconds": 177.0
+      },
+      {
+        "source_clip": "licker-attack.mp4",
+        "start_seconds": 177.0,
+        "end_seconds": 187.0
+      }
+    ],
+    "editing": "Controlled three-creature combat followed by separately staged normal-AI close-ups; no overdub"
+  },
+  "files": [
+    {
+      "name": "00-three-creatures.png",
+      "bytes": 170411,
+      "sha256": "87e2e253fbfc39621340cdb5b237f9408e5da4a2b9c65cd687c5274bfc81d811",
+      "path": "00-three-creatures.png"
+    },
+    {
+      "name": "01-spawn-eggs.png",
+      "bytes": 204601,
+      "sha256": "8574f3d3d1ad1950a26e278480f810e922fd59b059efc4063f7e1b18b76e1ce3",
+      "path": "01-spawn-eggs.png"
+    },
+    {
+      "name": "20-block-identification.png",
+      "bytes": 228666,
+      "sha256": "8de82bc65c52f5fedfa54a268ac49244cfc025174ceb9f31c93b3f071cb5cdd4",
+      "path": "20-block-identification.png"
+    },
+    {
+      "name": "99-death-cleared.png",
+      "bytes": 150414,
+      "sha256": "e8eb235cf8bf793c530e5cda18e49a651d7fa312ffc1569127cf06e6979770e2",
+      "path": "99-death-cleared.png"
+    },
+    {
+      "name": "animation-sync.json",
+      "bytes": 3736,
+      "sha256": "bd8c511af3ac815a1d761c5144a38037e9967c859fe3a06ce94ec253782762fb",
+      "path": "animation-sync.json"
+    },
+    {
+      "name": "audio-device.log",
+      "bytes": 425,
+      "sha256": "91cf37e04a5515ee99a857819c95062121299a066b3d4d083095b92d81c78b2b",
+      "path": "audio-device.log"
+    },
+    {
+      "name": "build.log",
+      "bytes": 1001,
+      "sha256": "24e941d8d97769e11c0c202c246f15a2e145fdae8eb96198a8234d781f976a2a",
+      "path": "build.log"
+    },
+    {
+      "name": "client-install.log",
+      "bytes": 189558,
+      "sha256": "aa3c05c4b11503008deed77e7944f4c4ec359d73e55ede057a0835b39201fade",
+      "path": "client-install.log"
+    },
+    {
+      "name": "debug.log",
+      "bytes": 1627812,
+      "sha256": "445f997b2aa8e4894a7629742d1dd06b3448359313a38f58a78485edac1d3598",
+      "path": "client-logs/debug.log"
+    },
+    {
+      "name": "latest.log",
+      "bytes": 1534174,
+      "sha256": "ba238a84a8e0c80823fac1bdaca34aea415f2b87b47baabdbbc6604283254fa7",
+      "path": "client-logs/latest.log"
+    },
+    {
+      "name": "client.log",
+      "bytes": 1412675,
+      "sha256": "c0d0c98a248b617ea7932b64f54aad8556c2b3cb6834feb33ee1210989ddc7a2",
+      "path": "client.log"
+    },
+    {
+      "name": "creature-brawl.mp4",
+      "bytes": 6871350,
+      "sha256": "3abc3922a80298fd3f5e65b7a1982388eeb4eddf83a12496540265f4f5cc1ba4",
+      "path": "creature-brawl.mp4"
+    },
+    {
+      "name": "death-cleanup-audio.wav",
+      "bytes": 2115982,
+      "sha256": "c4de3cd72d36402f1ad02e042c369bd750a39a29d4fe1cfd9173c7ba2f90f806",
+      "path": "death-cleanup-audio.wav"
+    },
+    {
+      "name": "encounter-showcase.mp4",
+      "bytes": 35218944,
+      "sha256": "e6cdd772eaaea305afbc70562e66bef462afb0bfe450d69bafe7a02ee13a7140",
+      "path": "encounter-showcase.mp4"
+    },
+    {
+      "name": "eula.txt",
+      "bytes": 10,
+      "sha256": "ee27072e4a23e088522f740ddaab0c7c4145c186969e90a86254faa3a5ec5ce6",
+      "path": "eula.txt"
+    },
+    {
+      "name": "ffmpeg-creature-brawl.log",
+      "bytes": 158,
+      "sha256": "b016a5fcc844781856dcb022ecb04cafd722e6f842ddc3b47f6df707a10bdc73",
+      "path": "ffmpeg-creature-brawl.log"
+    },
+    {
+      "name": "ffmpeg-death-audio.log",
+      "bytes": 54,
+      "sha256": "2e3414248b7a3febd16bab584963acc17ad38808064a110bab3a53cf73ce6082",
+      "path": "ffmpeg-death-audio.log"
+    },
+    {
+      "name": "ffmpeg-g1_birkin-attack.log",
+      "bytes": 158,
+      "sha256": "c5c20f88baee546966a0936c438dec717d2f18ef760b623fb286f473a78ea39d",
+      "path": "ffmpeg-g1_birkin-attack.log"
+    },
+    {
+      "name": "ffmpeg-licker-ambush.log",
+      "bytes": 158,
+      "sha256": "01106cde26514a1f1748097d165353ac69b2aa1285e20943cf15404ecbdf9da7",
+      "path": "ffmpeg-licker-ambush.log"
+    },
+    {
+      "name": "ffmpeg-licker-attack.log",
+      "bytes": 158,
+      "sha256": "81a8a4a697f3c63f4db880294550a983f3c4ecbea0eb78487e61341becc91b1b",
+      "path": "ffmpeg-licker-attack.log"
+    },
+    {
+      "name": "ffmpeg-licker-climb.log",
+      "bytes": 158,
+      "sha256": "a410f1bb2754097c9a4952e946239cd2105a7d60c19f3358fb3016b7327beafb",
+      "path": "ffmpeg-licker-climb.log"
+    },
+    {
+      "name": "ffmpeg-licker-crawl.log",
+      "bytes": 158,
+      "sha256": "5e87de48f27846c9daca89a55c9af801546cd896aa1d3b0b6280b4eac7bcd473",
+      "path": "ffmpeg-licker-crawl.log"
+    },
+    {
+      "name": "ffmpeg-licker-sneak-vs-sprint.log",
+      "bytes": 158,
+      "sha256": "ca0874a7ceb94f78ecbc65951e7d716cdd5850a1a4215672ff84a10c3d38c301",
+      "path": "ffmpeg-licker-sneak-vs-sprint.log"
+    },
+    {
+      "name": "ffmpeg-licker-tongue.log",
+      "bytes": 158,
+      "sha256": "e4a090154674b4c1146a8c02c7132703e6ccb4759fbc8dde561008b67b0be0d4",
+      "path": "ffmpeg-licker-tongue.log"
+    },
+    {
+      "name": "ffmpeg-music-check.log",
+      "bytes": 110,
+      "sha256": "d6d95d5d232d7d610f29f08db01675d5d7151e655921531fc4789ddf86511130",
+      "path": "ffmpeg-music-check.log"
+    },
+    {
+      "name": "ffmpeg-showcase.log",
+      "bytes": 1638,
+      "sha256": "348327d667226f1f1769f1a1e28262472e185bda872a68d5dcdf425be3a536ba",
+      "path": "ffmpeg-showcase.log"
+    },
+    {
+      "name": "ffmpeg-tyrant-attack.log",
+      "bytes": 158,
+      "sha256": "45ac52f915291700372f8d806c00d032baf5191e370f3116a80f0bdf614ea5a6",
+      "path": "ffmpeg-tyrant-attack.log"
+    },
+    {
+      "name": "ffmpeg-tyrant-charge.log",
+      "bytes": 158,
+      "sha256": "251b111f39170df6b7cb8e9461583fa202b7ff4792a5f3987d0b47b96a154877",
+      "path": "ffmpeg-tyrant-charge.log"
+    },
+    {
+      "name": "forge-install.log",
+      "bytes": 1210664,
+      "sha256": "f35d81d777692d6f1fa1d3bbb8226015820c437859c7f1e36d095f1625e499cb",
+      "path": "forge-install.log"
+    },
+    {
+      "name": "g1_birkin-20blocks.png",
+      "bytes": 232656,
+      "sha256": "913e5b5db9fbf5da4030942ace993e8e6041edfcde6732315d176d50fb18b246",
+      "path": "g1_birkin-20blocks.png"
+    },
+    {
+      "name": "g1_birkin-attack.mp4",
+      "bytes": 2496917,
+      "sha256": "28afb8e9e14bb66bab7c864726a8ed7d573bca05ccdc1b744fd1ac754b1846c4",
+      "path": "g1_birkin-attack.mp4"
+    },
+    {
+      "name": "g1_birkin-model-back.png",
+      "bytes": 183359,
+      "sha256": "9985979b79fd5348d5fbed17de136bac6489572f68a3025a64cd68572a56bf3c",
+      "path": "g1_birkin-model-back.png"
+    },
+    {
+      "name": "g1_birkin-model-side.png",
+      "bytes": 245790,
+      "sha256": "cbb68d1b186c897ff1cbd4b2cd8c6ed5d034f1f2bdaa52570f069b08889ba404",
+      "path": "g1_birkin-model-side.png"
+    },
+    {
+      "name": "g1_birkin-model.png",
+      "bytes": 309803,
+      "sha256": "6645b048c54195c5bfb8df37d12609a729102bb679509003c516b60e79674d61",
+      "path": "g1_birkin-model.png"
+    },
+    {
+      "name": "graphics.log",
+      "bytes": 1745,
+      "sha256": "078a4dfd9dfce1acb1128ffb1a1a1701da46d39773ba5f6893625c56782631cb",
+      "path": "graphics.log"
+    },
+    {
+      "name": "licker-20blocks.png",
+      "bytes": 204635,
+      "sha256": "6465895da2f13aa2927caa52819e417fdb853d62b8d8915754883a4802acc4bc",
+      "path": "licker-20blocks.png"
+    },
+    {
+      "name": "licker-ambush.mp4",
+      "bytes": 2904101,
+      "sha256": "a956743cb5f06ee2754789730b2049059dcc5220c086054046e9026f3fb8c0de",
+      "path": "licker-ambush.mp4"
+    },
+    {
+      "name": "licker-ambush.png",
+      "bytes": 371312,
+      "sha256": "251fb679bd44b0e3ad7e99c6ef7614b29dc072b6e3f763d0e191482d7166d45b",
+      "path": "licker-ambush.png"
+    },
+    {
+      "name": "licker-attack.mp4",
+      "bytes": 2002724,
+      "sha256": "77985b00027b73d81d82a30a4cd8fdf102224b23307bd667ed1644c140ce6e26",
+      "path": "licker-attack.mp4"
+    },
+    {
+      "name": "licker-climb.mp4",
+      "bytes": 5672427,
+      "sha256": "09c87ea60540528e29ba54a1a49447f6a019ea8ac4549f5761e583596d920f9f",
+      "path": "licker-climb.mp4"
+    },
+    {
+      "name": "licker-climb.png",
+      "bytes": 373279,
+      "sha256": "c0547508834d57d5f144f8139efbb7a94446586eecc0f19bac1767144a32d819",
+      "path": "licker-climb.png"
+    },
+    {
+      "name": "licker-crawl.mp4",
+      "bytes": 1458096,
+      "sha256": "c56de22862eccfc654777ab231e4f27fba0adccd2bc0282de005a092eb8c705b",
+      "path": "licker-crawl.mp4"
+    },
+    {
+      "name": "licker-model-back.png",
+      "bytes": 181212,
+      "sha256": "bb7ebc39949e55772336fa4b678adcec5c9abae650aaf0bd627b225f8d78823a",
+      "path": "licker-model-back.png"
+    },
+    {
+      "name": "licker-model-side.png",
+      "bytes": 202111,
+      "sha256": "79b701f8d14d2c6c39e2311525379432e43fbfb4280e928a9682b3c6928c7d30",
+      "path": "licker-model-side.png"
+    },
+    {
+      "name": "licker-model.png",
+      "bytes": 270270,
+      "sha256": "b4f296f75ca7dbcd33497461bb5e994e88dc8f115da01f9d9944ec03173d37ce",
+      "path": "licker-model.png"
+    },
+    {
+      "name": "licker-sneak-silent.png",
+      "bytes": 230769,
+      "sha256": "77c494228990012aa04906d0b3d68253723a0353244848202d7bc8725f8ad2f1",
+      "path": "licker-sneak-silent.png"
+    },
+    {
+      "name": "licker-sneak-vs-sprint.mp4",
+      "bytes": 8551546,
+      "sha256": "15c58b5be3d88acd74c741cd7667ef43df038cb7576ebeeda802cc9828599d8e",
+      "path": "licker-sneak-vs-sprint.mp4"
+    },
+    {
+      "name": "licker-sprint-hunt.png",
+      "bytes": 193269,
+      "sha256": "8a176433eff81aa7ba56cde5f2a4156ad66c77f466a2758897102f4d7473b339",
+      "path": "licker-sprint-hunt.png"
+    },
+    {
+      "name": "licker-tongue.mp4",
+      "bytes": 2164922,
+      "sha256": "81f1d56181f6beaf7af58e488e133b2d66810c29423486f6b8577d953f3967d0",
+      "path": "licker-tongue.mp4"
+    },
+    {
+      "name": "original-music-client.wav",
+      "bytes": 1411630,
+      "sha256": "1ad7c762454b97b9b0e18a442ad06ad45b7af3dd07c9e83c0a33c3b15e2bc0f0",
+      "path": "original-music-client.wav"
+    },
+    {
+      "name": "pulseaudio.log",
+      "bytes": 468,
+      "sha256": "c63f15cc507374ff6c7e1db5f9f532488b0d4b6d4502e7c7c0b37ffe87ae00e6",
+      "path": "pulseaudio.log"
+    },
+    {
+      "name": "server-commands.log",
+      "bytes": 70985,
+      "sha256": "c7ec13ee87a6ef484b7259df46a468743091e10b399e25502a39f0185358cafa",
+      "path": "server-commands.log"
+    },
+    {
+      "name": "debug.log",
+      "bytes": 1495861,
+      "sha256": "6bbaaba264b0cae0b3b97d9b04861bdaa3e8c84c659d7b523838f57c90ba75d6",
+      "path": "server-logs/debug.log"
+    },
+    {
+      "name": "latest.log",
+      "bytes": 1401548,
+      "sha256": "8d1d23f794582da813eef262df981e89b46ef78a7248ca37c7a396081d07496d",
+      "path": "server-logs/latest.log"
+    },
+    {
+      "name": "server.log",
+      "bytes": 1256866,
+      "sha256": "4c0ae612134bd4b9d6492ce702584933fa33983e3906b1d6b0bc4d6e88ea817c",
+      "path": "server.log"
+    },
+    {
+      "name": "server.properties",
+      "bytes": 1487,
+      "sha256": "d11bdcd827e7d8d0bf7c88c4bbeb4995e49e9f0a23174ad021a8210fc58d22fb",
+      "path": "server.properties"
+    },
+    {
+      "name": "showcase-concat.txt",
+      "bytes": 261,
+      "sha256": "e70caab78c680a16342281b5ddba600208e97154e4de2750311116c2b7184bd6",
+      "path": "showcase-concat.txt"
+    },
+    {
+      "name": "re_demo-0.1.3.jar",
+      "bytes": 245752,
+      "sha256": "8f0edd185c642c75a4c754789f8f76de051977daa5974ac2d244642fe6af0196",
+      "path": "tested-mod/re_demo-0.1.3.jar"
+    },
+    {
+      "name": "tyrant-20blocks.png",
+      "bytes": 229846,
+      "sha256": "fea511593711a311c6242588d722650b67ac1fae79e2de22858c2e4fcf98e62c",
+      "path": "tyrant-20blocks.png"
+    },
+    {
+      "name": "tyrant-attack.mp4",
+      "bytes": 1684642,
+      "sha256": "7a05ec5ff89f98f01982eff835edfc1a68f75c4cd8cbcbb7462e07fe6bb3527a",
+      "path": "tyrant-attack.mp4"
+    },
+    {
+      "name": "tyrant-charge.mp4",
+      "bytes": 1423936,
+      "sha256": "f192a0eed3f4bedb544349d17a20b0eb49e780a795081d64601d9680b62f35fe",
+      "path": "tyrant-charge.mp4"
+    },
+    {
+      "name": "tyrant-model-back.png",
+      "bytes": 183322,
+      "sha256": "3e5b2e1edb348dd42e26518bc29eaae810807634b111b4c89a00ffd8a16e5e0a",
+      "path": "tyrant-model-back.png"
+    },
+    {
+      "name": "tyrant-model-side.png",
+      "bytes": 196697,
+      "sha256": "926e2bddc48d33279128399f075b92ebf544877261791f181274e58a603e2a2e",
+      "path": "tyrant-model-side.png"
+    },
+    {
+      "name": "tyrant-model.png",
+      "bytes": 289642,
+      "sha256": "e09fec8cbf2164a064d2803b67e7d38de2a185c18cffa38cddc16fd44e359267",
+      "path": "tyrant-model.png"
+    },
+    {
+      "name": "window-manager.log",
+      "bytes": 85,
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c",
+      "path": "window-manager.log"
+    }
+  ]
+}

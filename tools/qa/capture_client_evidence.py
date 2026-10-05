@@ -232,7 +232,8 @@ class Capture:
             "visual_quality_review_required": True, "player_joined": False,
             "client_input_roundtrip_verified": False,
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
-                       "Stationary high-health golems are used as controlled attack targets, then the three "
+                       "Stationary high-health golems are used as controlled attack targets. The tongue "
+                       "close-up alone uses zero movement speed, with normal AI and attacks still enabled. The three "
                        "creatures fight each other with aggro seeded by real mob_attack damage.",
             "screenshots": [], "clips": [], "confirmations": [],
         }
@@ -498,7 +499,7 @@ class Capture:
         self.setup_scene()
 
     def setup_scene(self) -> None:
-        for command in ("gamerule doMobSpawning false", "gamerule doDaylightCycle false",
+        for command in ("gamerule doMobSpawning false", "gamerule doMobLoot false", "gamerule doDaylightCycle false",
                         "gamerule doWeatherCycle false", "gamerule mobGriefing false",
                         "gamerule sendCommandFeedback false", "time set noon", "weather clear",
                         "forceload add -16 -32 31 15", "scoreboard objectives add ce_health dummy"):
@@ -573,6 +574,9 @@ class Capture:
         self.confirm(f"if entity {dummy}", f"{entity}: controlled target summoned")
         self.command(f"execute store result score {before} ce_health run data get entity {dummy} Health 100")
         self.confirm(f"if score {before} ce_health matches 100000", f"{entity}: stationary target at full health")
+        if scenario == "tongue":
+            # Hold the ranged pose without disabling AI or triggering an animation.
+            self.command(f"attribute {selector} minecraft:generic.movement_speed base set 0")
         path = self.output / f"{entity}-{scenario}.mp4"
         clip_seconds = max(14, self.args.clip_seconds) if entity == "g1_birkin" else self.args.clip_seconds
         recorder = self.record_video(path, clip_seconds)
@@ -603,9 +607,10 @@ class Capture:
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
                                          scenario=scenario, initial_target_distance=target_distance,
+                                         actor_movement_held=scenario == "tongue",
                                          audio=check_audio(path)))
 
-    def brawl_scene(self, seconds: int = 55) -> None:
+    def brawl_scene(self, seconds: int = 18) -> None:
         # All three creatures fight each other under normal AI. Mutual aggro is
         # seeded with real mob_attack damage packets, so every retaliation and
         # attack animation is produced by the installed mod's own combat code.
@@ -686,7 +691,7 @@ class Capture:
                                             ("g1_birkin", "attack", 1.8),
                                             ("licker", "attack", 1.8),
                                             ("tyrant", "charge", 7.0),
-                                            ("licker", "tongue", 3.4),
+                                            ("licker", "tongue", 3.8),
                                             ("licker", "crawl", 12.0)):
             x = 4
             self.command(f"summon re_demo:{entity} {x} 64 4 "
@@ -694,7 +699,8 @@ class Capture:
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_{entity},limit=1]",
                          f"fresh normal-AI {scenario} scene")
             center = x + distance * 0.5
-            self.camera(center + 1, -3 if scenario in ("tongue", "attack") else -6 if scenario == "charge" else -9,
+            self.camera(center if scenario == "tongue" else center + 1,
+                        -1 if scenario == "tongue" else -3 if scenario == "attack" else -6 if scenario == "charge" else -9,
                         center, 64.6 if entity == "licker" else 65.1, 4,
                         f"{entity}: {scenario}")
             self.combat_clip(entity, x, scenario, distance)

@@ -40,7 +40,7 @@ public final class LickerEntity extends EncounterMob {
     public static AttributeSupplier.Builder attributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.LICKER_HEALTH)
                 .add(Attributes.ARMOR, 4).add(Attributes.MOVEMENT_SPEED, 0.29)
-                .add(Attributes.ATTACK_DAMAGE, 10).add(Attributes.FOLLOW_RANGE, 24);
+                .add(Attributes.ATTACK_DAMAGE, CommonConfig.LICKER_CLAW_DAMAGE).add(Attributes.FOLLOW_RANGE, 24);
     }
 
     @Override
@@ -161,9 +161,9 @@ public final class LickerEntity extends EncounterMob {
 
     @Override
     protected void attackFrame(int attack, int tick) {
-        if (attack == CLAW && tick == 9) strike(2.3, 110, 10, 0.3);
+        if (attack == CLAW && tick == 9) strike(2.3, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.3);
         if (attack == TONGUE && tick == 11) {
-            strike(4, 22, 8, 0);
+            strike(4, 22, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
             LivingEntity target = getTarget();
             if (target != null && attackHits.contains(target.getUUID())) {
                 Vec3 pull = position().subtract(target.position()).normalize().scale(0.45);
@@ -177,7 +177,9 @@ public final class LickerEntity extends EncounterMob {
             setDeltaMovement(direction.x * speed, attack == LEAP ? 0.48 : -0.35, direction.z * speed);
             hasImpulse = true;
         }
-        if ((attack == LEAP && tick >= 13) || (attack == AMBUSH && tick >= 9)) strike(1.7, 130, 14, 0.5);
+        if ((attack == LEAP && tick >= 13) || (attack == AMBUSH && tick >= 9)) {
+            strike(1.7, 130, attack == AMBUSH ? CommonConfig.LICKER_AMBUSH_DAMAGE : CommonConfig.LICKER_LEAP_DAMAGE, 0.5);
+        }
     }
 
     @Override

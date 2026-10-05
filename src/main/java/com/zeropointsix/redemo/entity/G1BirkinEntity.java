@@ -61,7 +61,7 @@ public final class G1BirkinEntity extends EncounterMob {
     public static AttributeSupplier.Builder attributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.BIRKIN_HEALTH)
                 .add(Attributes.ARMOR, 8).add(Attributes.MOVEMENT_SPEED, 0.24)
-                .add(Attributes.ATTACK_DAMAGE, 14).add(Attributes.FOLLOW_RANGE, 40)
+                .add(Attributes.ATTACK_DAMAGE, CommonConfig.G1_SLAM_DAMAGE).add(Attributes.FOLLOW_RANGE, 40)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.7);
     }
 
@@ -138,16 +138,16 @@ public final class G1BirkinEntity extends EncounterMob {
     @Override
     protected void attackFrame(int attack, int tick) {
         if (attack == SLAM && tick == 18) {
-            strike(3.3, 140, 14, 0.7);
+            strike(3.3, 140, CommonConfig.G1_SLAM_DAMAGE, 0.7);
             openWeakPoint(isBerserk() ? 100 : 60);
             if (level() instanceof ServerLevel server) server.sendParticles(ParticleTypes.POOF, getX() + forward().x * 2, getY() + 0.1, getZ() + forward().z * 2, 20, 1.2, 0.1, 1.2, 0.05);
         }
         if (attack == SWEEP && tick == 20) {
-            strike(3.6, 160, 18, 1.0);
+            strike(3.6, 160, CommonConfig.G1_SWEEP_DAMAGE, 1.0);
             openWeakPoint(isBerserk() ? 110 : 65);
         }
         if (attack == GRAB && tick == 15) {
-            strike(2.8, 75, 6, 0);
+            strike(2.8, 75, CommonConfig.G1_GRAB_DAMAGE, 0);
             LivingEntity target = getTarget();
             if (target != null && attackHits.contains(target.getUUID())) {
                 grabbed = target.getUUID();
@@ -156,7 +156,7 @@ public final class G1BirkinEntity extends EncounterMob {
         }
         if (attack == GRAB && tick == 30) {
             if (grabbed != null && level() instanceof ServerLevel server && server.getEntity(grabbed) instanceof LivingEntity victim && validTarget(victim) && distanceTo(victim) <= 4 && clearAttackLine(victim)) {
-                victim.hurt(damageSources().mobAttack(this), 8 * CommonConfig.DAMAGE_SCALE.get().floatValue());
+                victim.hurt(damageSources().mobAttack(this), CommonConfig.G1_GRAB_THROW_DAMAGE * CommonConfig.DAMAGE_SCALE.get().floatValue());
                 Vec3 direction = forward();
                 victim.push(direction.x * 1.1, 0.65, direction.z * 1.1);
                 victim.hurtMarked = true;

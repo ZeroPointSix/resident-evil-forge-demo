@@ -79,3 +79,67 @@ jobs:
           path: build/client-evidence/
           if-no-files-found: error
           retention-days: 14
+
+  dev-env:
+    name: Dev environment evidence (gradlew runServer + runClient)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    env:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      GALLIUM_DRIVER: llvmpipe
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install free software display tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth openbox xdotool mesa-utils \
+            libgl1-mesa-dri libglx-mesa0 libasound2 libxrandr2 \
+            libxcursor1 libxi6 libxinerama1 libxxf86vm1
+      - name: Run dev Forge server and dev client (gradlew runServer + runClient)
+        run: |
+          xvfb-run --auto-servernum \
+            --server-args="-screen 0 1280x720x24 -nolisten tcp +extension GLX +render -noreset" \
+            python tools/qa/capture_dev_env.py \
+              --project . --output build/dev-env-evidence \
+              --accept-minecraft-eula
+      - name: Summarize dev-env evidence scope
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          report = Path("build/dev-env-evidence/report.json")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("## Dev Environment Evidence\n\n")
+              out.write("`./gradlew runServer` + `./gradlew runClient -PdevEvidence` (ForgeGradle dev runtime, "
+                        "auto-join via --quickPlayMultiplayer). Not a human playtest.\n\n")
+              if not report.exists():
+                  out.write("**FAILED:** No completed dev-env report. Inspect the job logs.\n")
+              else:
+                  data = json.loads(report.read_text())
+                  out.write(f"Result: **{'PASS' if data['passed'] else 'FAIL'}**\n\n")
+                  out.write(f"Client reached world: {data.get('run_client_reached_world')}; "
+                            f"mod loaded: {data.get('mod_loaded_in_dev_env')}.\n")
+                  if data.get("error"):
+                      out.write(f"\nFailure: `{data['error']}`\n")
+          PY
+      - name: Upload dev-env evidence and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-env-evidence-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/dev-env-evidence/
+          if-no-files-found: error
+          retention-days: 14

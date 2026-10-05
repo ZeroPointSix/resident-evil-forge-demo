@@ -58,6 +58,28 @@ def vector(value: Any, length: int = 3) -> bool:
 
 def load_json(data: bytes) -> dict:
     require(len(data) <= MAX_FILE_BYTES, "JSON exceeds size limit")
+    # Explicit, version-independent nesting limit: CPython's recursive parser
+    # raises RecursionError only near the interpreter limit, which differs
+    # between releases. A bracket scan with string/escape awareness rejects
+    # deep JSON identically on every supported Python.
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in data:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:
+                escaped = True
+            elif byte == 0x22:
+                in_string = False
+        elif byte == 0x22:
+            in_string = True
+        elif byte in (0x7B, 0x5B):
+            depth += 1
+            require(depth <= 512, "JSON nesting exceeds limit")
+        elif byte in (0x7D, 0x5D):
+            depth -= 1
 
     def unique(pairs: list[tuple[str, Any]]) -> dict:
         result = {}

@@ -84,6 +84,11 @@ minecraft {
         client {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
+            // CI dev-environment evidence: -PdevEvidence makes `gradlew runClient`
+            // auto-join the local `gradlew runServer` instance on this machine.
+            if (project.hasProperty('devEvidence')) {
+                args '--quickPlayMultiplayer', '127.0.0.1:25565'
+            }
         }
 
         server {

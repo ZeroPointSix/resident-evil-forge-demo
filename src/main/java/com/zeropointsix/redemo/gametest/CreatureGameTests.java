@@ -2,6 +2,7 @@ package com.zeropointsix.redemo.gametest;
 
 import com.mojang.authlib.GameProfile;
 import com.zeropointsix.redemo.ResidentEvilMod;
+import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.entity.G1BirkinEntity;
 import com.zeropointsix.redemo.entity.EncounterMob;
 import com.zeropointsix.redemo.entity.LickerEntity;
@@ -478,5 +479,40 @@ public final class CreatureGameTests {
             h.assertTrue(licker.getTarget() == null && !licker.attacking(), "Dead Licker must not reacquire its attacker");
             h.succeed();
         });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void lickerCeilingAmbushDropsAndStrikes(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        for (int x = 3; x <= 5; x++) for (int z = 3; z <= 5; z++) {
+            h.setBlock(new BlockPos(x, 4, z), Blocks.STONE);
+        }
+        BlockPos ceiling = h.absolutePos(new BlockPos(4, 4, 4));
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));
+        licker.setNoGravity(true);
+        licker.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        double hangY = ceiling.getY() - licker.getBbHeight();
+        licker.setPos(ceiling.getX() + 0.5, hangY - 0.08, ceiling.getZ() + 0.5);
+        var dummy = h.spawn(EntityType.IRON_GOLEM, new BlockPos(6, 1, 4));
+        dummy.setNoAi(true);
+        dummy.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        float original = dummy.getHealth();
+        licker.hear(licker.position(), null, 16);
+        licker.hurt(licker.damageSources().mobAttack(dummy), 1);
+        boolean[] hung = {false};
+        h.startSequence().thenWaitUntil(() -> {
+            h.assertTrue(licker.isAlive(), "Licker must survive the ambush fixture");
+            if (licker.isHanging()) hung[0] = true;
+            h.assertTrue(hung[0] && licker.attack() == LickerEntity.AMBUSH,
+                    "Licker must hang under a solid ceiling and release with the ambush attack: hanging="
+                            + licker.isHanging() + " attack=" + licker.attack());
+        }).thenWaitUntil(() -> {
+            h.assertTrue(original - dummy.getHealth() >= CommonConfig.LICKER_AMBUSH_DAMAGE - 1
+                            && licker.getY() < hangY - 1,
+                    "Ambush must drop the Licker and land ~14 damage, y=" + licker.getY() + " hangY=" + hangY
+                            + " lost=" + (original - dummy.getHealth()));
+        }).thenSucceed();
     }
 }

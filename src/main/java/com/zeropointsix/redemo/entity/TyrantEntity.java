@@ -49,7 +49,7 @@ public final class TyrantEntity extends EncounterMob {
     public static AttributeSupplier.Builder attributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.TYRANT_HEALTH)
                 .add(Attributes.ARMOR, 12).add(Attributes.MOVEMENT_SPEED, 0.22)
-                .add(Attributes.ATTACK_DAMAGE, 16).add(Attributes.FOLLOW_RANGE, 64)
+                .add(Attributes.ATTACK_DAMAGE, CommonConfig.TYRANT_PUNCH_DAMAGE).add(Attributes.FOLLOW_RANGE, 64)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.9);
     }
 
@@ -108,8 +108,8 @@ public final class TyrantEntity extends EncounterMob {
 
     @Override
     protected void attackFrame(int attack, int tick) {
-        if (attack == PUNCH && tick == scaled(16)) strike(2.8, 100, damage(16), 0.6);
-        if (attack == SHOVE && tick == scaled(10)) strike(2.8, 150, damage(10), 1.8);
+        if (attack == PUNCH && tick == scaled(16)) strike(2.8, 100, damage(CommonConfig.TYRANT_PUNCH_DAMAGE), 0.6);
+        if (attack == SHOVE && tick == scaled(10)) strike(2.8, 150, damage(CommonConfig.TYRANT_SHOVE_DAMAGE), 1.8);
         if (attack == BREAK && tick == scaled(14)) breakSoftObstacles();
         if (attack == CHARGE && tick >= scaled(20) && tick <= scaled(35)) {
             if (!horizontalCollision) {
@@ -117,7 +117,7 @@ public final class TyrantEntity extends EncounterMob {
                 setDeltaMovement(forward.x * 0.65, getDeltaMovement().y, forward.z * 0.65);
                 hasImpulse = true;
             }
-            strike(1.9, 100, damage(22), 1.5);
+            strike(1.9, 100, damage(CommonConfig.TYRANT_CHARGE_DAMAGE), 1.5);
         }
     }
 

@@ -221,6 +221,18 @@ def check_audio(path: Path) -> dict:
             "source": "live Forge client output via isolated PulseAudio monitor; no overdub"}
 
 
+def audio_rms(path: Path, start: float, seconds: float) -> float:
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-ss", str(start), "-t", str(seconds), "-i", str(path),
+         "-vn", "-ac", "1", "-ar", "8000", "-f", "f32le", "-"],
+        check=True, capture_output=True, timeout=30)
+    samples = array("f")
+    samples.frombytes(result.stdout)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    return math.sqrt(sum(v * v for v in samples) / max(1, len(samples))) if samples else 0.0
+
+
 def match_music(recording: Path, original: Path) -> dict:
     def envelope(path):
         decoded = subprocess.run(
@@ -283,9 +295,13 @@ class Capture:
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
                        "The three creatures attack separate stationary high-health golems in one group scene; "
                        "targets receive no scripted damage and retaliation is seeded on each attacker. "
-                       "Licker wall-climb is a separate mossy-cobblestone obstacle with a blocked target.",
+                       "Licker wall-climb is a separate mossy-cobblestone obstacle with a blocked target. "
+                       "Sneak-vs-sprint runs the same camera in survival mode; the ceiling ambush stages "
+                       "a hovering licker beneath a lit stone roof.",
             "dev_client_launch": ("Official Forge 1.20.1-47.2.0 client profile via minecraft-launcher-lib "
                                   "(not Gradle runClient). Same installed release JAR as the dedicated server."),
+            "dev_env_launch": ("Separate same-workflow artifact: gradlew runServer + "
+                               "gradlew runClient -PdevEvidence enters the dev world."),
             "screenshots": [], "clips": [], "confirmations": [],
         }
 
@@ -604,6 +620,201 @@ class Capture:
             raise EvidenceError(f"Model review area is too dark: {name}")
         self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2", pixels=metrics))
 
+    def key(self, name: str, down: bool) -> None:
+        subprocess.run(["xdotool", "keydown" if down else "keyup", "--clearmodifiers", name],
+                       check=True, timeout=10)
+
+    def sneak_scene(self) -> None:
+        # One real client on one flat lane, twice: silent sneak-walk, then a
+        # loud sprint. Only the sprint may pull the Licker (NoiseEvents radius
+        # 0 vs 20). The comparison runs back-to-back in a single clip.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+        self.command("kill @e[type=minecraft:iron_golem]")
+        self.command("kill @e[type=minecraft:arrow]")
+        time.sleep(2)
+        selector = '@e[type=re_demo:licker,tag=ce_sneak,limit=1]'
+        self.command('summon re_demo:licker 6 64 4 '
+                     '{Tags:["ce_sneak"],PersistenceRequired:1b,Rotation:[-90.0f,0.0f]}')
+        self.confirm(f"if entity {selector}", "sneak control: live-AI licker staged")
+        # Only a real survival-mode player emits footstep noise events.
+        self.command(f"gamemode survival {CAMERA}")
+        self.command(f"effect give {CAMERA} minecraft:resistance 999999 4 true")
+        self.command(f"tp {CAMERA} 15.5 64 4 90 0")
+        self.confirm(f"positioned 15.5 64 4 if entity @a[name={CAMERA},distance=..0.3]",
+                     "sneak control: camera 9.5 blocks from the licker")
+        sneaked = False
+        path = self.output / "licker-sneak-vs-sprint.mp4"
+        seconds = 18
+        for attempt in range(2):
+            recorder = self.record_video(path, seconds)
+            time.sleep(1)
+            self.command(f"title {CAMERA} actionbar " +
+                         json.dumps({"text": "phase A: sneak-walk is silent | controlled real-client scene"}))
+            subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
+            self.key("shift", True)
+            for _ in range(2):
+                self.key("w", True)
+                time.sleep(0.5)
+                self.key("w", False)
+                time.sleep(1.4)
+            self.key("shift", False)
+            try:
+                self.confirm(f"as {selector} at @s unless entity @a[name={CAMERA},distance=..6]",
+                             "sneak: silent sneak-walk did not pull the licker", timeout=6)
+                sneaked = True
+                break
+            except EvidenceError:
+                if recorder.poll() is None:
+                    recorder.wait(timeout=seconds + 15)
+                if attempt == 1:
+                    raise
+                # A random stroll may drift toward the camera; retake once.
+                self.command(f"kill {selector}")
+                self.command(f"tp {CAMERA} 15.5 64 4 90 0")
+                self.command('summon re_demo:licker 6 64 4 '
+                             '{Tags:["ce_sneak"],PersistenceRequired:1b,Rotation:[-90.0f,0.0f]}')
+                time.sleep(2)
+        if not sneaked:
+            raise EvidenceError("sneak control: could not stage a quiet phase")
+        self.command(f"title {CAMERA} actionbar " +
+                     json.dumps({"text": "phase B: sprint is audible | controlled real-client scene"}))
+        before = len(tail(self.output / "server.log", 10_000_000))
+        self.key("ctrl", True)
+        self.key("w", True)
+        time.sleep(1.6)
+        self.key("w", False)
+        self.key("ctrl", False)
+        self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
+                     "sprint: footstep noise hunted and reached the camera", timeout=12)
+        self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=1",
+                                    tail(self.output / "server.log", 10_000_000)[before:]),
+                  "claw attack frames after the sprint chase", 12)
+        deadline = time.monotonic() + seconds + 20
+        while recorder.poll() is None and time.monotonic() < deadline:
+            self.alive()
+            time.sleep(0.3)
+        if recorder.poll() != 0:
+            raise EvidenceError("Sneak-vs-sprint recording failed/timed out")
+        info = probe(path)
+        duration = float(info["format"]["duration"])
+        if duration < seconds - 1:
+            raise EvidenceError(f"Sneak control recording truncated: {duration}s")
+        metrics = check_frame(path)
+        first, later = frame_pixels(path, 0.5), frame_pixels(path, duration - 1)
+        difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
+        if difference < 0.05:
+            raise EvidenceError("Sneak control recording appears frozen")
+        self.report["clips"].append(dict(
+            file_record(path), duration_seconds=duration, pixels=metrics,
+            sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
+            sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
+            sprint_phase="radius-20 noise: licker closed in and clawed the camera",
+            claw_frames_logged=True, camera_gamemode="survival", camera_resistance=4,
+            audio=check_audio(path)))
+        self.command(f"kill {selector}")
+        self.command(f"gamemode creative {CAMERA}")
+        self.command(f"effect clear {CAMERA} minecraft:resistance")
+        self.command(f"tp {CAMERA} 6 64 -3 180 0")
+        time.sleep(2)
+
+    def ambush_scene(self) -> None:
+        # Low stone roof over the flat lane: hovering airborne beneath it with
+        # a heard sound is exactly what engages the Licker's ceiling ambush.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+        self.command("kill @e[type=minecraft:iron_golem]")
+        self.command("kill @e[type=minecraft:arrow]")
+        time.sleep(2)
+        self.command("fill 12 68 -2 20 68 2 minecraft:stone")
+        self.command("fill 12 68 -2 20 68 -2 minecraft:glowstone")
+        self.command("fill 12 68 2 20 68 2 minecraft:glowstone")
+        self.command("fill 12 68 -1 12 68 1 minecraft:glowstone")
+        self.command("fill 20 68 -1 20 68 1 minecraft:glowstone")
+        self.confirm("if block 16 68 0 minecraft:stone if block 16 68 -2 minecraft:glowstone "
+                     "if block 16 68 2 minecraft:glowstone", "ambush: lit stone roof placed")
+        selector = '@e[type=re_demo:licker,tag=ce_ambush,limit=1]'
+        dummy = '@e[type=minecraft:iron_golem,tag=ce_ambush_dummy,limit=1]'
+        self.command('summon re_demo:licker 16 66.9 0 '
+                     '{Tags:["ce_ambush"],PersistenceRequired:1b,NoAI:1b,NoGravity:1b}')
+        self.command('summon minecraft:iron_golem 24 64 0 '
+                     '{Tags:["ce_ambush_dummy"],NoAI:1b,PersistenceRequired:1b,Health:1000.0f,'
+                     'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
+                     '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
+        self.confirm(f"if entity {selector} if entity {dummy}",
+                     "ambush: hovering licker under the roof, distant target")
+        self.camera(23, -8, 16, 67, 0, "Licker ceiling ambush", cam_y=64.0)
+        path = self.output / "licker-ambush.mp4"
+        seconds = 16
+        recorder = self.record_video(path, seconds)
+        time.sleep(1)
+        before = len(tail(self.output / "server.log", 10_000_000))
+        # A real projectile impact is a noise event the Licker must record.
+        self.command('summon minecraft:arrow 16 69.6 0 {Motion:[0.0,-0.4,0.0],pickup:0b}')
+        time.sleep(0.8)
+        self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
+        self.confirm(f"if entity @e[type=re_demo:licker,tag=ce_ambush,y=66.3,dy=0.9]",
+                     "ambush: licker holding under the ceiling", timeout=8)
+        time.sleep(0.9)
+        self.screenshot("licker-ambush.png")
+        # The release window opens once the dummy is pulled inside 7 blocks.
+        self.command(f"tp {dummy} 18 64 0")
+        self.wait(lambda: re.search(r"RE_DEMO_SYNC_SERVER [^\n]*asset=licker[^\n]*attack=4",
+                                    tail(self.output / "server.log", 10_000_000)[before:]),
+                  "ambush release attack frames", 12)
+        self.command(f"execute store result score ambush_land ce_health run data get entity {selector} Pos[1] 100")
+        self.confirm("if score ambush_land ce_health matches ..6600",
+                     "ambush: licker dropped off the ceiling")
+        self.command(f"execute store result score ambush_hp ce_health run data get entity {dummy} Health 100")
+        self.confirm("if score ambush_hp ce_health matches ..98700",
+                     "ambush: release strike landed at least 13 damage", timeout=10)
+        deadline = time.monotonic() + seconds + 20
+        while recorder.poll() is None and time.monotonic() < deadline:
+            self.alive()
+            time.sleep(0.3)
+        if recorder.poll() != 0:
+            raise EvidenceError("Ceiling ambush recording failed/timed out")
+        info = probe(path)
+        duration = float(info["format"]["duration"])
+        if duration < seconds - 1:
+            raise EvidenceError(f"Ceiling ambush recording truncated: {duration}s")
+        metrics = check_frame(path)
+        first, later = frame_pixels(path, 0.5), frame_pixels(path, duration - 1)
+        difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
+        if difference < 0.05:
+            raise EvidenceError("Ceiling ambush recording appears frozen")
+        self.report["clips"].append(dict(
+            file_record(path), duration_seconds=duration, pixels=metrics,
+            sampled_motion=round(difference, 3), scenario="ceiling-ambush",
+            roof="minecraft:stone+glowstone at y=68", release_attack_logged="attack=4",
+            target_min_damage_hp=13, audio=check_audio(path)))
+        self.command(f"kill {selector}")
+        self.command(f"kill {dummy}")
+        time.sleep(2)
+
+    def identify_scene(self) -> None:
+        # 20-block identification under plain daylight: the review camera's
+        # night vision is removed and the stand-ins carry no name tags.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+        self.command("kill @e[type=minecraft:iron_golem]")
+        self.command("kill @e[type=minecraft:arrow]")
+        time.sleep(2)
+        self.command(f"effect clear {CAMERA} minecraft:night_vision")
+        for entity, _, x, _ in MOBS:
+            self.command(f"summon re_demo:{entity} {x} 64 8 "
+                         f'{{Tags:["ce_id"],PersistenceRequired:1b,NoAI:1b,Rotation:[180.0f,0.0f]}}')
+            self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_id,limit=1]",
+                         f"identification: unnamed {entity} staged")
+        self.camera(6, -12, 6, 64.8, 8, "three creatures, 20 blocks, daylight, no name tags")
+        self.screenshot("20-block-identification.png")
+        for entity, label, x, height in MOBS:
+            self.camera(x, -12, x, 64 + height, 8, f"{label} at 20 blocks")
+            self.screenshot(f"{entity}-20blocks.png")
+        self.command(f"effect give {CAMERA} minecraft:night_vision 999999 0 true")
+        self.command("kill @e[tag=ce_id]")
+        time.sleep(2)
+
     def verify_in_world_input(self) -> None:
         # Login alone also occurs while Loading Terrain is visible. A real key
         # press must move the camera on the flat floor before any evidence passes.
@@ -862,20 +1073,42 @@ class Capture:
         time.sleep(2)
 
     def death_cleanup_scene(self) -> None:
+        # Creature audio must not linger after death/removal: one-shot hurt and
+        # death cues inside the kill window are expected, silence must follow.
+        path = self.output / "death-cleanup-audio.wav"
+        recorder = self.start("ffmpeg-death-audio", [
+            "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
+            "-f", "pulse", "-i", "re_demo_capture.monitor", "-t", "12",
+            "-c:a", "pcm_s16le", "-ar", "44100", "-ac", "2", str(path)], self.work)
+        time.sleep(1)
         for entity, _, x, _ in MOBS:
             self.command(f"summon re_demo:{entity} {x} 64 4 "
                          f'{{Tags:["ce_dead_{entity}"],PersistenceRequired:1b,NoAI:1b}}')
         self.confirm("if entity @e[type=re_demo:licker] if entity @e[type=re_demo:tyrant] "
                      "if entity @e[type=re_demo:g1_birkin]",
                      "death cleanup: three live fixtures")
-        self.command("kill @e[type=re_demo:licker]")
-        self.command("kill @e[type=re_demo:tyrant]")
-        self.command("kill @e[type=re_demo:g1_birkin]")
+        for entity, _, _, _ in MOBS:
+            self.command(f"damage @e[type=re_demo:{entity},tag=ce_dead_{entity}] 6 minecraft:mob_attack")
+            time.sleep(0.4)
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+            time.sleep(0.4)
+        if recorder.wait(timeout=20) != 0:
+            raise EvidenceError("Death cleanup audio capture failed")
+        audio = check_audio(path)
+        tail_rms = audio_rms(path, 7.0, 5.0)
+        if tail_rms >= 0.001:
+            raise EvidenceError(f"Residual creature audio after death/removal (tail RMS={tail_rms})")
         self.confirm("unless entity @e[type=re_demo:licker] unless entity @e[type=re_demo:tyrant] "
                      "unless entity @e[type=re_demo:g1_birkin]",
                      "death cleanup: no remaining demo creatures", timeout=20)
         self.camera(6, -10, 6, 65.3, 4, "Cleared after death")
         self.screenshot("99-death-cleared.png")
+        self.report["death_audio_cleanup"] = dict(
+            file_record(path), seconds=12, kill_window_seconds=6,
+            whole_clip=audio, tail_rms_7_to_12s=tail_rms,
+            scope="Client output returns to silence after creature deaths; one-shot hurt/death cues "
+                  "are allowed inside the kill window. Does not claim the mod stops externally-played music.")
 
     def mid_attack_reveal_scenes(self) -> None:
         # New actors are spawned behind the camera and revealed only after the
@@ -960,11 +1193,16 @@ class Capture:
             self.screenshot(f"{entity}-model.png")
             self.camera(x + 6.4, 4, x, 64 + focus_height, 4, f"{label} side")
             self.screenshot(f"{entity}-model-side.png")
+            self.camera(x - 0.5, 10.4, x, 64 + focus_height, 4, f"{label} back")
+            self.screenshot(f"{entity}-model-back.png")
         self.isolated_action_scenes()
+        self.sneak_scene()
+        self.ambush_scene()
         self.climb_scene()
         self.verify_music_playback()
         self.brawl_scene()
         self.mid_attack_reveal_scenes()
+        self.identify_scene()
         self.death_cleanup_scene()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
@@ -976,17 +1214,22 @@ class Capture:
         expected_shots = {
             "00-three-creatures.png", "01-spawn-eggs.png", "licker-model.png", "tyrant-model.png",
             "g1_birkin-model.png", "licker-model-side.png", "tyrant-model-side.png",
-            "g1_birkin-model-side.png", "licker-climb.png", "99-death-cleared.png",
+            "g1_birkin-model-side.png", "licker-model-back.png", "tyrant-model-back.png",
+            "g1_birkin-model-back.png", "licker-ambush.png", "20-block-identification.png",
+            "licker-20blocks.png", "tyrant-20blocks.png", "g1_birkin-20blocks.png",
+            "licker-climb.png", "99-death-cleared.png",
         }
         expected_clips = {
             "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",
             "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4", "licker-climb.mp4",
+            "licker-ambush.mp4", "licker-sneak-vs-sprint.mp4",
         }
         got_shots = {item["name"] for item in self.report["screenshots"]}
         got_clips = {item["name"] for item in self.report["clips"]}
         if got_shots != expected_shots or got_clips != expected_clips:
             raise EvidenceError(f"Incomplete evidence set shots={sorted(got_shots)} clips={sorted(got_clips)}")
-        ordered = ["creature-brawl.mp4", "licker-climb.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4",
+        ordered = ["creature-brawl.mp4", "licker-climb.mp4", "licker-ambush.mp4",
+                   "licker-sneak-vs-sprint.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4",
                    "g1_birkin-attack.mp4", "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
         playlist = self.output / "showcase-concat.txt"
         playlist.write_text("".join(f"file '{name}'\n" for name in ordered), encoding="utf-8")

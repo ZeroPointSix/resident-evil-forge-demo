@@ -282,7 +282,10 @@ class Capture:
             "client_input_roundtrip_verified": False,
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
                        "The three creatures attack separate stationary high-health golems in one group scene; "
-                       "targets receive no scripted damage and retaliation is seeded on each attacker.",
+                       "targets receive no scripted damage and retaliation is seeded on each attacker. "
+                       "Licker wall-climb is a separate mossy-cobblestone obstacle with a blocked target.",
+            "dev_client_launch": ("Official Forge 1.20.1-47.2.0 client profile via minecraft-launcher-lib "
+                                  "(not Gradle runClient). Same installed release JAR as the dedicated server."),
             "screenshots": [], "clips": [], "confirmations": [],
         }
 
@@ -561,7 +564,7 @@ class Capture:
                      "controlled arena built")
         # Keep the review camera well lit even while generated-chunk skylight settles.
         self.command(f"effect give {CAMERA} minecraft:night_vision 999999 0 true")
-        self.report["capture_lighting"] = "Daylight plus camera-only night vision; no texture or model edits"
+        self.report["capture_lighting"] = "Daylight plus camera-only night vision; capture does not edit textures or models"
         for entity, label, x, _ in MOBS:
             name = json.dumps({"text": label}, separators=(",", ":"))
             self.command(f"summon re_demo:{entity} {x} 64 4 "
@@ -571,12 +574,13 @@ class Capture:
                          f"release JAR entity summoned: {entity}")
         self.report["installed_jar_server_verified"] = True
 
-    def camera(self, x: float, z: float, focus_x: float, focus_y: float, focus_z: float, label: str) -> None:
+    def camera(self, x: float, z: float, focus_x: float, focus_y: float, focus_z: float, label: str,
+               cam_y: float = 64.0) -> None:
         dx, dz = focus_x - x, focus_z - z
         yaw = -math.degrees(math.atan2(dx, dz))
-        pitch = -math.degrees(math.atan2(focus_y - 65.62, math.hypot(dx, dz)))
-        self.command(f"tp {CAMERA} {x:.3f} 64 {z:.3f} {yaw:.3f} {pitch:.3f}")
-        self.confirm(f"positioned {x:.3f} 64 {z:.3f} if entity @a[name={CAMERA},distance=..0.3]",
+        pitch = -math.degrees(math.atan2(focus_y - (cam_y + 1.62), math.hypot(dx, dz)))
+        self.command(f"tp {CAMERA} {x:.3f} {cam_y:.3f} {z:.3f} {yaw:.3f} {pitch:.3f}")
+        self.confirm(f"positioned {x:.3f} {cam_y:.3f} {z:.3f} if entity @a[name={CAMERA},distance=..0.3]",
                      f"camera positioned: {label}")
         self.command(f"title {CAMERA} actionbar " + json.dumps({"text": f"{label} | controlled real-client scene"}))
         time.sleep(3)
@@ -778,6 +782,98 @@ class Capture:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
             time.sleep(4)
 
+    def climb_scene(self) -> None:
+        # Side-on wall: Licker starts on the north face, dummy is south of the
+        # wall so claw line-of-sight is blocked and huntClimb comes from combat lock.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+        self.command("kill @e[type=minecraft:iron_golem]")
+        time.sleep(2)
+        self.command("fill 15 64 -10 21 67 -10 minecraft:mossy_cobblestone")
+        self.command("fill 15 64 -14 15 67 -10 minecraft:mossy_cobblestone")
+        self.command("fill 21 64 -14 21 67 -10 minecraft:mossy_cobblestone")
+        self.confirm("if block 18 65 -10 minecraft:mossy_cobblestone "
+                     "if block 15 66 -12 minecraft:mossy_cobblestone "
+                     "if block 21 66 -12 minecraft:mossy_cobblestone",
+                     "licker climb: mossy cobblestone wall and side funnels placed")
+        selector = '@e[type=re_demo:licker,tag=ce_climb,limit=1]'
+        dummy = '@e[type=minecraft:iron_golem,tag=ce_climb_dummy,limit=1]'
+        self.command('summon re_demo:licker 18 64 -13 '
+                     '{Tags:["ce_climb"],PersistenceRequired:1b,NoAI:1b,Rotation:[0.0f,0.0f]}')
+        self.command('summon minecraft:iron_golem 18 64 -7 '
+                     '{Tags:["ce_climb_dummy"],NoAI:1b,PersistenceRequired:1b,Health:1000.0f,'
+                     'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
+                     '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
+        self.confirm(f"if entity {selector} if entity {dummy}", "licker climb: actor and blocked dummy staged")
+        self.command(f"execute store result score climb_before ce_health run data get entity {selector} Pos[1] 100")
+        self.command("scoreboard players operation climb_need ce_health = climb_before ce_health")
+        self.command("scoreboard players add climb_need ce_health 120")
+        self.command("scoreboard players operation climb_peak ce_health = climb_before ce_health")
+        self.confirm("if score climb_before ce_health matches 6300..6500",
+                     "licker climb: actor started on the arena floor")
+        self.camera(26, -16, 18, 66.4, -10, "Licker wall climb", cam_y=64.0)
+        path = self.output / "licker-climb.mp4"
+        clip_seconds = 18
+        recorder = self.record_video(path, clip_seconds)
+        time.sleep(1)
+        self.command(f"data merge entity {selector} {{NoAI:0b}}")
+        self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
+        climbed = False
+        deadline = time.monotonic() + clip_seconds + 8
+        while recorder.poll() is None and time.monotonic() < deadline:
+            self.alive()
+            self.command(f"execute store result score climb_now ce_health run data get entity {selector} Pos[1] 100")
+            self.command("execute if score climb_now ce_health > climb_peak ce_health "
+                         "run scoreboard players operation climb_peak ce_health = climb_now ce_health")
+            self.command("execute if score climb_peak ce_health >= climb_need ce_health run say CE_CLIMB_Y")
+            if not climbed and re.search(r"\[Server\]\s+CE_CLIMB_Y\b", tail(self.output / "server.log")):
+                climbed = True
+                self.screenshot("licker-climb.png")
+            time.sleep(0.4)
+        if recorder.poll() != 0:
+            raise EvidenceError("Licker climb recording failed/timed out")
+        self.command(f"data get entity {selector}")
+        self.command(f"data get entity {selector} Pos")
+        self.confirm("if score climb_peak ce_health >= climb_need ce_health",
+                     "licker climb: server Y gained at least 1.2 blocks on the wall", timeout=8)
+        if not climbed:
+            self.screenshot("licker-climb.png")
+        info = probe(path)
+        duration = float(info["format"]["duration"])
+        if duration < clip_seconds - 1:
+            raise EvidenceError(f"Climb recording truncated: {duration}s")
+        metrics = check_frame(path)
+        first, later = frame_pixels(path, 0.5), frame_pixels(path, min(8, duration - 1))
+        difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
+        if difference < 0.05:
+            raise EvidenceError("Climb recording appears frozen")
+        self.report["clips"].append(dict(
+            file_record(path), duration_seconds=duration, pixels=metrics,
+            sampled_motion=round(difference, 3), scenario="wall-climb",
+            obstacle="minecraft:mossy_cobblestone", wall_height_blocks=4,
+            required_y_gain_blocks=1.2, server_y_gain_confirmed=True,
+            target_blocked_los=True, audio=check_audio(path),
+        ))
+        self.command(f"kill {selector}")
+        self.command(f"kill {dummy}")
+        time.sleep(2)
+
+    def death_cleanup_scene(self) -> None:
+        for entity, _, x, _ in MOBS:
+            self.command(f"summon re_demo:{entity} {x} 64 4 "
+                         f'{{Tags:["ce_dead_{entity}"],PersistenceRequired:1b,NoAI:1b}}')
+        self.confirm("if entity @e[type=re_demo:licker] if entity @e[type=re_demo:tyrant] "
+                     "if entity @e[type=re_demo:g1_birkin]",
+                     "death cleanup: three live fixtures")
+        self.command("kill @e[type=re_demo:licker]")
+        self.command("kill @e[type=re_demo:tyrant]")
+        self.command("kill @e[type=re_demo:g1_birkin]")
+        self.confirm("unless entity @e[type=re_demo:licker] unless entity @e[type=re_demo:tyrant] "
+                     "unless entity @e[type=re_demo:g1_birkin]",
+                     "death cleanup: no remaining demo creatures", timeout=20)
+        self.camera(6, -10, 6, 65.3, 4, "Cleared after death")
+        self.screenshot("99-death-cleared.png")
+
     def mid_attack_reveal_scenes(self) -> None:
         # New actors are spawned behind the camera and revealed only after the
         # real server AI has advanced an attack. No combat state is injected.
@@ -850,14 +946,23 @@ class Capture:
         self.verify_in_world_input()
         self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.screenshot("00-three-creatures.png")
+        self.command(f"item replace entity {CAMERA} hotbar.0 with re_demo:licker_spawn_egg")
+        self.command(f"item replace entity {CAMERA} hotbar.1 with re_demo:tyrant_spawn_egg")
+        self.command(f"item replace entity {CAMERA} hotbar.2 with re_demo:g1_birkin_spawn_egg")
+        self.camera(6, -10, 6, 65.3, 4, "Spawn eggs on camera hotbar")
+        self.screenshot("01-spawn-eggs.png")
         for entity, label, x, focus_height in MOBS:
             distance = 6.2 if entity == "licker" else 6.8
             self.camera(x + distance * 0.45, 4 - distance, x, 64 + focus_height, 4, label)
             self.screenshot(f"{entity}-model.png")
+            self.camera(x + 6.4, 4, x, 64 + focus_height, 4, f"{label} side")
+            self.screenshot(f"{entity}-model-side.png")
         self.isolated_action_scenes()
+        self.climb_scene()
         self.verify_music_playback()
         self.brawl_scene()
         self.mid_attack_reveal_scenes()
+        self.death_cleanup_scene()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
                             r"(?:Unable|Failed|Could not|Missing).{0,100}(?:re_demo[:/]|assets/re_demo/))", re.I)
@@ -865,10 +970,21 @@ class Capture:
             match = errors.search(tail(path, 10_000_000))
             if match:
                 raise EvidenceError(f"Client rendering/resource error in {path.name}: {match.group(0)}")
-        if len(self.report["screenshots"]) != 4 or len(self.report["clips"]) != 7:
-            raise EvidenceError("Incomplete evidence set")
-        ordered = ["creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",
-                   "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
+        expected_shots = {
+            "00-three-creatures.png", "01-spawn-eggs.png", "licker-model.png", "tyrant-model.png",
+            "g1_birkin-model.png", "licker-model-side.png", "tyrant-model-side.png",
+            "g1_birkin-model-side.png", "licker-climb.png", "99-death-cleared.png",
+        }
+        expected_clips = {
+            "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",
+            "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4", "licker-climb.mp4",
+        }
+        got_shots = {item["name"] for item in self.report["screenshots"]}
+        got_clips = {item["name"] for item in self.report["clips"]}
+        if got_shots != expected_shots or got_clips != expected_clips:
+            raise EvidenceError(f"Incomplete evidence set shots={sorted(got_shots)} clips={sorted(got_clips)}")
+        ordered = ["creature-brawl.mp4", "licker-climb.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4",
+                   "g1_birkin-attack.mp4", "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
         playlist = self.output / "showcase-concat.txt"
         playlist.write_text("".join(f"file '{name}'\n" for name in ordered), encoding="utf-8")
         showcase = self.output / "encounter-showcase.mp4"

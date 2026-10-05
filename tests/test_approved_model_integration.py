@@ -121,6 +121,14 @@ class ApprovedModelIntegrationTests(unittest.TestCase):
             project = read(ROOT / "art" / f"{creature}.bbmodel")
             self.assertEqual(base64.b64decode(project["textures"][0]["source"].split(",", 1)[1]), palette)
 
+    def test_runtime_textures_are_byte_distinct(self):
+        digests = {}
+        for creature in HASHES:
+            data = (ASSETS / "textures/entity" / f"{creature}.png").read_bytes()
+            self.assertTrue(data.startswith(b"\x89PNG\r\n\x1a\n"), creature)
+            digests[creature] = hashlib.sha256(data).hexdigest()
+        self.assertEqual(len(set(digests.values())), 3, digests)
+
     def test_original_parts_have_no_implicit_pose_or_scale(self):
         for creature in HASHES:
             runtime = bones(ASSETS / "geo" / f"{creature}.geo.json")

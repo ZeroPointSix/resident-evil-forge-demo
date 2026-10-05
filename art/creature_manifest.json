@@ -23,8 +23,8 @@
       "files": {
         "src/main/resources/assets/re_demo/geo/licker.geo.json": "7726592ad65684a8d061426cbcbee731f13ea9b3a35cb00c33c9569edefde110",
         "src/main/resources/assets/re_demo/animations/licker.animation.json": "d9d2049687fe25d3124df02de771574e7549e886379191d39864db13f7b97c77",
-        "src/main/resources/assets/re_demo/textures/entity/licker.png": "dc93224150934250139ec3c460f1c6d6eee006cc27b323d298fbfa1927607942",
-        "art/licker.bbmodel": "0f7375d40129d3c67f723921bea72697784b3f64b28a6ff6f4bc6f0d7e60f68d"
+        "src/main/resources/assets/re_demo/textures/entity/licker.png": "fb329f4e347bc9525fd55808c63ec6892fa8fba23c0c1d3dd757be7bcf246987",
+        "art/licker.bbmodel": "fc19bbe62d41fbce23e753fc3391cef214944ec7efc647898866a885a2241a7d"
       }
     },
     "tyrant": {
@@ -45,8 +45,8 @@
       "files": {
         "src/main/resources/assets/re_demo/geo/tyrant.geo.json": "9b0592e0c1ef424e40153ef6c82802220eb175b26fb009a3ff3b293ea91f7b5d",
         "src/main/resources/assets/re_demo/animations/tyrant.animation.json": "0f43b4e7576da5d067082e25645bf0edde8c93637616e101297376f72e6c9b50",
-        "src/main/resources/assets/re_demo/textures/entity/tyrant.png": "d92854988a325aaf9892079ddc686c2c8ed65bb4623d4b2d9981eb4b5bf4fd44",
-        "art/tyrant.bbmodel": "b684ac463fe68034d7224a9c09a0a2582ff726c7bdbf6460af17222fe2572b34"
+        "src/main/resources/assets/re_demo/textures/entity/tyrant.png": "4f9e82cca85ce92cc196aee0204e8b22805f43cea2740466e4dc90eeb9db2956",
+        "art/tyrant.bbmodel": "893df35fa24f1ccc9fd1ba448a34dcbb3cb8dc07bd439a47387b588d8195e56f"
       }
     },
     "g1_birkin": {
@@ -67,8 +67,8 @@
       "files": {
         "src/main/resources/assets/re_demo/geo/g1_birkin.geo.json": "d1249c54098248b4da2b3bec9291e3ed261463c816b32a68829a5de1f76138bc",
         "src/main/resources/assets/re_demo/animations/g1_birkin.animation.json": "16f995941618e20a4821a2e3288a045a94135d5c8bac22df25230526e4766f1f",
-        "src/main/resources/assets/re_demo/textures/entity/g1_birkin.png": "cfe175c8e8ae35413dfc9af3ebed3bfbae73dabcb78cd7a0434d59082a24c30c",
-        "art/g1_birkin.bbmodel": "4265191a309db3c9d2ded7c11c96d32ef9cefbf715e8c24bbdd96fb7179baacf"
+        "src/main/resources/assets/re_demo/textures/entity/g1_birkin.png": "28d3029aaabe183423b8910223841f6b15ce3a07be9c7159b8df713c01d1a465",
+        "art/g1_birkin.bbmodel": "fa51ee0a324d596cda53ee0c6c18255f71a2bdfbcc22d988aa662168b564dae5"
       }
     }
   }

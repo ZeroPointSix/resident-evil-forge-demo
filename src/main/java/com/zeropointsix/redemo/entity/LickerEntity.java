@@ -67,6 +67,10 @@ public final class LickerEntity extends EncounterMob {
     public Vec3 investigationPoint() { return lastSound; }
     public boolean hasCombatLock() { return combatLock; }
 
+    private boolean inClawRange(LivingEntity target) {
+        return validTarget(target) && distanceTo(target) <= 2.3 && hasLineOfSight(target);
+    }
+
     public void hear(Vec3 position, LivingEntity source, double radius) {
         if (level().isClientSide || !isAlive() || position.distanceToSqr(position()) > radius * radius) return;
         boolean repeated = lastSound != null && tickCount - lastSoundTick < 50;
@@ -105,12 +109,12 @@ public final class LickerEntity extends EncounterMob {
         leapCooldown = Math.max(0, leapCooldown - 1);
         tongueCooldown = Math.max(0, tongueCooldown - 1);
         hangCooldown = Math.max(0, hangCooldown - 1);
-        boolean hasTarget = validTarget(getTarget());
-        boolean melee = hasTarget && distanceTo(getTarget()) <= 2.3;
-        // Collision with the current claw target is not a wall. Climbing it
-        // lifts the Licker off the hit arc and the group-combat dummy never
-        // takes the required damage.
-        entityData.set(CLIMBING, !melee && horizontalCollision && (!onGround() || lastSound != null));
+        boolean melee = inClawRange(getTarget());
+        // Only an unobstructed claw target is "melee". A dummy 2.3 blocks away
+        // behind a wall still has to be climbed; colliding with that dummy in
+        // the open must not spider-climb its hurtbox.
+        boolean huntClimb = lastSound != null || combatLock;
+        entityData.set(CLIMBING, !melee && horizontalCollision && (!onGround() || huntClimb));
         if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
             lastSound = null;
             if (!combatLock && !melee && !attacking()) setTarget(null);
@@ -119,7 +123,7 @@ public final class LickerEntity extends EncounterMob {
             setTarget(null);
             combatLock = false;
         }
-        if (onClimbable() && lastSound != null && !isHanging() && !attacking() && !melee) {
+        if (onClimbable() && huntClimb && !isHanging() && !attacking() && !melee) {
             setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
         }
         BlockPos ceiling = BlockPos.containing(getX(), getBoundingBox().maxY + 0.15, getZ());

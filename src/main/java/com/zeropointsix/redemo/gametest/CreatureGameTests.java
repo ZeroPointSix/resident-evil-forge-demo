@@ -343,6 +343,64 @@ public final class CreatureGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void lickerClimbsSolidWallTowardSound(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        for (int x = 2; x <= 6; x++) for (int y = 1; y <= 3; y++) {
+            h.setBlock(new BlockPos(x, y, 5), Blocks.STONE);
+        }
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 2));
+        var source = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 8));
+        source.setNoAi(true);
+        source.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        double startY = licker.getY();
+        BlockPos wall = h.absolutePos(new BlockPos(4, 1, 5));
+        licker.hear(source.position(), source, 24);
+        licker.hear(source.position(), source, 24);
+        h.assertTrue(licker.getTarget() == source, "Repeated sound must hunt the source behind the wall");
+        boolean[] climbed = {false};
+        h.startSequence().thenWaitUntil(() -> {
+            h.assertTrue(licker.isAlive(), "Licker must survive the wall climb");
+            if (licker.onClimbable()) climbed[0] = true;
+            h.assertTrue(climbed[0] && (licker.getY() >= startY + 1.5 || licker.getZ() > wall.getZ() + 0.6),
+                    "Licker must climb the solid wall with onClimbable and gain height or cross it, y="
+                            + licker.getY() + " z=" + licker.getZ() + " climbing=" + licker.onClimbable());
+        }).thenSucceed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void lickerClimbsWhenCloseTargetIsBlocked(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        for (int x = 2; x <= 6; x++) for (int y = 1; y <= 3; y++) {
+            h.setBlock(new BlockPos(x, y, 4), Blocks.STONE);
+        }
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 3));
+        var attacker = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 5));
+        attacker.setNoAi(true);
+        attacker.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        double startY = licker.getY();
+        BlockPos wall = h.absolutePos(new BlockPos(4, 1, 4));
+        licker.hurt(licker.damageSources().mobAttack(attacker), 1);
+        h.assertTrue(licker.getTarget() == attacker && licker.hasCombatLock(),
+                "Hurt must lock the blocked attacker without sound memory");
+        h.assertTrue(licker.investigationPoint() == null, "Combat lock must not fake a lastSound investigation");
+        h.assertTrue(licker.distanceTo(attacker) <= 2.3, "Fixture must be inside the old distance-only melee radius");
+        h.assertTrue(!licker.hasLineOfSight(attacker), "Stone wall must block claw line of sight");
+        boolean[] climbed = {false};
+        h.startSequence().thenWaitUntil(() -> {
+            h.assertTrue(licker.isAlive() && licker.hasCombatLock(), "Combat lock must persist while climbing the blocker");
+            if (licker.onClimbable()) climbed[0] = true;
+            h.assertTrue(climbed[0] && licker.getY() >= startY + 1.2,
+                    "A 2.3-range target behind a wall must still be climbed, y=" + licker.getY()
+                            + " climbing=" + licker.onClimbable() + " dist=" + licker.distanceTo(attacker)
+                            + " wallZ=" + wall.getZ());
+        }).thenSucceed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 160)
     public static void lickerHurtAggroIgnoresExpiredSoundMemory(GameTestHelper h) {
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {

@@ -603,44 +603,74 @@ class Capture:
                                          audio=check_audio(path)))
 
     def brawl_scene(self, seconds: int = 55) -> None:
-        # All three creatures fight each other under normal AI. Mutual aggro is
-        # seeded with real mob_attack damage packets, so every retaliation and
-        # attack animation is produced by the installed mod's own combat code.
+        # Start with a natural three-way fight, then rotate three controlled
+        # retaliation rounds. Free-for-all target selection can starve one
+        # participant; the rounds keep damage authentic while guaranteeing
+        # that every creature is attacked by another installed mod creature.
         triangle = (("tyrant", 4, 4), ("g1_birkin", 12, 4), ("licker", 8, -3))
+        selectors = {
+            entity: f"@e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1]"
+            for entity, _, _ in triangle
+        }
         for entity, x, z in triangle:
             self.command(f"summon re_demo:{entity} {x} 64 {z} "
                          f"{{Tags:[\"ce_brawl_{entity}\"],PersistenceRequired:1b,NoAI:1b,Health:3000.0f,"
                          'Attributes:[{Name:"minecraft:generic.max_health",Base:3000.0d}]}')
-            self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1]",
-                         f"brawl arena: {entity} staged")
+            self.confirm(f"if entity {selectors[entity]}", f"brawl arena: {entity} staged")
             self.command(f"execute store result score before_brawl_{entity} ce_health "
-                         f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
-            # Require more than 5 HP loss, beyond the two scripted 1-HP aggro hits.
-            self.command(f"scoreboard players remove before_brawl_{entity} ce_health 500")
+                         f"run data get entity {selectors[entity]} Health 100")
+            # Each entity receives at most two scripted 1-HP aggro hits.
+            # Requiring a total loss over 7 HP proves more than 5 HP came from AI attacks.
+            self.command(f"scoreboard players remove before_brawl_{entity} ce_health 700")
         self.camera(8, -10, 8, 64.6, 4, "three-way brawl")
         path = self.output / "creature-brawl.mp4"
         recorder = self.record_video(path, seconds)
         time.sleep(1)
         self.play_music()
-        for entity, _, _ in triangle:
-            self.command(f"data merge entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] {{NoAI:0b}}")
+
         def seed(attacker: str, victim: str) -> None:
             # Retaliation goals (and the licker's hurt->hear path) make the
             # damaged creature hunt the credited attacker.
-            self.command(f"damage @e[type=re_demo:{victim},tag=ce_brawl_{victim},limit=1] "
-                         f"1 minecraft:mob_attack by @e[type=re_demo:{attacker},tag=ce_brawl_{attacker},limit=1]")
+            self.command(f"damage {selectors[victim]} 1 minecraft:mob_attack by {selectors[attacker]}")
+
+        def wait_scene(duration: float) -> None:
+            deadline = time.monotonic() + duration
+            while time.monotonic() < deadline and recorder.poll() is None:
+                self.alive()
+                time.sleep(0.3)
+
+        for entity, _, _ in triangle:
+            self.command(f"data merge entity {selectors[entity]} {{NoAI:0b}}")
         seed("g1_birkin", "tyrant")
         seed("licker", "g1_birkin")
         seed("tyrant", "licker")
-        reseed_at = time.monotonic() + seconds * 0.55
+        wait_scene(8)
+
+        # Each round uses a normal-AI attacker and a stationary creature target.
+        # The 1-HP packet is applied to the attacker only to establish retaliation;
+        # the tracked victim can cross the 5-HP threshold only through real AI attacks.
+        rounds = (("g1_birkin", "tyrant", 14),
+                  ("tyrant", "licker", 11),
+                  ("licker", "g1_birkin", 11))
+        for attacker, victim, duration in rounds:
+            standby = next(entity for entity, _, _ in triangle if entity not in (attacker, victim))
+            for entity, _, _ in triangle:
+                self.command(f"data merge entity {selectors[entity]} {{NoAI:1b}}")
+            self.command(f"tp {selectors[attacker]} 6 64 4")
+            self.command(f"tp {selectors[victim]} 8 64 4")
+            self.command(f"tp {selectors[standby]} 15 64 -4")
+            self.command(f"title {CAMERA} actionbar " +
+                         json.dumps({"text": f"{attacker} attacks {victim} | controlled real-client scene"}))
+            self.command(f"data merge entity {selectors[attacker]} {{NoAI:0b}}")
+            self.command(f"damage {selectors[attacker]} 1 minecraft:mob_attack by {selectors[victim]}")
+            wait_scene(duration)
+
+        # Let the final composition keep moving until ffmpeg reaches its fixed duration.
+        for entity, _, _ in triangle:
+            self.command(f"data merge entity {selectors[entity]} {{NoAI:0b}}")
         deadline = time.monotonic() + seconds + 40
         while recorder.poll() is None and time.monotonic() < deadline:
             self.alive()
-            if time.monotonic() >= reseed_at:
-                seed("tyrant", "g1_birkin")
-                seed("g1_birkin", "licker")
-                seed("licker", "tyrant")
-                reseed_at = float("inf")
             time.sleep(0.3)
         if recorder.poll() != 0:
             raise EvidenceError("Brawl recording failed/timed out")
@@ -648,13 +678,13 @@ class Capture:
         time.sleep(1)
         for entity, _, _ in triangle:
             self.command(f"execute store result score after_brawl_{entity} ce_health "
-                         f"run data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health 100")
-            self.command(f"execute if score after_brawl_{entity} ce_health < before_brawl_{entity} ce_health "
-                         f"run scoreboard players add brawl_damaged ce_health 1")
-            self.command(f"data get entity @e[type=re_demo:{entity},tag=ce_brawl_{entity},limit=1] Health")
-        time.sleep(1)
+                         f"run data get entity {selectors[entity]} Health 100")
+            self.confirm(f"if score after_brawl_{entity} ce_health < before_brawl_{entity} ce_health",
+                         f"brawl: {entity} lost more than 5 HP to another creature")
+            self.command(f"scoreboard players add brawl_damaged ce_health 1")
+            self.command(f"data get entity {selectors[entity]} Health")
         self.confirm("if score brawl_damaged ce_health matches 3",
-                     "brawl: all three creatures lost more than 5 HP, excluding the maximum 2 HP of aggro seeds")
+                     "brawl: all three creatures lost more than 5 HP, excluding scripted aggro damage")
         for entity, _, _ in triangle:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_brawl_{entity}]")
         info = probe(path)
@@ -670,6 +700,10 @@ class Capture:
                                          sampled_motion=round(difference, 3), scenario="brawl",
                                          mutual_combat_damage_verified=True, seed_damage_excluded_hp=2,
                                          all_three_damaged=True, minimum_loss_hp=5,
+                                         controlled_damage_rounds=[
+                                             {"attacker": attacker, "victim": victim, "seconds": round_seconds}
+                                             for attacker, victim, round_seconds in rounds
+                                         ],
                                          audio=check_audio(path)))
 
     def isolated_action_scenes(self) -> None:

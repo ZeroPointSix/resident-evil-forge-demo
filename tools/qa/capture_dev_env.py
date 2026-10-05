@@ -179,8 +179,8 @@ class DevEnvCapture:
         # opped Dev client types the command. Avoid NBT braces: xdotool cannot
         # type `{` with modifiers cleared.
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
-        subprocess.run(["xdotool", "key", "--clearmodifiers", "Escape"], check=True, timeout=10)
-        time.sleep(0.25)
+        # The client is already in-world. Escape would open the pause menu and
+        # swallow the following chat key, leaving every command unexecuted.
         subprocess.run(["xdotool", "key", "--clearmodifiers", "t"], check=True, timeout=10)
         time.sleep(0.45)
         subprocess.run(["xdotool", "type", "--delay", "18", "--", command], check=True, timeout=30)

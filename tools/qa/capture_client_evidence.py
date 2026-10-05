@@ -674,17 +674,27 @@ class Capture:
             metrics["hide_gui"] = True
         self.report["screenshots"].append(dict(file_record(target), origin="native Minecraft F2", pixels=metrics))
 
-    def key(self, name: str, down: bool, *, clear_modifiers: bool = True) -> None:
-        cmd = ["xdotool", "keydown" if down else "keyup"]
-        if clear_modifiers:
-            cmd.append("--clearmodifiers")
-        cmd.append(name)
-        subprocess.run(cmd, check=True, timeout=10)
+    def key(self, name: str, down: bool) -> None:
+        # Preserve held Shift/Control while pressing or releasing movement keys.
+        subprocess.run(["xdotool", "keydown" if down else "keyup", name],
+                       check=True, timeout=10)
+
+    def sprint_forward(self) -> None:
+        self.key("Control_L", True)
+        try:
+            self.key("w", True)
+            # Continuous movement spans multiple six-tick sprint footsteps.
+            time.sleep(1.5)
+        finally:
+            try:
+                self.key("w", False)
+            finally:
+                self.key("Control_L", False)
 
     def sneak_scene(self) -> None:
-        # One real client on one flat lane, twice: silent sneak-walk, then an
-        # unsneaked walk. Only the walk may pull the Licker (NoiseEvents radius
-        # 0 vs 9). The comparison runs back-to-back in a single clip.
+        # One real client on one flat lane, twice: silent sneak-walk, then a
+        # loud sprint. Only the sprint may pull the Licker (NoiseEvents radius
+        # 0 vs 20). The comparison runs back-to-back in a single clip.
         for entity, _, _, _ in MOBS:
             self.command(f"kill @e[type=re_demo:{entity}]")
         self.command("kill @e[type=minecraft:iron_golem]")
@@ -714,9 +724,9 @@ class Capture:
             subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
             self.key("shift", True)
             for _ in range(2):
-                self.key("w", True, clear_modifiers=False)
+                self.key("w", True)
                 time.sleep(0.5)
-                self.key("w", False, clear_modifiers=False)
+                self.key("w", False)
                 time.sleep(1.4)
             self.key("shift", False)
             try:
@@ -741,29 +751,26 @@ class Capture:
         if not sneaked:
             raise EvidenceError("sneak control: could not stage a quiet phase")
         self.command(f"title {CAMERA} actionbar " +
-                     json.dumps({"text": "phase B: unsneaked walk at 8.5 blocks | controlled real-client scene"}))
+                     json.dumps({"text": "phase B: sprint footsteps at 8.5 blocks | controlled real-client scene"}))
         # Park on the 8.5-block mark so closing-in can only be the Licker
-        # hunting unsneaked walk footsteps (NoiseEvents radius 9 vs sneak 0).
-        # A/D strafes leave that radius after ~0.7s (max |dz| at dx=8.5 is
-        # 2.96). Forward W stays inside radius 9 and tickCount%12 hits twice
-        # in a 1.5s hold; re-tp so the hunter, not the camera, covers the gap.
+        # hunting sprint footsteps (NoiseEvents radius 20 vs sneak 0).
+        # Face along +Z while sprinting: stay in radius 20 without moving
+        # into the Licker, then return to the fixed observation mark.
         # Do not mix jump, LivingHurt, or ownerless arrows into this clip.
         self.command(f"tp {CAMERA} 14.5 64 4 90 0")
         self.command(f"execute store result score sneak_lx0 ce_health run data get entity {selector} Pos[0] 100")
         time.sleep(0.5)
         subprocess.run(["xdotool", "windowactivate", "--sync", self.window], check=True, timeout=10)
         for _ in range(2):
-            self.command(f"tp {CAMERA} 14.5 64 4 90 0")
+            self.command(f"tp {CAMERA} 14.5 64 4 0 0")
             time.sleep(0.25)
-            self.key("w", True)
-            time.sleep(1.5)
-            self.key("w", False)
+            self.sprint_forward()
             self.command(f"tp {CAMERA} 14.5 64 4 90 0")
             time.sleep(0.2)
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
-                     "loud walk: unsneaked footsteps hunted and reached the camera", timeout=16)
+                     "sprint: sprint-footstep noise hunted and reached the camera", timeout=16)
         self.confirm("if score sneak_lx1 ce_health > sneak_lx0 ce_health",
-                     "loud walk: licker X moved toward the camera, not the camera into the licker",
+                     "sprint: licker X moved toward the camera, not the camera into the licker",
                      prepare=f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
         self.command(f"data get entity {selector} Pos")
         self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
@@ -789,8 +796,8 @@ class Capture:
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
-            sprint_phase="unsneaked forward walk at 8.5 blocks: licker closed to within 5 and increased X",
-            loud_stimuli="unsneaked walk footsteps only; no jump/hurt/arrow",
+            sprint_phase="Control+W sprint at 8.5 blocks: licker closed to within 5 and increased X",
+            loud_stimuli="sprint footsteps only; no jump/hurt/arrow",
             silent_min_distance_blocks=6, sprint_max_distance_blocks=5,
             silent_still="licker-sneak-silent.png", sprint_still="licker-sprint-hunt.png",
             hunter_moved="licker X increased toward a parked camera",

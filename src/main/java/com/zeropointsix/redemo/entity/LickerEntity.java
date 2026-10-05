@@ -101,13 +101,20 @@ public final class LickerEntity extends EncounterMob {
         leapCooldown = Math.max(0, leapCooldown - 1);
         tongueCooldown = Math.max(0, tongueCooldown - 1);
         hangCooldown = Math.max(0, hangCooldown - 1);
-        entityData.set(CLIMBING, horizontalCollision && !onGround() || horizontalCollision && lastSound != null);
-        if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
+        boolean melee = validTarget(getTarget()) && distanceTo(getTarget()) <= 2.3;
+        // Collision with the current claw target is not a wall. Climbing it
+        // lifts the Licker off the hit arc and the group-combat dummy never
+        // takes the required damage.
+        entityData.set(CLIMBING, !melee && horizontalCollision && (!onGround() || lastSound != null));
+        if (melee || (attacking() && validTarget(getTarget()))) {
+            lastSound = getTarget().position();
+            lastSoundTick = tickCount;
+        } else if (tickCount - lastSoundTick >= CommonConfig.SOUND_MEMORY_TICKS.get()) {
             lastSound = null;
             setTarget(null);
         }
         if (!validTarget(getTarget())) setTarget(null);
-        if (onClimbable() && lastSound != null && !isHanging() && !attacking()) {
+        if (onClimbable() && lastSound != null && !isHanging() && !attacking() && !melee) {
             setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
         }
         BlockPos ceiling = BlockPos.containing(getX(), getBoundingBox().maxY + 0.15, getZ());

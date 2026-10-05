@@ -317,6 +317,67 @@ public final class CreatureGameTests {
         throw new IllegalStateException("Could not allocate the required entity ID parity");
     }
 
+    @GameTest(template = "empty", timeoutTicks = 160)
+    public static void lickerKeepsMeleeOnSilentTargetAfterSoundMemory(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        for (int x = 0; x < 16; x++) for (int y = 1; y <= 7; y++) {
+            h.setBlock(new BlockPos(x, y, 8), Blocks.WHITE_CONCRETE);
+        }
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(6, 1, 4));
+        target.setNoAi(true);
+        target.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        double startY = licker.getY();
+        licker.hurt(licker.damageSources().mobAttack(target), 1);
+        float original = target.getHealth();
+        h.runAfterDelay(130, () -> {
+            h.assertTrue(licker.getTarget() == target,
+                    "Hurt aggro must survive 6s of silence while the Licker is still in claw range");
+            h.assertTrue(original - target.getHealth() >= 5,
+                    "Silent NoAI dummy in claw range must take at least 5 HP of real AI damage");
+            h.assertTrue(licker.getY() < startY + 1.5,
+                    "Licker must claw the dummy instead of spider-climbing its collision");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 160)
+    public static void threeSilentDummiesEachTakeFiveHp(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
+        }
+        EncounterMob[] attackers = {
+            h.spawn(ModEntities.TYRANT.get(), new BlockPos(2, 1, 2)),
+            h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(2, 1, 7)),
+            h.spawn(ModEntities.LICKER.get(), new BlockPos(2, 1, 12))
+        };
+        var dummies = new net.minecraft.world.entity.animal.IronGolem[attackers.length];
+        float[] original = new float[attackers.length];
+        double[] startY = new double[attackers.length];
+        for (int i = 0; i < attackers.length; i++) {
+            var dummy = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 2 + i * 5));
+            dummy.setNoAi(true);
+            dummy.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+            dummies[i] = dummy;
+            original[i] = dummy.getHealth();
+            startY[i] = attackers[i].getY();
+            attackers[i].hurt(attackers[i].damageSources().mobAttack(dummy), 1);
+        }
+        h.runAfterDelay(130, () -> {
+            for (int i = 0; i < attackers.length; i++) {
+                h.assertTrue(original[i] - dummies[i].getHealth() >= 5,
+                        attackers[i].assetId() + " must deal at least 5 HP to its own silent dummy");
+                h.assertTrue(attackers[i].getY() < startY[i] + 1.5,
+                        attackers[i].assetId() + " must not climb off its dummy");
+            }
+            h.assertTrue(attackers[2].getTarget() == dummies[2],
+                    "Licker hurt aggro must still point at its silent dummy after sound memory");
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 50)
     public static void lethalHitClearsLickerTargetAndAttackImmediately(GameTestHelper h) {
         var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));

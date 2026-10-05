@@ -2,6 +2,7 @@ package com.zeropointsix.redemo.entity;
 
 import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModSounds;
+import com.mojang.logging.LogUtils;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -27,13 +28,14 @@ import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public abstract class EncounterMob extends Monster implements GeoEntity {
     private static final EntityDataAccessor<Integer> ATTACK = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ATTACK_TICK = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> ATTACK_SEQUENCE = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
+    static final boolean ANIMATION_TRACE = Boolean.getBoolean("re_demo.animationTrace");
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     protected final Set<UUID> attackHits = new HashSet<>();
     protected int attackDuration;
@@ -57,10 +59,12 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         super.defineSynchedData();
         entityData.define(ATTACK, 0);
         entityData.define(ATTACK_TICK, 0);
+        entityData.define(ATTACK_SEQUENCE, 0);
     }
 
     public int attack() { return entityData.get(ATTACK); }
     public int attackTick() { return entityData.get(ATTACK_TICK); }
+    public int attackSequence() { return entityData.get(ATTACK_SEQUENCE); }
     public boolean attacking() { return attack() != 0; }
     public abstract String assetId();
     public abstract int deathDurationTicks();
@@ -79,10 +83,18 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         yBodyRot = attackYaw;
         entityData.set(ATTACK, attack);
         entityData.set(ATTACK_TICK, 0);
+        entityData.set(ATTACK_SEQUENCE, attackSequence() + 1);
         attackDuration = duration;
         cooldown = duration + recovery;
         attackHits.clear();
         getNavigation().stop();
+        traceAttackFrame(0);
+    }
+
+    private void traceAttackFrame(int frame) {
+        if (ANIMATION_TRACE) LogUtils.getLogger().info(
+                "RE_DEMO_SYNC_SERVER uuid={} asset={} seq={} attack={} tick={} speed={}",
+                getUUID(), assetId(), attackSequence(), attack(), frame, animationSpeed());
     }
 
     @Override
@@ -102,6 +114,7 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
             int frame = attackTick() + 1;
             entityData.set(ATTACK_TICK, frame);
             attackFrame(attack(), frame);
+            traceAttackFrame(frame);
             if (frame >= attackDuration) {
                 entityData.set(ATTACK, 0);
                 entityData.set(ATTACK_TICK, 0);
@@ -201,7 +214,7 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "action", 0, state -> {
+        controllers.add(new ServerTimedAnimationController(this, state -> {
             state.getController().setAnimationSpeed(animationSpeed());
             String clip = !isAlive() ? "death" : attacking() ? attackAnimation(attack()) : hurtTime > 0 ? "hurt" : state.isMoving() ? "walk" : "idle";
             String name = "animation." + assetId() + "." + clip;

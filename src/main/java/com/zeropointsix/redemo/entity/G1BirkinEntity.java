@@ -30,6 +30,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.entity.PartEntity;
 
@@ -172,13 +173,23 @@ public final class G1BirkinEntity extends EncounterMob {
         if (!isEyeOpen()) return false;
         if (source.getDirectEntity() instanceof Projectile p) {
             Vec3 motion = p.getDeltaMovement();
-            return eye.getBoundingBox().inflate(0.12).clip(p.position().subtract(motion), p.position().add(motion)).isPresent();
+            return eyeIsFirstIntersection(p.position(), p.position().add(motion), 0.12);
         }
         if (source.getDirectEntity() instanceof LivingEntity attacker && attacker.distanceTo(this) < 6) {
             Vec3 start = attacker.getEyePosition();
-            return eye.getBoundingBox().clip(start, start.add(attacker.getViewVector(1).scale(6))).isPresent();
+            return eyeIsFirstIntersection(start, start.add(attacker.getViewVector(1).scale(6)), 0);
         }
         return false;
+    }
+
+    private boolean eyeIsFirstIntersection(Vec3 start, Vec3 end, double padding) {
+        AABB eyeBox = eye.getBoundingBox().inflate(padding);
+        AABB bodyBox = getBoundingBox().inflate(padding);
+        var eyeHit = eyeBox.contains(start) ? java.util.Optional.of(start) : eyeBox.clip(start, end);
+        if (eyeHit.isEmpty()) return false;
+        var bodyHit = bodyBox.contains(start) ? java.util.Optional.of(start) : bodyBox.clip(start, end);
+        // A ray reaching the eye only after entering the body is a normal body hit.
+        return bodyHit.isEmpty() || start.distanceToSqr(eyeHit.get()) <= start.distanceToSqr(bodyHit.get()) + 1.0E-7;
     }
 
     @Override

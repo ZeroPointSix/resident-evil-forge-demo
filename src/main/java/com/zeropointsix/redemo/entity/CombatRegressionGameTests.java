@@ -28,6 +28,34 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 public final class CombatRegressionGameTests {
     private CombatRegressionGameTests() { }
 
+    @GameTest(template = "empty", timeoutTicks = 30)
+    public static void attackSequenceDistinguishesRepeatedSameMove(GameTestHelper h) {
+        EncounterMob[] mobs = {
+            h.spawn(ModEntities.LICKER.get(), new BlockPos(3, 2, 4)),
+            h.spawn(ModEntities.TYRANT.get(), new BlockPos(7, 2, 4)),
+            h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(11, 2, 4))
+        };
+        for (EncounterMob mob : mobs) {
+            mob.setNoAi(true);
+            mob.setNoGravity(true);
+            mob.startAttack(1, 4, 1);
+            h.assertTrue(mob.attackSequence() == 1 && mob.attackTick() == 0, "First attack has an identity and origin");
+        }
+        h.runAfterDelay(7, () -> {
+            for (EncounterMob mob : mobs) {
+                h.assertTrue(!mob.attacking(), "First attack must finish");
+                mob.startAttack(1, 10, 1);
+                h.assertTrue(mob.attackSequence() == 2 && mob.attackTick() == 0,
+                        "Same move needs a new identity even if client missed the idle interval");
+            }
+        });
+        h.runAfterDelay(10, () -> {
+            for (EncounterMob mob : mobs) h.assertTrue(mob.attackSequence() == 2 && mob.attackTick() > 0,
+                    "Replicated attack progress must advance inside the same sequence");
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 80)
     public static void deathRemovalWaitsForEachAnimation(GameTestHelper h) {
         EncounterMob[] mobs = {
@@ -98,6 +126,28 @@ public final class CombatRegressionGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 55)
+    public static void openEyeDoesNotAmplifyRearBodyArrows(GameTestHelper h) {
+        G1BirkinEntity[] mobs = sweepFixtures(h);
+        h.runAfterDelay(20, () -> shootAtEyeHeight(h, mobs, false));
+        h.runAfterDelay(23, () -> assertArrowDamage(h, mobs, 1));
+        h.runAfterDelay(29, () -> shootAtEyeHeight(h, mobs, false));
+        h.runAfterDelay(32, () -> {
+            assertArrowDamage(h, mobs, 1);
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 55)
+    public static void openEyeDoesNotAmplifyRearBodyMelee(GameTestHelper h) {
+        G1BirkinEntity[] mobs = sweepFixtures(h);
+        h.runAfterDelay(20, () -> meleeAtEyeHeight(h, mobs, false));
+        h.runAfterDelay(29, () -> {
+            meleeAtEyeHeight(h, mobs, false);
+            h.succeed();
+        });
+    }
+
     private static G1BirkinEntity[] sweepFixtures(GameTestHelper h) {
         G1BirkinEntity[] mobs = new G1BirkinEntity[4];
         for (int i = 0; i < mobs.length; i++) {
@@ -117,13 +167,17 @@ public final class CombatRegressionGameTests {
     }
 
     private static void shootEyes(GameTestHelper h, G1BirkinEntity[] mobs) {
+        shootAtEyeHeight(h, mobs, true);
+    }
+
+    private static void shootAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront) {
         for (G1BirkinEntity mob : mobs) {
             h.assertTrue(mob.isEyeOpen(), "Sweep must expose the eye at ticks 20 and 29");
             h.assertTrue(mob.eyePart().getBoundingBox().getCenter().distanceTo(mob.eyeCenter()) < 0.001,
                     "Part must match stable visible-eye coordinates for every body yaw");
             mob.invulnerableTime = 0;
             mob.setHealth(mob.getMaxHealth());
-            Vec3 direction = front(mob);
+            Vec3 direction = front(mob).scale(fromFront ? 1 : -1);
             Vec3 start = mob.eyeCenter().add(direction.scale(3));
             Arrow arrow = new Arrow(h.getLevel(), start.x, start.y, start.z);
             arrow.setNoGravity(true);
@@ -134,14 +188,23 @@ public final class CombatRegressionGameTests {
     }
 
     private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs) {
-        float expected = CombatRules.getDamageAfterAbsorb(6, 8, 0) * 1.75F;
+        assertArrowDamage(h, mobs, 1.75F);
+    }
+
+    private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs, float multiplier) {
+        float expected = CombatRules.getDamageAfterAbsorb(6, 8, 0) * multiplier;
         for (G1BirkinEntity mob : mobs) {
             h.assertTrue(Math.abs(mob.getMaxHealth() - mob.getHealth() - expected) < 0.01,
-                    "Moving vanilla arrow must produce weak-point damage, yaw=" + mob.yBodyRot + " actual=" + (mob.getMaxHealth() - mob.getHealth()));
+                    "Moving vanilla arrow must respect the first hit region, multiplier=" + multiplier
+                            + " yaw=" + mob.yBodyRot + " actual=" + (mob.getMaxHealth() - mob.getHealth()));
         }
     }
 
     private static void meleeEyes(GameTestHelper h, G1BirkinEntity[] mobs) {
+        meleeAtEyeHeight(h, mobs, true);
+    }
+
+    private static void meleeAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront) {
         FakePlayer player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.fromString("df13d884-df39-4b1c-9ca9-c1c5aadbe109"), "WeakPointQA"));
         Vec3 oldPosition = player.position();
         float oldYaw = player.getYRot(), oldPitch = player.getXRot();
@@ -157,9 +220,9 @@ public final class CombatRegressionGameTests {
                 h.assertTrue(mob.isEyeOpen(), "Sweep eye must be open for melee");
                 mob.invulnerableTime = 0;
                 mob.setHealth(mob.getMaxHealth());
-                Vec3 start = mob.eyeCenter().add(front(mob).scale(2.5));
+                Vec3 start = mob.eyeCenter().add(front(mob).scale(fromFront ? 2.5 : -2.5));
                 player.setPos(start.subtract(0, player.getEyeHeight(), 0));
-                player.setYRot(mob.yBodyRot + 180);
+                player.setYRot(mob.yBodyRot + (fromFront ? 180 : 0));
                 player.setYHeadRot(player.getYRot());
                 player.setXRot(0);
                 Vec3 end = start.add(player.getViewVector(1).scale(3));
@@ -170,10 +233,12 @@ public final class CombatRegressionGameTests {
                                 + " head=" + player.getYHeadRot() + " start=" + start + " end=" + end
                                 + " eye=" + mob.eyePart().getBoundingBox()
                                 + " hit=" + (hit == null ? "none" : hit.getEntity().getType()));
+                if (!fromFront) h.assertTrue(hit.getEntity() == mob,
+                        "Rear aim must select the body before the open eye");
                 player.attack(hit.getEntity());
-                float expected = CombatRules.getDamageAfterAbsorb(8, 8, 0) * 1.75F;
+                float expected = CombatRules.getDamageAfterAbsorb(8, 8, 0) * (fromFront ? 1.75F : 1);
                 h.assertTrue(Math.abs(mob.getMaxHealth() - mob.getHealth() - expected) < 0.01,
-                        "Player.attack must produce weak-point damage, yaw=" + mob.yBodyRot);
+                        "Player.attack must respect first hit region, fromFront=" + fromFront + " yaw=" + mob.yBodyRot);
             }
         } finally {
             player.setPos(oldPosition);

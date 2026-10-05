@@ -97,6 +97,47 @@ def tail(path: Path, limit: int = 2_000_000) -> str:
         return stream.read().decode("utf-8", errors="replace")
 
 
+def sync_rows(log: str, role: str) -> list[dict]:
+    marker = f"RE_DEMO_SYNC_{role} "
+    return [dict(re.findall(r"(\w+)=([^\s]+)", line.split(marker, 1)[1]))
+            for line in log.splitlines() if marker in line]
+
+
+def validate_animation_sync(client: str, server: str) -> dict:
+    samples = sync_rows(client, "CLIENT")
+    server_frames = {(r["uuid"], r["seq"], r["attack"], r["tick"]) for r in sync_rows(server, "SERVER")}
+    late = {}
+    identities = {}
+    for row in samples:
+        identity = (row["uuid"], row["seq"], row["attack"], row["tick"])
+        if identity not in server_frames:
+            raise EvidenceError(f"Client sample has no matching authoritative server frame: {identity}")
+        expected = min((int(row["tick"]) + float(row["partial"])) * float(row["speed"]),
+                       math.nextafter(float(row["length"]), -math.inf))
+        prefix, segment, point = (float(row[k]) for k in ("prefix", "segment", "point"))
+        # GeckoLib 4.4.9 uses segment-relative ticks, except its final-keyframe
+        # overrun branch, which stores the absolute clip tick instead.
+        beyond = row["last"] == "true" and expected >= prefix + segment
+        expected_point = expected if beyond else expected - prefix
+        if (row["state"] != "RUNNING" or not math.isfinite(float(row["value"]))
+                or expected < prefix - 1e-5 or (not beyond and expected > prefix + segment + 1e-5)
+                or abs(point - expected_point) > 1e-5):
+            raise EvidenceError(f"Actual GeckoLib keyframe sample is not server-aligned: {row}")
+        identities.setdefault(row["asset"], set()).add((row["uuid"], row["seq"]))
+        if row["first"] == "true" and int(row["tick"]) >= 4:
+            late.setdefault(row["asset"], row)
+    required = {mob[0] for mob in MOBS}
+    if required - late.keys():
+        raise EvidenceError(f"Missing real-client mid-attack first-frame samples: {sorted(required - late.keys())}")
+    if any(len(identities.get(asset, ())) < 2 for asset in required):
+        raise EvidenceError("Animation evidence must cover more than one attack identity per creature")
+    return {"passed": True, "sample_count": len(samples), "late_first_frames": late,
+            "attack_identities": {k: len(v) for k, v in identities.items()},
+            "source": "Actual GeckoLib 4.4.9 bone-animation queues in the installed real Forge client",
+            "alignment": "(replicated ATTACK_TICK + render partialTick) * animation speed; unique attack sequence",
+            "scope": "Received server state, not zero network latency; Tyrant integer-duration rounding remains sub-tick"}
+
+
 def download(url: str, target: Path) -> None:
     for attempt in range(3):
         try:
@@ -434,7 +475,7 @@ class Capture:
                 raise EvidenceError("Unexpected GeckoLib artifact")
         self.report["installed_geckolib"] = dict(file_record(gecko), upstream=GECKO_URL,
                                                 source="original Gradle cache" if cached else "upstream Maven")
-        (self.server_dir / "user_jvm_args.txt").write_text("-Xms512m\n-Xmx2G\n", encoding="utf-8")
+        (self.server_dir / "user_jvm_args.txt").write_text("-Xms512m\n-Xmx2G\n-Dre_demo.animationTrace=true\n", encoding="utf-8")
         (self.server_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
         (self.server_dir / "server.properties").write_text(
             f"server-ip=127.0.0.1\nserver-port={self.args.port}\nonline-mode=false\n"
@@ -470,7 +511,8 @@ class Capture:
         # this temporary loopback server. No account credentials are requested.
         options = utils.generate_test_options()
         options.update({"username": CAMERA, "gameDirectory": str(self.client_dir),
-                        "executablePath": shutil.which("java"), "jvmArguments": ["-Xms512m", "-Xmx3G"],
+                        "executablePath": shutil.which("java"),
+                        "jvmArguments": ["-Xms512m", "-Xmx3G", "-Dre_demo.animationTrace=true"],
                         "customResolution": True, "resolutionWidth": "1280", "resolutionHeight": "720",
                         "quickPlayMultiplayer": f"127.0.0.1:{self.args.port}"})
         self.client_command = command.get_minecraft_command(profile, self.client_dir, options) + ["--fullscreen"]
@@ -722,6 +764,56 @@ class Capture:
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
             time.sleep(4)
 
+    def mid_attack_reveal_scenes(self) -> None:
+        # New actors are spawned behind the camera and revealed only after the
+        # real server AI has advanced an attack. No combat state is injected.
+        for entity, _, _, _ in MOBS:
+            self.command(f"kill @e[type=re_demo:{entity}]")
+        self.command("kill @e[type=minecraft:iron_golem]")
+        time.sleep(4)
+        for entity, _, _, _ in MOBS:
+            succeeded = False
+            for attempt in range(4):
+                self.command(f"tp {CAMERA} 6 64 -3 180 0")
+                time.sleep(0.6)
+                tag = f"ce_sync_{entity}_{attempt}"
+                actor = f"@e[type=re_demo:{entity},tag={tag},limit=1]"
+                target = f"@e[type=minecraft:iron_golem,tag={tag},limit=1]"
+                self.command(f"summon re_demo:{entity} 4 64 4 {{Tags:[\"{tag}\"],NoAI:1b,PersistenceRequired:1b}}")
+                self.command(f"summon minecraft:iron_golem 5.8 64 4 "
+                             f"{{Tags:[\"{tag}\"],NoAI:1b,Health:1000.0f,"
+                             'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
+                             '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
+                self.confirm(f"if entity {actor} if entity {target}", f"{entity}: hidden live-AI fixture")
+                before = len(tail(self.output / "server.log", 10_000_000))
+                self.command(f"data merge entity {actor} {{NoAI:0b}}")
+                self.command(f"damage {actor} 1 minecraft:mob_attack by {target}")
+                frame = self.wait(lambda: next((r for r in sync_rows(
+                    tail(self.output / "server.log", 10_000_000)[before:], "SERVER")
+                    if r["asset"] == entity and int(r["tick"]) >= 4), None), "attack already in progress", 20)
+                self.command(f"tp {CAMERA} 6 64 -3 0 0")
+                deadline = time.monotonic() + 3
+                while time.monotonic() < deadline:
+                    self.alive()
+                    rows = sync_rows(tail(self.output / "client.log", 10_000_000), "CLIENT")
+                    succeeded = any(r["uuid"] == frame["uuid"] and r["seq"] == frame["seq"]
+                                    and r["first"] == "true" and int(r["tick"]) >= 4 for r in rows)
+                    if succeeded:
+                        break
+                    time.sleep(0.1)
+                self.command(f"kill {actor}")
+                self.command(f"kill {target}")
+                time.sleep(4)
+                if succeeded:
+                    break
+            if not succeeded:
+                raise EvidenceError(f"{entity}: no first visible frame during an existing attack")
+        result = validate_animation_sync(tail(self.output / "client.log", 10_000_000),
+                                         tail(self.output / "server.log", 10_000_000))
+        proof = self.output / "animation-sync.json"
+        proof.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        self.report["animation_sync"] = dict(file_record(proof), **result)
+
     def capture(self) -> None:
         self.camera(6, -10, 6, 65.3, 4, "Three creatures")
         self.verify_in_world_input()
@@ -734,6 +826,7 @@ class Capture:
         self.isolated_action_scenes()
         self.verify_music_playback()
         self.brawl_scene()
+        self.mid_attack_reveal_scenes()
         self.alive()
         errors = re.compile(r"(?:GeckoLibException|Rendering entity in world|"
                             r"(?:Unable|Failed|Could not|Missing).{0,100}(?:re_demo[:/]|assets/re_demo/))", re.I)

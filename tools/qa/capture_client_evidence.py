@@ -348,7 +348,10 @@ class Capture:
     def confirm(self, condition: str, label: str, timeout: float = 30) -> None:
         self.sequence += 1
         marker = f"CE_{self.nonce}_{self.sequence}"
-        pattern = re.compile(r"\[Server\]\s+" + re.escape(marker) + r"\b")
+        # `execute as <entity> ... run say` echoes with the entity's display
+        # name as sender (e.g. "[Licker]"), not "[Server]", so match only the
+        # unique marker token; nothing else can produce it.
+        pattern = re.compile(re.escape(marker) + r"\b")
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             self.command(f"execute {condition} run say {marker}")
@@ -640,9 +643,12 @@ class Capture:
         # Only a real survival-mode player emits footstep noise events.
         self.command(f"gamemode survival {CAMERA}")
         self.command(f"effect give {CAMERA} minecraft:resistance 999999 4 true")
-        self.command(f"tp {CAMERA} 15.5 64 4 90 0")
-        self.confirm(f"positioned 15.5 64 4 if entity @a[name={CAMERA},distance=..0.3]",
-                     "sneak control: camera 9.5 blocks from the licker")
+        # 8.5 blocks out: close enough that an un-sneaked walk (radius-9
+        # footstep noise) would pull the licker, so phase A only passes when
+        # the shift key really kept the player silent.
+        self.command(f"tp {CAMERA} 14.5 64 4 90 0")
+        self.confirm(f"positioned 14.5 64 4 if entity @a[name={CAMERA},distance=..0.3]",
+                     "sneak control: camera 8.5 blocks from the licker")
         sneaked = False
         path = self.output / "licker-sneak-vs-sprint.mp4"
         seconds = 18
@@ -671,7 +677,7 @@ class Capture:
                     raise
                 # A random stroll may drift toward the camera; retake once.
                 self.command(f"kill {selector}")
-                self.command(f"tp {CAMERA} 15.5 64 4 90 0")
+                self.command(f"tp {CAMERA} 14.5 64 4 90 0")
                 self.command('summon re_demo:licker 6 64 4 '
                              '{Tags:["ce_sneak"],PersistenceRequired:1b,Rotation:[-90.0f,0.0f]}')
                 time.sleep(2)

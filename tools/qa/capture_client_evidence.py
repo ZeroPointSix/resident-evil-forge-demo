@@ -233,7 +233,8 @@ class Capture:
             "client_input_roundtrip_verified": False,
             "staging": "Creative camera; daylight flat arena; NoAI model portraits, then normal mob AI. "
                        "Stationary high-health golems are used as controlled attack targets. The tongue "
-                       "close-up alone uses zero movement speed, with normal AI and attacks still enabled. The three "
+                       "close-up alone uses zero movement speed and full knockback resistance, with normal AI "
+                       "and attacks still enabled. The three "
                        "creatures fight each other with aggro seeded by real mob_attack damage.",
             "screenshots": [], "clips": [], "confirmations": [],
         }
@@ -577,6 +578,7 @@ class Capture:
         if scenario == "tongue":
             # Hold the ranged pose without disabling AI or triggering an animation.
             self.command(f"attribute {selector} minecraft:generic.movement_speed base set 0")
+            self.command(f"attribute {selector} minecraft:generic.knockback_resistance base set 1")
         path = self.output / f"{entity}-{scenario}.mp4"
         clip_seconds = max(14, self.args.clip_seconds) if entity == "g1_birkin" else self.args.clip_seconds
         recorder = self.record_video(path, clip_seconds)
@@ -600,14 +602,17 @@ class Capture:
         if duration < clip_seconds - 1:
             raise EvidenceError(f"Recording truncated for {entity}: {duration}s")
         metrics = check_frame(path)
-        first, later = frame_pixels(path, 0.5), frame_pixels(path, min(4, duration - 1))
-        difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
+        first = frame_pixels(path, 0.5)
+        sample_times = (1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5) if scenario == "tongue" else (4,)
+        difference = max(sum(abs(a - b) for a, b in zip(first, frame_pixels(path, min(t, duration - 1))))
+                         / len(first) for t in sample_times)
         if difference < 0.05:
             raise EvidenceError(f"Recording appears frozen for {entity}")
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
                                          scenario=scenario, initial_target_distance=target_distance,
-                                         actor_movement_held=scenario == "tongue",
+                                         actor_attribute_overrides={"movement_speed": 0, "knockback_resistance": 1}
+                                         if scenario == "tongue" else {},
                                          audio=check_audio(path)))
 
     def brawl_scene(self, seconds: int = 18) -> None:

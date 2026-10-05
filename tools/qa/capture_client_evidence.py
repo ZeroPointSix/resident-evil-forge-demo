@@ -651,7 +651,7 @@ class Capture:
                      "sneak control: camera 8.5 blocks from the licker")
         sneaked = False
         path = self.output / "licker-sneak-vs-sprint.mp4"
-        seconds = 18
+        seconds = 24
         for attempt in range(2):
             recorder = self.record_video(path, seconds)
             time.sleep(1)
@@ -687,17 +687,23 @@ class Capture:
         if not sneaked:
             raise EvidenceError("sneak control: could not stage a quiet phase")
         self.command(f"title {CAMERA} actionbar " +
-                     json.dumps({"text": "phase B: sprint is audible | controlled real-client scene"}))
-        self.key("ctrl", True)
-        self.key("w", True)
-        time.sleep(1.6)
-        self.key("w", False)
-        self.key("ctrl", False)
+                     json.dumps({"text": "phase B: audible jump/impact | controlled real-client scene"}))
+        # Put the camera back on the 8.5-block mark so closing-in can only be
+        # the Licker hunting the noise, not the player walking into it.
+        self.command(f"tp {CAMERA} 14.5 64 4 90 0")
+        self.command(f"execute store result score sneak_lx0 ce_health run data get entity {selector} Pos[0] 100")
+        time.sleep(0.4)
+        for _ in range(4):
+            self.key("space", True)
+            time.sleep(0.12)
+            self.key("space", False)
+            time.sleep(0.5)
+        self.command('summon minecraft:arrow 14.5 65.4 4 {Motion:[0.0,-0.6,0.0],pickup:0b}')
         self.confirm(f"as {selector} at @s if entity @a[name={CAMERA},distance=..5]",
-                     "sprint: footstep noise hunted and reached the camera", timeout=12)
-        # SoundInvestigateGoal pathfinds to the noise without always calling
-        # setTarget (hear() only locks a living source on a repeated ping).
-        # The Review ask is sneak vs sprint aggro distance, not a claw frame.
+                     "sprint: footstep/impact noise hunted and reached the camera", timeout=12)
+        self.command(f"execute store result score sneak_lx1 ce_health run data get entity {selector} Pos[0] 100")
+        self.confirm("if score sneak_lx1 ce_health > sneak_lx0 ce_health",
+                     "sprint: licker X moved toward the camera, not the camera into the licker")
         self.command(f"data get entity {selector} Pos")
         self.command(f"data get entity @a[name={CAMERA},limit=1] Pos")
         self.screenshot("licker-sprint-hunt.png")
@@ -720,9 +726,10 @@ class Capture:
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="sneak-vs-sprint",
             sneak_phase="silent sneak-walk: licker stayed beyond 6 blocks",
-            sprint_phase="radius-20 noise: licker closed to within 5 blocks of the camera",
+            sprint_phase="audible jump/arrow at 8.5 blocks: licker closed to within 5 and increased X",
             silent_min_distance_blocks=6, sprint_max_distance_blocks=5,
             silent_still="licker-sneak-silent.png", sprint_still="licker-sprint-hunt.png",
+            hunter_moved="licker X increased toward a parked camera",
             claw_frames_logged=False, camera_gamemode="survival", camera_resistance=4,
             audio=check_audio(path)))
         self.command(f"kill {selector}")
@@ -766,8 +773,12 @@ class Capture:
         self.command('summon minecraft:arrow 16 69.6 0 {Motion:[0.0,-0.4,0.0],pickup:0b}')
         time.sleep(0.8)
         self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
-        self.confirm(f"if entity @e[type=re_demo:licker,tag=ce_ambush,y=66.3,dy=0.9]",
+        # `y=/dy=` without x/z is a volume around the command origin (0,0,0),
+        # so it never matches the hanging licker at x=16. Use Pos[1]*100.
+        self.command(f"execute store result score ambush_hang ce_health run data get entity {selector} Pos[1] 100")
+        self.confirm("if score ambush_hang ce_health matches 6600..6750",
                      "ambush: licker holding under the ceiling", timeout=8)
+        self.command(f"data get entity {selector} Pos")
         time.sleep(0.9)
         self.screenshot("licker-ambush.png")
         self.command(f"data merge entity {selector} {{NoAI:0b,NoGravity:0b}}")

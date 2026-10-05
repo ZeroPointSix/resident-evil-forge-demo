@@ -1,12 +1,14 @@
 package com.zeropointsix.redemo.entity;
 
 import com.mojang.logging.LogUtils;
+import java.util.List;
 import java.util.Map;
 import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
 import software.bernie.geckolib.core.animatable.model.CoreGeoModel;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.core.animation.EasingType;
+import software.bernie.geckolib.core.keyframe.Keyframe;
 import software.bernie.geckolib.core.state.BoneSnapshot;
 
 /** Single-stage attacks use replicated server progress, including their first visible frame. */
@@ -61,12 +63,13 @@ final class ServerTimedAnimationController extends AnimationController<Encounter
         for (var animation : currentAnimation.animation().boneAnimations()) {
             var queue = getBoneAnimationQueues().get(animation.boneName());
             var point = queue == null ? null : queue.rotationXQueue().peek();
-            var frames = animation.rotationKeyFrames().xKeyframes();
+            // Only frame identity and duration are needed, not GeckoLib's math value type.
+            List<?> frames = animation.rotationKeyFrames().xKeyframes();
             if (point == null || point.keyFrame() == null || frames.size() < 2) continue;
             if (Math.abs(point.animationStartValue() - point.animationEndValue()) < 1e-7) continue;
             double prefix = 0;
             for (int index = 0; index < frames.size(); index++) {
-                var frame = frames.get(index);
+                Keyframe<?> frame = (Keyframe<?>) frames.get(index);
                 if (frame == point.keyFrame()) {
                     // These are the actual points queued by GeckoLib's private sampler,
                     // not a second copy of the requested/expected progress.

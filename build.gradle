@@ -135,6 +135,9 @@ dependencies {
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
+    // GeckoLib 4.4.9 embeds this at runtime but omits it from its published POM.
+    // Compile-only access is needed to inspect its actual keyframe samples.
+    compileOnly "com.eliotlash.mclib:mclib:20"
 
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

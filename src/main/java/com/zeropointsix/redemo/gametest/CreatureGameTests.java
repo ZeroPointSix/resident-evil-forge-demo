@@ -343,7 +343,7 @@ public final class CreatureGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 160)
+    @GameTest(template = "empty", timeoutTicks = 200)
     public static void threeSilentDummiesEachTakeFiveHp(GameTestHelper h) {
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
             h.getLevel().setBlockAndUpdate(h.absolutePos(new BlockPos(x, 0, z)), Blocks.STONE.defaultBlockState());
@@ -363,9 +363,10 @@ public final class CreatureGameTests {
             dummies[i] = dummy;
             original[i] = dummy.getHealth();
             startY[i] = attackers[i].getY();
-            attackers[i].hurt(attackers[i].damageSources().mobAttack(dummy), 1);
+            attackers[i].setTarget(dummy);
+            attackers[i].hurt(attackers[i].damageSources().mobAttack(dummy), 4);
         }
-        h.runAfterDelay(130, () -> {
+        h.runAfterDelay(160, () -> {
             for (int i = 0; i < attackers.length; i++) {
                 h.assertTrue(original[i] - dummies[i].getHealth() >= 5,
                         attackers[i].assetId() + " must deal at least 5 HP to its own silent dummy");

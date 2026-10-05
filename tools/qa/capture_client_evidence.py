@@ -1310,8 +1310,9 @@ class Capture:
         self.confirm(f"if entity {selector}", "g1_eye: staged berserk candidate")
         # Rotation 180 faces -Z; the eye sits on the model's front-right at
         # local (+0.6, 2.4, -0.5) -> world north-west, so frame it from the
-        # north-west at eye level.
-        self.camera(10.2, 1.4, 11.4, 66.4, 3.5, "G1 shoulder eye open", cam_y=65.8)
+        # north-west, aiming just above the pivot so the exposure pose does
+        # not clip the eye at the top edge.
+        self.camera(9.7, 0.6, 11.4, 66.7, 3.6, "G1 shoulder eye open", cam_y=65.4)
         # Below 30% of 480 HP so updatePhase() runs berserk and opens the eye.
         self.command(f"data merge entity {selector} {{Health:140.0f}}")
         time.sleep(1)

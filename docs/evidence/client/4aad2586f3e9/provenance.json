@@ -1,0 +1,194 @@
+{
+  "capture_source_revision": "4aad2586f3e926c628f401b50db4d58753215b15",
+  "archive_only": true,
+  "images_modified": false,
+  "manual_playtest": false,
+  "runs": [
+    {
+      "id": 37379720296,
+      "name": "Build",
+      "head_sha": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37379720296",
+      "run_attempt": 1
+    },
+    {
+      "id": 37379727341,
+      "name": "Build",
+      "head_sha": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37379727341",
+      "run_attempt": 1
+    },
+    {
+      "id": 37379727336,
+      "name": "QA Validator Self Tests",
+      "head_sha": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37379727336",
+      "run_attempt": 1
+    },
+    {
+      "id": 37379720227,
+      "name": "Controlled Real Client Evidence",
+      "head_sha": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37379720227",
+      "run_attempt": 1
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "client",
+      "artifact_id": 11373189624,
+      "run_id": 37379720227,
+      "source_revision": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "archive_sha256": "f514832fcf80127352e1c78972e81c08889a0e44279020545202f09790fb1348",
+      "jars": [
+        {
+          "path": "/data2/re-demo-a35-evidence/4aad2586f3e926c628f401b50db4d58753215b15/11373189624/files/tested-mod/re_demo-0.1.3.jar",
+          "bytes": 245751,
+          "sha256": "4c196b98c0fe474a0f411a0711c78eecf959276828f25393f5836733ece3341f"
+        }
+      ]
+    },
+    {
+      "kind": "dev",
+      "artifact_id": 11373014268,
+      "run_id": 37379720227,
+      "source_revision": "4aad2586f3e926c628f401b50db4d58753215b15",
+      "archive_sha256": "5faa173f32095932ec51da0707c62402fd200f47746695cbcfd98e75c4510c39",
+      "jars": []
+    }
+  ],
+  "files": [
+    {
+      "name": "00-three-creatures.png",
+      "bytes": 170292,
+      "sha256": "a11df43a6925a34da7fe09e084d4189c4fb75dba348c42d2b1f7c2179ce8c6d1"
+    },
+    {
+      "name": "01-spawn-eggs.png",
+      "bytes": 211131,
+      "sha256": "486d03701e5e91e091b4d4a8f92e4153c200b717d173bf4d1608f9369c7b1ecc"
+    },
+    {
+      "name": "20-block-identification.png",
+      "bytes": 241475,
+      "sha256": "ed9bba2afdf6393d51782cef20261d5b7a3b6ad8f0b7f34a85ba9fbb454e2d8f"
+    },
+    {
+      "name": "99-death-cleared.png",
+      "bytes": 162302,
+      "sha256": "42984e02a670d05a191bf12221c700a58cad556892ab3031fd9069207e46abba"
+    },
+    {
+      "name": "g1_birkin-20blocks.png",
+      "bytes": 246303,
+      "sha256": "e4be74b55a4eb87c6ad840ee48d409e5e6a4244c4355f9b9e2879f1be4adc53b"
+    },
+    {
+      "name": "g1_birkin-eye.png",
+      "bytes": 289342,
+      "sha256": "d75169c948152901adf9f13e793de8456aaad209e0877186c7ff5751cce52ef4"
+    },
+    {
+      "name": "g1_birkin-model-back.png",
+      "bytes": 182403,
+      "sha256": "49ed4a2eaf00ae6b72a786f32e1fef519cdfff5922139d010d7d717f654a8037"
+    },
+    {
+      "name": "g1_birkin-model-side.png",
+      "bytes": 246274,
+      "sha256": "68becc4621ddd23e325b62c2b653eb12b9467017099425ab086f020a4eb3c101"
+    },
+    {
+      "name": "g1_birkin-model.png",
+      "bytes": 310174,
+      "sha256": "e43f3699751b29066f8f6e1ea2aec0429c10fe3f62755ac926560d49abec5186"
+    },
+    {
+      "name": "licker-20blocks.png",
+      "bytes": 214874,
+      "sha256": "997b57d484a56514d947ed63d376818b1a1968281fe2aa0cd42bca99b509a9ad"
+    },
+    {
+      "name": "licker-ambush.png",
+      "bytes": 391729,
+      "sha256": "fa5e42321b3a5a9b3d52992ed8027acc57a7e53ba407b74bd5ee57ef677de0e5"
+    },
+    {
+      "name": "licker-climb.png",
+      "bytes": 385817,
+      "sha256": "a230ffffcce648fe403cdb4412a4167f9db00b069ce1394f17556eda57e6dd5c"
+    },
+    {
+      "name": "licker-model-back.png",
+      "bytes": 181693,
+      "sha256": "c1a61da93f00044610c8f9112944c7db62182aa7a0cd82bc52164fa55d2814cf"
+    },
+    {
+      "name": "licker-model-side.png",
+      "bytes": 202496,
+      "sha256": "ec4f829e0c713c84ce3b9469f34f129110337796c128585dc7b7f0c3dcf3d067"
+    },
+    {
+      "name": "licker-model.png",
+      "bytes": 271002,
+      "sha256": "d03e995da3589b14a651c1fab82b0c45421adcde5afc9912ab555dfa1e65ae97"
+    },
+    {
+      "name": "licker-sneak-silent.png",
+      "bytes": 259907,
+      "sha256": "3fd27cb6d49df75e7641d92cb20def62026875617ad045b04734221f330e9c9f"
+    },
+    {
+      "name": "licker-sprint-hunt.png",
+      "bytes": 251426,
+      "sha256": "5b1c9cb6b4fff5e0fbdc55cd57197819f1636a9ddf876f56475317636401f2f3"
+    },
+    {
+      "name": "tyrant-20blocks.png",
+      "bytes": 241985,
+      "sha256": "ece8fe7f9db8535965420d50afe0417f005825151c072e6565a07b07d9df5645"
+    },
+    {
+      "name": "tyrant-model-back.png",
+      "bytes": 183212,
+      "sha256": "bacc627ad42d6da3ee21b84947a50e62f4f664a923e31f076284c7f9ae8e4df4"
+    },
+    {
+      "name": "tyrant-model-side.png",
+      "bytes": 197335,
+      "sha256": "1159048d2f428de35886bb4fbcdbd8f7858c4db4f2cc4bb707d49964d9c75969"
+    },
+    {
+      "name": "tyrant-model.png",
+      "bytes": 289578,
+      "sha256": "f20376b42a80f67ec18983975a2d98c60109141c852306076b3d13133f2c1f80"
+    },
+    {
+      "name": "client-report.json",
+      "bytes": 49126,
+      "sha256": "a86d5a631224f21caf795292572f3f556fc2f3e1d71888a390c6ae0da1d6ba9d"
+    },
+    {
+      "name": "dev-client-in-world.png",
+      "bytes": 110367,
+      "sha256": "d246c83990e78ad3c0093f6aab49bf9ac7bd9294a718f4e118f9ceb77b9784f9"
+    },
+    {
+      "name": "dev-report.json",
+      "bytes": 2344,
+      "sha256": "fb9db9587d32502e7c6b361eb7b9f80a44deb041300e102d9cfdf8044b407509"
+    }
+  ]
+}

@@ -783,37 +783,38 @@ class Capture:
             time.sleep(4)
 
     def climb_scene(self) -> None:
-        # Side-on wall: Licker starts on the north face, dummy is south of the
-        # wall so claw line-of-sight is blocked and huntClimb comes from combat lock.
+        # Wide 2-thick wall with the dummy ON TOP so the only short hunt path is
+        # vertical. Side funnels previously let the Licker skirt the slab at Y=64
+        # after a 1.2-block hop, which looked like floor pursuit.
         for entity, _, _, _ in MOBS:
             self.command(f"kill @e[type=re_demo:{entity}]")
         self.command("kill @e[type=minecraft:iron_golem]")
         time.sleep(2)
-        self.command("fill 15 64 -10 21 67 -10 minecraft:mossy_cobblestone")
-        self.command("fill 15 64 -14 15 67 -10 minecraft:mossy_cobblestone")
-        self.command("fill 21 64 -14 21 67 -10 minecraft:mossy_cobblestone")
-        self.confirm("if block 18 65 -10 minecraft:mossy_cobblestone "
-                     "if block 15 66 -12 minecraft:mossy_cobblestone "
-                     "if block 21 66 -12 minecraft:mossy_cobblestone",
-                     "licker climb: mossy cobblestone wall and side funnels placed")
+        self.command("fill 8 64 -11 28 69 -10 minecraft:mossy_cobblestone")
+        self.command("fill 24 64 -13 24 69 -13 minecraft:orange_wool")
+        self.confirm("if block 18 64 -10 minecraft:mossy_cobblestone "
+                     "if block 18 69 -11 minecraft:mossy_cobblestone "
+                     "if block 24 67 -13 minecraft:orange_wool",
+                     "licker climb: 6-block mossy wall and height ruler placed")
         selector = '@e[type=re_demo:licker,tag=ce_climb,limit=1]'
         dummy = '@e[type=minecraft:iron_golem,tag=ce_climb_dummy,limit=1]'
-        self.command('summon re_demo:licker 18 64 -13 '
+        self.command('summon re_demo:licker 18 64 -15 '
                      '{Tags:["ce_climb"],PersistenceRequired:1b,NoAI:1b,Rotation:[0.0f,0.0f]}')
-        self.command('summon minecraft:iron_golem 18 64 -7 '
+        self.command('summon minecraft:iron_golem 18 70 -10.5 '
                      '{Tags:["ce_climb_dummy"],NoAI:1b,PersistenceRequired:1b,Health:1000.0f,'
                      'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
                      '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
-        self.confirm(f"if entity {selector} if entity {dummy}", "licker climb: actor and blocked dummy staged")
+        self.confirm(f"if entity {selector} if entity {dummy} if block 18 70 -10 minecraft:air",
+                     "licker climb: actor on floor and dummy on wall top")
         self.command(f"execute store result score climb_before ce_health run data get entity {selector} Pos[1] 100")
         self.command("scoreboard players operation climb_need ce_health = climb_before ce_health")
-        self.command("scoreboard players add climb_need ce_health 120")
+        self.command("scoreboard players add climb_need ce_health 250")
         self.command("scoreboard players operation climb_peak ce_health = climb_before ce_health")
         self.confirm("if score climb_before ce_health matches 6300..6500",
                      "licker climb: actor started on the arena floor")
-        self.camera(26, -16, 18, 66.4, -10, "Licker wall climb", cam_y=64.0)
+        self.camera(27, -19, 18, 67.4, -10.5, "Licker wall climb", cam_y=64.0)
         path = self.output / "licker-climb.mp4"
-        clip_seconds = 18
+        clip_seconds = 22
         recorder = self.record_video(path, clip_seconds)
         time.sleep(1)
         self.command(f"data merge entity {selector} {{NoAI:0b}}")
@@ -825,33 +826,35 @@ class Capture:
             self.command(f"execute store result score climb_now ce_health run data get entity {selector} Pos[1] 100")
             self.command("execute if score climb_now ce_health > climb_peak ce_health "
                          "run scoreboard players operation climb_peak ce_health = climb_now ce_health")
-            self.command("execute if score climb_peak ce_health >= climb_need ce_health run say CE_CLIMB_Y")
-            if not climbed and re.search(r"\[Server\]\s+CE_CLIMB_Y\b", tail(self.output / "server.log")):
+            self.command('tellraw @a [{"text":"CE_CLIMB_YVAL "},{"score":{"name":"climb_now","objective":"ce_health"}}]')
+            self.command("execute if score climb_now ce_health >= climb_need ce_health run say CE_CLIMB_MID")
+            if not climbed and re.search(r"\[Server\]\s+CE_CLIMB_MID\b", tail(self.output / "server.log")):
                 climbed = True
                 self.screenshot("licker-climb.png")
             time.sleep(0.4)
         if recorder.poll() != 0:
             raise EvidenceError("Licker climb recording failed/timed out")
-        self.command(f"data get entity {selector}")
         self.command(f"data get entity {selector} Pos")
+        self.command(f"data get entity {dummy} Pos")
         self.confirm("if score climb_peak ce_health >= climb_need ce_health",
-                     "licker climb: server Y gained at least 1.2 blocks on the wall", timeout=8)
+                     "licker climb: server Y gained at least 2.5 blocks on the wall", timeout=8)
         if not climbed:
-            self.screenshot("licker-climb.png")
+            raise EvidenceError("Licker never reached +2.5 Y on the mossy wall while the camera was recording")
         info = probe(path)
         duration = float(info["format"]["duration"])
         if duration < clip_seconds - 1:
             raise EvidenceError(f"Climb recording truncated: {duration}s")
         metrics = check_frame(path)
-        first, later = frame_pixels(path, 0.5), frame_pixels(path, min(8, duration - 1))
+        first, later = frame_pixels(path, 0.5), frame_pixels(path, min(10, duration - 1))
         difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
         if difference < 0.05:
             raise EvidenceError("Climb recording appears frozen")
         self.report["clips"].append(dict(
             file_record(path), duration_seconds=duration, pixels=metrics,
             sampled_motion=round(difference, 3), scenario="wall-climb",
-            obstacle="minecraft:mossy_cobblestone", wall_height_blocks=4,
-            required_y_gain_blocks=1.2, server_y_gain_confirmed=True,
+            obstacle="minecraft:mossy_cobblestone", wall_height_blocks=6,
+            wall_thickness_blocks=2, dummy_on_wall_top=True,
+            required_y_gain_blocks=2.5, server_y_gain_confirmed=True,
             target_blocked_los=True, audio=check_audio(path),
         ))
         self.command(f"kill {selector}")

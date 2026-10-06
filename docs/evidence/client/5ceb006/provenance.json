@@ -1,0 +1,167 @@
+{
+  "capture_source_revision": "5ceb006714a0347ce771ebaf9f1d4c7c40f966e2",
+  "source_run_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37368922271",
+  "archive_only": true,
+  "images_modified": false,
+  "artifacts": [
+    {
+      "kind": "client",
+      "id": 11370040909,
+      "run_id": 37368922271,
+      "source_revision": "5ceb006714a0347ce771ebaf9f1d4c7c40f966e2",
+      "zip_sha256": "8afd6f5500c8ff97b106c57b448a3ef7f89f48283617f029187385712b232b17",
+      "zip_bytes": 74649120,
+      "github_digest": "sha256:8afd6f5500c8ff97b106c57b448a3ef7f89f48283617f029187385712b232b17"
+    }
+  ],
+  "files": [
+    {
+      "file": "00-three-creatures.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "00-three-creatures.png",
+      "bytes": 170411,
+      "sha256": "87e2e253fbfc39621340cdb5b237f9408e5da4a2b9c65cd687c5274bfc81d811"
+    },
+    {
+      "file": "01-spawn-eggs.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "01-spawn-eggs.png",
+      "bytes": 204601,
+      "sha256": "8574f3d3d1ad1950a26e278480f810e922fd59b059efc4063f7e1b18b76e1ce3"
+    },
+    {
+      "file": "20-block-identification.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "20-block-identification.png",
+      "bytes": 228666,
+      "sha256": "8de82bc65c52f5fedfa54a268ac49244cfc025174ceb9f31c93b3f071cb5cdd4"
+    },
+    {
+      "file": "99-death-cleared.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "99-death-cleared.png",
+      "bytes": 150414,
+      "sha256": "e8eb235cf8bf793c530e5cda18e49a651d7fa312ffc1569127cf06e6979770e2"
+    },
+    {
+      "file": "g1_birkin-20blocks.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "g1_birkin-20blocks.png",
+      "bytes": 232656,
+      "sha256": "913e5b5db9fbf5da4030942ace993e8e6041edfcde6732315d176d50fb18b246"
+    },
+    {
+      "file": "g1_birkin-model-back.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "g1_birkin-model-back.png",
+      "bytes": 183359,
+      "sha256": "9985979b79fd5348d5fbed17de136bac6489572f68a3025a64cd68572a56bf3c"
+    },
+    {
+      "file": "g1_birkin-model-side.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "g1_birkin-model-side.png",
+      "bytes": 245790,
+      "sha256": "cbb68d1b186c897ff1cbd4b2cd8c6ed5d034f1f2bdaa52570f069b08889ba404"
+    },
+    {
+      "file": "g1_birkin-model.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "g1_birkin-model.png",
+      "bytes": 309803,
+      "sha256": "6645b048c54195c5bfb8df37d12609a729102bb679509003c516b60e79674d61"
+    },
+    {
+      "file": "licker-20blocks.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-20blocks.png",
+      "bytes": 204635,
+      "sha256": "6465895da2f13aa2927caa52819e417fdb853d62b8d8915754883a4802acc4bc"
+    },
+    {
+      "file": "licker-ambush.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-ambush.png",
+      "bytes": 371312,
+      "sha256": "251fb679bd44b0e3ad7e99c6ef7614b29dc072b6e3f763d0e191482d7166d45b"
+    },
+    {
+      "file": "licker-climb.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-climb.png",
+      "bytes": 373279,
+      "sha256": "c0547508834d57d5f144f8139efbb7a94446586eecc0f19bac1767144a32d819"
+    },
+    {
+      "file": "licker-model-back.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-model-back.png",
+      "bytes": 181212,
+      "sha256": "bb7ebc39949e55772336fa4b678adcec5c9abae650aaf0bd627b225f8d78823a"
+    },
+    {
+      "file": "licker-model-side.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-model-side.png",
+      "bytes": 202111,
+      "sha256": "79b701f8d14d2c6c39e2311525379432e43fbfb4280e928a9682b3c6928c7d30"
+    },
+    {
+      "file": "licker-model.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-model.png",
+      "bytes": 270270,
+      "sha256": "b4f296f75ca7dbcd33497461bb5e994e88dc8f115da01f9d9944ec03173d37ce"
+    },
+    {
+      "file": "licker-sneak-silent.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-sneak-silent.png",
+      "bytes": 230769,
+      "sha256": "77c494228990012aa04906d0b3d68253723a0353244848202d7bc8725f8ad2f1"
+    },
+    {
+      "file": "licker-sprint-hunt.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "licker-sprint-hunt.png",
+      "bytes": 193269,
+      "sha256": "8a176433eff81aa7ba56cde5f2a4156ad66c77f466a2758897102f4d7473b339"
+    },
+    {
+      "file": "tyrant-20blocks.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "tyrant-20blocks.png",
+      "bytes": 229846,
+      "sha256": "fea511593711a311c6242588d722650b67ac1fae79e2de22858c2e4fcf98e62c"
+    },
+    {
+      "file": "tyrant-model-back.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "tyrant-model-back.png",
+      "bytes": 183322,
+      "sha256": "3e5b2e1edb348dd42e26518bc29eaae810807634b111b4c89a00ffd8a16e5e0a"
+    },
+    {
+      "file": "tyrant-model-side.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "tyrant-model-side.png",
+      "bytes": 196697,
+      "sha256": "926e2bddc48d33279128399f075b92ebf544877261791f181274e58a603e2a2e"
+    },
+    {
+      "file": "tyrant-model.png",
+      "artifact_id": 11370040909,
+      "zip_entry": "tyrant-model.png",
+      "bytes": 289642,
+      "sha256": "e09fec8cbf2164a064d2803b67e7d38de2a185c18cffa38cddc16fd44e359267"
+    },
+    {
+      "file": "capture-report.json",
+      "artifact_id": 11370040909,
+      "zip_entry": "report.json",
+      "bytes": 48607,
+      "sha256": "3401576a1dba9b8a93850514a3d45bbc2bae2823012ebdb43acbe3a83f8bf03f"
+    }
+  ],
+  "notes": "dev-env job on this run was still queued when archived; HUD-off portraits and sneak walk-only hunt are from the capture zip. devenv-report is not included."
+}

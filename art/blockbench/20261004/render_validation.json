@@ -1,0 +1,33 @@
+{
+  "renderer": "Blender 4.3.2",
+  "input": "final .geo.json and palette PNG",
+  "all_model_scales": [
+    1,
+    1,
+    1
+  ],
+  "game_runtime_tested": false,
+  "models": {
+    "tyrant": {
+      "cube_count": 171,
+      "max_blockbench_corner_error_units": 3.939321432556702e-06,
+      "each_cube_closed": true,
+      "screen_center_x": 360.02342998981476,
+      "camera_bounds_passed": true
+    },
+    "g1_birkin": {
+      "cube_count": 315,
+      "max_blockbench_corner_error_units": 4.3702847432669066e-06,
+      "each_cube_closed": true,
+      "screen_center_x": 986.0078930854797,
+      "camera_bounds_passed": true
+    },
+    "licker": {
+      "cube_count": 305,
+      "max_blockbench_corner_error_units": 3.960906917056119e-06,
+      "each_cube_closed": true,
+      "screen_center_x": 1750.636911392212,
+      "camera_bounds_passed": true
+    }
+  }
+}

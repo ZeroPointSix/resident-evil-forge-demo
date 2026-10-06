@@ -1,0 +1,128 @@
+{
+  "checks": [
+    "tyrant: closed solid parts, nonblank views, OBJ face counts match",
+    "g1_birkin: closed solid parts, nonblank views, OBJ face counts match",
+    "licker: closed solid parts, nonblank views, OBJ face counts match",
+    "lineup: same unit scale, orthographic projection, all mesh vertices within frame"
+  ],
+  "files": {
+    "g1_birkin.mtl": {
+      "bytes": 2145,
+      "sha256": "f239a334fdf0d83bfc1392f1b770a8be3ef2fda3e49bd50ff3c752bf37be1522"
+    },
+    "g1_birkin.obj": {
+      "bytes": 100864,
+      "sha256": "3c840de753420de9877dc608b9a106c095d332c0121b4c16776468d6d5676663"
+    },
+    "g1_birkin_back.png": {
+      "bytes": 544888,
+      "sha256": "abbd73d43440102bcd96fd8b515aed5f42898a05e4149b35f422809b2475342b"
+    },
+    "g1_birkin_front.png": {
+      "bytes": 556102,
+      "sha256": "de54691a2e69ff86be1a2f5777ef43e1eab2e0337e30b321041c4f744e2cb14d"
+    },
+    "g1_birkin_side.png": {
+      "bytes": 282078,
+      "sha256": "ef4e67848b0c8d3169660c12f099e7fcd0514a43149a677e0129f084c3fb041b"
+    },
+    "g1_birkin_three_quarter.png": {
+      "bytes": 943668,
+      "sha256": "ea3fbcbb476de85e32ef0960a6c33d3dc7572318f713f96741fed74485d39af5"
+    },
+    "g1_birkin_turnaround.png": {
+      "bytes": 1236435,
+      "sha256": "7df4d4714f6890e8ae603101f6e8d95a96b05c03ec4652e740c0fe6f6638d7aa"
+    },
+    "interchange_validation.json": {
+      "bytes": 118,
+      "sha256": "8f42eac087463c3be43506613661ec19812b75f4b3eaa31d65d9d962539618ae"
+    },
+    "licker.mtl": {
+      "bytes": 1201,
+      "sha256": "add266e10a50c25f8ab3237fd56dd58de02fe905a0689aa8616e0b0296b79cfc"
+    },
+    "licker.obj": {
+      "bytes": 159797,
+      "sha256": "9fb4b176f3e60a71f0d7c494dc58d4170d735814b27f7bc549ac8602613cd6f9"
+    },
+    "licker_back.png": {
+      "bytes": 114702,
+      "sha256": "1cfd2d4a2709758dda0b5c995681dba9e480a3aee2e9c120ede4fd96250254bb"
+    },
+    "licker_front.png": {
+      "bytes": 120464,
+      "sha256": "99b0ae145f1c2feea3708be491be4a49c2727f6a95d8488690a58cd3f60a5865"
+    },
+    "licker_side.png": {
+      "bytes": 104041,
+      "sha256": "5bf851465ce8503a0e3a9007ef74db5383cdfd4f7c3e68c03f33a1631b56fa5d"
+    },
+    "licker_three_quarter.png": {
+      "bytes": 748487,
+      "sha256": "06cf408b988c33c0ee7835dbd3760400e392c16a655954025a87999245e0e11a"
+    },
+    "licker_turnaround.png": {
+      "bytes": 1062836,
+      "sha256": "056c1ec44c08cb7bdb25c7770f3af53276fd1055c3fcb70b7b4c8dd6ae9f4b93"
+    },
+    "lineup.png": {
+      "bytes": 678230,
+      "sha256": "dd725f4b0858fccb978f3441d5ec053ca98f9faf3d6d688e976cd56543d9d54b"
+    },
+    "lineup_review.png": {
+      "bytes": 703121,
+      "sha256": "2d9763c955b956d6c4e7d0cd5b2af53f40a98bfde3db8363e7ae9ad1ff652692"
+    },
+    "model_stats.json": {
+      "bytes": 2419,
+      "sha256": "b44cf0866ed34d7ee03e5d90d5ea96fd77f3f840cac33ecc606b97d3c2fd5953"
+    },
+    "monster_blockouts.blend": {
+      "bytes": 166131,
+      "sha256": "f9c922380817fa5cc251976bf9d2c72852fec8749b161eb5b35f20506e691a41"
+    },
+    "review_overview.png": {
+      "bytes": 2446788,
+      "sha256": "d255f2348be1e2c260d2982c558021f2840ffa44407235fec6b0dab8893d178a"
+    },
+    "tyrant.mtl": {
+      "bytes": 1198,
+      "sha256": "1b59d664be0027e5286522f837767b5b7a5da947f5b7302dff7b6060f4ed9860"
+    },
+    "tyrant.obj": {
+      "bytes": 148289,
+      "sha256": "983cc33934f09bdad25ebd3142b1fa458df3cb51d1f60f995daed47566d9e432"
+    },
+    "tyrant_back.png": {
+      "bytes": 383956,
+      "sha256": "274781efa0fcc6a56902496d2b47004c2dd44b21690557d8e59acf6a31bf523f"
+    },
+    "tyrant_front.png": {
+      "bytes": 400338,
+      "sha256": "070f7d15d52160c82291ba407dc730bc27c6a6b14f8479408e717567463970e8"
+    },
+    "tyrant_side.png": {
+      "bytes": 213823,
+      "sha256": "da609eb5f64654e833e77ebc2db664afe59aa3c0991ac4b67c0328a94004ab8c"
+    },
+    "tyrant_three_quarter.png": {
+      "bytes": 836488,
+      "sha256": "b36de9a5ca03cf93c7aa112877e52748506b14708a4e9ace92914b168d94bd2f"
+    },
+    "tyrant_turnaround.png": {
+      "bytes": 920884,
+      "sha256": "c586e37c0a4997d4e91f406ad4e0bfffae73826168fc2aa472703aed93201fd9"
+    }
+  },
+  "game_runtime_tested": false,
+  "interchange": {
+    "blend_reopened": true,
+    "obj_reimported": {
+      "tyrant": true,
+      "g1_birkin": true,
+      "licker": true
+    }
+  },
+  "approval_status": "awaiting user visual review"
+}

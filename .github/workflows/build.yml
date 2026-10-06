@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: [main, "feat/**", "test/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+      - name: Build
+        run: |
+          set -o pipefail
+          ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
+      - name: Verify packaged asset contract
+        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.3.jar --report build/reports/asset-contract.json
+      - name: Install audio verifier
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Verify original music and exact packaged bytes
+        run: python tools/qa/validate_music.py --root . --jar build/libs/re_demo-0.1.3.jar --report build/reports/music-contract.json
+      - name: Run real Forge GameTests
+        run: |
+          set -o pipefail
+          ./gradlew runGameTestServer --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
+      - name: Upload mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: re-demo-${{ github.sha }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/re-demo-gametest.log
+            build/reports/asset-contract.json
+            build/reports/music-contract.json
+            run/logs/
+            run/crash-reports/
+          if-no-files-found: warn
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ github.sha }}
+          path: ${{ runner.temp }}/re-demo-ci-build.log
+          if-no-files-found: error

@@ -1,0 +1,189 @@
+{
+  "capture_source_revision": "580c39f6f689b1fa2bd7da1acb06f89bfb6c1eca",
+  "source_run_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37350172183",
+  "archive_only": true,
+  "images_modified": false,
+  "artifacts": [
+    {
+      "kind": "client",
+      "id": 11362992374,
+      "run_id": 37350172183,
+      "source_revision": "580c39f6f689b1fa2bd7da1acb06f89bfb6c1eca",
+      "zip_sha256": "d9ea4af809437a78d667ad03e7549bf2a70a07322fe4f229fc243dac10f82383",
+      "zip_bytes": 63404262,
+      "github_digest": "sha256:d9ea4af809437a78d667ad03e7549bf2a70a07322fe4f229fc243dac10f82383"
+    },
+    {
+      "kind": "dev",
+      "id": 11363106025,
+      "run_id": 37350172183,
+      "source_revision": "580c39f6f689b1fa2bd7da1acb06f89bfb6c1eca",
+      "zip_sha256": "bbe72bd50eea6a2cb51c3743fbad6a1387b7e155d3c50981acf63f744474111d",
+      "zip_bytes": 192010,
+      "github_digest": "sha256:bbe72bd50eea6a2cb51c3743fbad6a1387b7e155d3c50981acf63f744474111d"
+    }
+  ],
+  "files": [
+    {
+      "file": "00-three-creatures.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "00-three-creatures.png",
+      "bytes": 182516,
+      "sha256": "bf1634fb2bfe26c30995d4df7bd2caef77dc0802480192ec24203caff56a4a28"
+    },
+    {
+      "file": "01-spawn-eggs.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "01-spawn-eggs.png",
+      "bytes": 181514,
+      "sha256": "2098464cde3a7238dd7e8886f3c291026e0d4f831f234bed8b817f0582ecedf2"
+    },
+    {
+      "file": "20-block-identification.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "20-block-identification.png",
+      "bytes": 248294,
+      "sha256": "31c7fa3b1523ad4a9e8af03c53201784868c8f3a3d2cdd9c27f109c08daeb186"
+    },
+    {
+      "file": "99-death-cleared.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "99-death-cleared.png",
+      "bytes": 161424,
+      "sha256": "fa6049a5c41e91d32169533d3b80afb1df63bb94d5eb9d812066a19f98dbdf22"
+    },
+    {
+      "file": "capture-report.json",
+      "artifact_id": 11362992374,
+      "zip_entry": "report.json",
+      "bytes": 47909,
+      "sha256": "afa78ce93b74af3d364fb0c5f3d318eb12251f5120167576ffc149e19254be26"
+    },
+    {
+      "file": "dev-client-in-world.png",
+      "artifact_id": 11363106025,
+      "zip_entry": "dev-client-in-world.png",
+      "bytes": 110182,
+      "sha256": "339660ec93d6f930623c815f7a78a65805f3c384effc30413ac0dafd3d9d7b74"
+    },
+    {
+      "file": "devenv-report.json",
+      "artifact_id": 11363106025,
+      "zip_entry": "report.json",
+      "bytes": 2344,
+      "sha256": "2a74497bfc8cc1ab9194846ba31b93ec5c29500c7d60e3734d46d902dcbd7164"
+    },
+    {
+      "file": "g1_birkin-20blocks.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "g1_birkin-20blocks.png",
+      "bytes": 251231,
+      "sha256": "7c586b49a6cad766f96a203193fe4e536165b0a313bd8941110b1e2a2aee939f"
+    },
+    {
+      "file": "g1_birkin-model-back.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "g1_birkin-model-back.png",
+      "bytes": 184129,
+      "sha256": "f5c890bbcddeea486406061f23a1e5fff2f3d80baeaaae1cbf955718ecd46cd5"
+    },
+    {
+      "file": "g1_birkin-model-side.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "g1_birkin-model-side.png",
+      "bytes": 255954,
+      "sha256": "6aab47b326353a2d96206ae3b8e270e8011c4ae108ce9b4be9971899e9cd23ae"
+    },
+    {
+      "file": "g1_birkin-model.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "g1_birkin-model.png",
+      "bytes": 303579,
+      "sha256": "bcb402829c154e7d3fc0afeb6a3581002b85a91208ba3d17476c2963c1d67887"
+    },
+    {
+      "file": "licker-20blocks.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-20blocks.png",
+      "bytes": 222994,
+      "sha256": "68ab974981a24cda71d639a6e83d746576acd37a66fbbfeb022f9c0381140e88"
+    },
+    {
+      "file": "licker-ambush.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-ambush.png",
+      "bytes": 334031,
+      "sha256": "3102151f4ea34e3ec0168f4956de5a425429637b99e1d5fb2eb4eab061f7c042"
+    },
+    {
+      "file": "licker-climb.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-climb.png",
+      "bytes": 358749,
+      "sha256": "047498b605aa68a9889a9566ae48335f8481ae097e81f68c2adfc91838054702"
+    },
+    {
+      "file": "licker-model-back.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-model-back.png",
+      "bytes": 186212,
+      "sha256": "e44a8549cb4ac996585ed0c946909871c17e973a708b813600fcbd5ea5c48a9e"
+    },
+    {
+      "file": "licker-model-side.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-model-side.png",
+      "bytes": 215544,
+      "sha256": "74bffa87a04f8f121a990d7465ca5e3c94862a91148bfc2b82cf5a88db1626ef"
+    },
+    {
+      "file": "licker-model.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-model.png",
+      "bytes": 272879,
+      "sha256": "65a74933d498d64af6ef761e5b0ac72fc144708caa845431f956b57cc82fc936"
+    },
+    {
+      "file": "licker-sneak-silent.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-sneak-silent.png",
+      "bytes": 244766,
+      "sha256": "ee4c79aabac87ad509369baad0ebbeeba14a622eb94e1c5749a2b75736640be0"
+    },
+    {
+      "file": "licker-sprint-hunt.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "licker-sprint-hunt.png",
+      "bytes": 175056,
+      "sha256": "f32a9fa0d3b27dc22b2d1b72704bcd257307bcb341c7bc72bb090e9e26dc3425"
+    },
+    {
+      "file": "tyrant-20blocks.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "tyrant-20blocks.png",
+      "bytes": 248568,
+      "sha256": "98f04cd2d107d1f0e961ea79f4c3e9ada844bf6e86f26dae9985f4f5dd6ffe0f"
+    },
+    {
+      "file": "tyrant-model-back.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "tyrant-model-back.png",
+      "bytes": 185271,
+      "sha256": "ce93ce99204b787f8cecfb975c88af6cc0006bfc3fee9202c34a74086a8431f6"
+    },
+    {
+      "file": "tyrant-model-side.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "tyrant-model-side.png",
+      "bytes": 205636,
+      "sha256": "b357c759fd18cc04f66aa16b801f478f3e101d34cb1e5e26ef5a71401dfc1d88"
+    },
+    {
+      "file": "tyrant-model.png",
+      "artifact_id": 11362992374,
+      "zip_entry": "tyrant-model.png",
+      "bytes": 283090,
+      "sha256": "1492a7b7473ce4b26723ae9803620667affcb7302ecc894cf9954c11ddc6011b"
+    }
+  ]
+}

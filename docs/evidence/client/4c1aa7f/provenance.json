@@ -1,0 +1,98 @@
+{
+  "capture_source_revision": "4c1aa7fc793af60c03b97f5fee2a6b38bc365292",
+  "source_run_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37336113608",
+  "archive_only": true,
+  "images_modified": false,
+  "artifacts": [
+    {
+      "kind": "client",
+      "id": 11356953401,
+      "run_id": 37336113608,
+      "source_revision": "4c1aa7fc793af60c03b97f5fee2a6b38bc365292",
+      "zip_sha256": "a9d3002e582afc174007e4cef064b4416b2543152e630237f8cec208477fb714",
+      "zip_bytes": 64704307,
+      "github_digest": "sha256:a9d3002e582afc174007e4cef064b4416b2543152e630237f8cec208477fb714"
+    },
+    {
+      "kind": "dev",
+      "id": 11356598232,
+      "run_id": 37336113608,
+      "source_revision": "4c1aa7fc793af60c03b97f5fee2a6b38bc365292",
+      "zip_sha256": "995bf6fd35464ebecccf309d95e8a21accfc0d9b1caedb41c1ef6d3d1114f967",
+      "zip_bytes": 192508,
+      "github_digest": "sha256:995bf6fd35464ebecccf309d95e8a21accfc0d9b1caedb41c1ef6d3d1114f967"
+    }
+  ],
+  "files": [
+    {
+      "file": "licker-model.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "licker-model.png",
+      "bytes": 272795,
+      "sha256": "79eca0bc32b48f5148caf768cb3197a663782c5b5a0bab40ec5b57135d19d602"
+    },
+    {
+      "file": "tyrant-model.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "tyrant-model.png",
+      "bytes": 284439,
+      "sha256": "16b92929f490ef358a359f37011f4cf9cce449ef5361e87377b444c9081be173"
+    },
+    {
+      "file": "g1_birkin-model.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "g1_birkin-model.png",
+      "bytes": 303442,
+      "sha256": "1233dad474e0d39a4874b450da0bf27f3ac584626aa3c1a72e7fdb58ee4df2ad"
+    },
+    {
+      "file": "20-block-identification.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "20-block-identification.png",
+      "bytes": 248192,
+      "sha256": "5698cba34ffcc69d816c73961a54c4af06335d9e3b001a226a01f8c9c78f5d79"
+    },
+    {
+      "file": "licker-20blocks.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "licker-20blocks.png",
+      "bytes": 221476,
+      "sha256": "9a8e3b0121e4ca09c20df9435fa3ec95ab3558ae9b32efa83b0207ec954dcf0d"
+    },
+    {
+      "file": "tyrant-20blocks.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "tyrant-20blocks.png",
+      "bytes": 248525,
+      "sha256": "c417416f9b31b1a16b604b5ee67a4dd6b3dc4618712a21a7d5c7133d5d66ccd0"
+    },
+    {
+      "file": "g1_birkin-20blocks.png",
+      "artifact_id": 11356953401,
+      "zip_entry": "g1_birkin-20blocks.png",
+      "bytes": 251028,
+      "sha256": "00c8875e2ea0757bb262ea4b5fae9d9573a7d3736cf7a1dcaa027c865e9b3de6"
+    },
+    {
+      "file": "capture-report.json",
+      "artifact_id": 11356953401,
+      "zip_entry": "report.json",
+      "bytes": 47795,
+      "sha256": "5a4b16c0bf8122cbba1af79671be8764f2737de6e05e5d967568bad687398acc"
+    },
+    {
+      "file": "dev-client-in-world.png",
+      "artifact_id": 11356598232,
+      "zip_entry": "dev-client-in-world.png",
+      "bytes": 110323,
+      "sha256": "b190972c51bf5336deb87b172c195ceacdf16f8948b8c174edcfd980889f93c1"
+    },
+    {
+      "file": "devenv-report.json",
+      "artifact_id": 11356598232,
+      "zip_entry": "report.json",
+      "bytes": 2344,
+      "sha256": "9881723b1a4ea9c4d4c52b36168bf6ddb61aa74e222d3e8bc5f1b166bdc86f0f"
+    }
+  ]
+}

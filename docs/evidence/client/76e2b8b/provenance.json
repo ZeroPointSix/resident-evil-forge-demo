@@ -1,0 +1,191 @@
+{
+  "archive_only": true,
+  "images_modified": false,
+  "source_revision": "76e2b8bc9795285200fafce23bcd39979c5ffd22",
+  "run": {
+    "client": 37378166487,
+    "dev": 37378166487
+  },
+  "artifacts": [
+    {
+      "id": 11373057409,
+      "name": "client-evidence-76e2b8bc9795285200fafce23bcd39979c5ffd22-1",
+      "zip_sha256": "d559ea71cd8cffadb4c955d28b8754fa03ab88961de8a448c466901b507da019"
+    },
+    {
+      "id": 11372333868,
+      "name": "dev-env-evidence-76e2b8bc9795285200fafce23bcd39979c5ffd22-1",
+      "zip_sha256": "61f761d279b6ddcee6c136bcbff9e18ab227c13cda11f5c7a0d5e7eae8532664"
+    }
+  ],
+  "files": [
+    {
+      "file": "00-three-creatures.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "00-three-creatures.png",
+      "bytes": 170608,
+      "sha256": "67bf665a246a722cc7e0e716c1fb340d65f795092772231bfe9f4ce9482c364f"
+    },
+    {
+      "file": "01-spawn-eggs.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "01-spawn-eggs.png",
+      "bytes": 201526,
+      "sha256": "06427543ff3416b5431a3187bfe75e469cc2bb02a25c15c756fa703663b0e6b5"
+    },
+    {
+      "file": "20-block-identification.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "20-block-identification.png",
+      "bytes": 241537,
+      "sha256": "7d0f4b35de1eb33177aabaa30a5a0f4a53cf6c132f9b43e68a366c1453777fbb"
+    },
+    {
+      "file": "99-death-cleared.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "99-death-cleared.png",
+      "bytes": 162877,
+      "sha256": "471e2571356a63ac1c85edf7f4a04d4266e22aa72ef9d0216d3d54d456d94f52"
+    },
+    {
+      "file": "capture-report.json",
+      "artifact_id": 11373057409,
+      "zip_entry": "report.json",
+      "bytes": 49126,
+      "sha256": "dba3fb7983baa2c903c02d5c77bcfb2cf83a8c832c7b0f0d953125fd52e86d06"
+    },
+    {
+      "file": "dev-client-in-world.png",
+      "artifact_id": 11372333868,
+      "zip_entry": "dev-client-in-world.png",
+      "bytes": 110719,
+      "sha256": "19e86fd07b6678d280f2483f4dcd143d9d0f760a93b0c488d31d2c4d804cad7f"
+    },
+    {
+      "file": "devenv-report.json",
+      "artifact_id": 11372333868,
+      "zip_entry": "report.json",
+      "bytes": 2344,
+      "sha256": "27279253948f676762dee2772c095bbc75ffb72628030a0b88469ea20e740804"
+    },
+    {
+      "file": "g1_birkin-20blocks.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "g1_birkin-20blocks.png",
+      "bytes": 246673,
+      "sha256": "4f15e737b23b6fb7b85606fdff6e54c3e330ebb1b1d22ee9d55b28433dc6e984"
+    },
+    {
+      "file": "g1_birkin-eye.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "g1_birkin-eye.png",
+      "bytes": 289376,
+      "sha256": "df7df72e8cff616d19b8a9507ee328b4fd3e5937ec31730f41468f6b32aefbd9"
+    },
+    {
+      "file": "g1_birkin-model-back.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "g1_birkin-model-back.png",
+      "bytes": 183372,
+      "sha256": "de63a4d9bda50735f1c4b13ccb7fec658e31e441ab6eadc1f6db08ea1d32437d"
+    },
+    {
+      "file": "g1_birkin-model-side.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "g1_birkin-model-side.png",
+      "bytes": 246378,
+      "sha256": "700170b8b9481a982f85b521d5fe3bebd14a4efb8592e3c50f02db24f57f251b"
+    },
+    {
+      "file": "g1_birkin-model.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "g1_birkin-model.png",
+      "bytes": 309643,
+      "sha256": "c6fffe9408739647777e5586ea1ef20ae0dd04689ce67bfcb434467f701f344a"
+    },
+    {
+      "file": "licker-20blocks.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-20blocks.png",
+      "bytes": 214905,
+      "sha256": "a3ff68acfd5c09f20e70fea0a77bc3d1adef3cf30022f4443a941b5af1e86f88"
+    },
+    {
+      "file": "licker-ambush.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-ambush.png",
+      "bytes": 389974,
+      "sha256": "4dbec8b9bfc7bc5cdc171fb8579341c372286e370b6be9ebffd0a6cabf7b0ad9"
+    },
+    {
+      "file": "licker-climb.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-climb.png",
+      "bytes": 385742,
+      "sha256": "2f70b0f0034653fc61220da2bd3a30151467b74a045681248b7b2a68d4cc6c19"
+    },
+    {
+      "file": "licker-model-back.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-model-back.png",
+      "bytes": 180825,
+      "sha256": "f3da595e771d10800187eef210a38a01a801e39ee686ce436e59321c559e7558"
+    },
+    {
+      "file": "licker-model-side.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-model-side.png",
+      "bytes": 201096,
+      "sha256": "28c468fb3dacacc3ebc884da78ec91c101fa037a3eb62cb15959b989f0da6a2a"
+    },
+    {
+      "file": "licker-model.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-model.png",
+      "bytes": 271336,
+      "sha256": "8bce752f39fdd2123b4f41e93fe88f9e51c310e30a6b5ba54082be6d01c3982e"
+    },
+    {
+      "file": "licker-sneak-silent.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-sneak-silent.png",
+      "bytes": 250077,
+      "sha256": "719044416715aaf25f19f00d4ab2fbb3b925db715d5e6f40a0471d7cf0a0aab4"
+    },
+    {
+      "file": "licker-sprint-hunt.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "licker-sprint-hunt.png",
+      "bytes": 247815,
+      "sha256": "e39792171f0b3d61715cda7f42d988c37e6614500943fc1d3008beb0a492edc1"
+    },
+    {
+      "file": "tyrant-20blocks.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "tyrant-20blocks.png",
+      "bytes": 242526,
+      "sha256": "717f3ea0909df7525b707e0bdf9762e032d911a7b771889c920e62c55fe1a1b7"
+    },
+    {
+      "file": "tyrant-model-back.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "tyrant-model-back.png",
+      "bytes": 183274,
+      "sha256": "0d61e2897b94306a2c41675b19098fc11e8ea0f0ab6f18aef8405da7b34d1895"
+    },
+    {
+      "file": "tyrant-model-side.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "tyrant-model-side.png",
+      "bytes": 195710,
+      "sha256": "81c410af01a81c21b71d3d34b25de3850bcd52a6a887fc0706176cef09664a36"
+    },
+    {
+      "file": "tyrant-model.png",
+      "artifact_id": 11373057409,
+      "zip_entry": "tyrant-model.png",
+      "bytes": 289385,
+      "sha256": "87c618a915c1a518d92bb359c0f0268c185e5230279713f54a1cd09fa6f4a649"
+    }
+  ]
+}

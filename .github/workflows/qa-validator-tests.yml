@@ -1,0 +1,39 @@
+name: QA Validator Self Tests
+
+on:
+  push:
+    paths:
+      - tools/qa/**
+      - tools/integrate_approved_models.py
+      - tests/**
+      - art/**
+      - src/main/resources/assets/re_demo/**
+      - src/main/java/com/zeropointsix/redemo/client/CreatureModel.java
+      - src/main/java/com/zeropointsix/redemo/entity/G1BirkinEntity.java
+      - .github/workflows/qa-validator-tests.yml
+  pull_request:
+    paths:
+      - tools/qa/**
+      - tools/integrate_approved_models.py
+      - tests/**
+      - art/**
+      - src/main/resources/assets/re_demo/**
+      - src/main/java/com/zeropointsix/redemo/client/CreatureModel.java
+      - src/main/java/com/zeropointsix/redemo/entity/G1BirkinEntity.java
+      - .github/workflows/qa-validator-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validator-regression:
+    name: Static validator regression tests (not game E2E)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install audio verifier
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Run validator fixtures and approved-model integration regressions
+        run: python3 -m unittest discover -s tests -v

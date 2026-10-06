@@ -1,0 +1,14 @@
+{
+  "entity.re_demo.licker": "Licker",
+  "entity.re_demo.tyrant": "Tyrant",
+  "entity.re_demo.g1_birkin": "G1 William Birkin",
+  "item.re_demo.licker_spawn_egg": "Licker Spawn Egg",
+  "item.re_demo.tyrant_spawn_egg": "Tyrant Spawn Egg",
+  "item.re_demo.g1_birkin_spawn_egg": "G1 Birkin Spawn Egg",
+  "subtitles.re_demo.licker_hiss": "Licker hisses",
+  "subtitles.re_demo.heavy_step": "Heavy footsteps",
+  "subtitles.re_demo.impact": "Heavy impact",
+  "subtitles.re_demo.rage": "Limiter breaks",
+  "subtitles.re_demo.eye_open": "Shoulder eye pulses",
+  "subtitles.re_demo.encounter_theme": "Containment Pulse plays"
+}

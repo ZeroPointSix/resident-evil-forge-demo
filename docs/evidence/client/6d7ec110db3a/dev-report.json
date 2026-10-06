@@ -1,0 +1,77 @@
+{
+  "kind": "dev-env-evidence",
+  "passed": true,
+  "source_revision": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+  "client_command": "./gradlew runClient -PdevEvidence",
+  "server_command": "./gradlew runServer",
+  "quick_play": "127.0.0.1:25565",
+  "run_client_reached_world": true,
+  "mod_loaded_in_dev_env": true,
+  "server_join_logged": true,
+  "window_visible": true,
+  "manual_playtest": false,
+  "screenshots": [
+    {
+      "name": "dev-client-in-world.png",
+      "bytes": 111203,
+      "sha256": "0613429064792c7efe9d13757ab191ea4932f6da4e0ae11beb8ed1a0d784c19a",
+      "origin": "native Minecraft F2",
+      "hide_gui": true,
+      "three_creatures": true
+    }
+  ],
+  "dev_server_ready": true,
+  "server_console_roundtrip": false,
+  "console_creature_summon": true,
+  "three_creatures_summoned": true,
+  "files": [
+    {
+      "name": "dev-client-in-world.png",
+      "bytes": 111203,
+      "sha256": "0613429064792c7efe9d13757ab191ea4932f6da4e0ae11beb8ed1a0d784c19a",
+      "path": "dev-client-in-world.png"
+    },
+    {
+      "name": "dev-client.log",
+      "bytes": 170677,
+      "sha256": "7f363ac8f6aeb65e889e7a45950b9fff4ccd2b7c714184f8526bca1c4c5e031e",
+      "path": "dev-client.log"
+    },
+    {
+      "name": "dev-server.log",
+      "bytes": 115272,
+      "sha256": "6be5e5dd76961e2dea11c8e2252ed6d768d634de6fdba7ffe91704f31fd76c9b",
+      "path": "dev-server.log"
+    },
+    {
+      "name": "2026-10-05-1.log.gz",
+      "bytes": 2576,
+      "sha256": "c1d54ba444cb65dbf2ab592dfb1911c6073631980b1c17b7b08db1aa07f013f3",
+      "path": "run-logs/2026-10-05-1.log.gz"
+    },
+    {
+      "name": "debug-1.log.gz",
+      "bytes": 13903,
+      "sha256": "d2951f7066192f116a3396c3025e4eada203574fb769ebec2ca22edd4cfb5097",
+      "path": "run-logs/debug-1.log.gz"
+    },
+    {
+      "name": "debug.log",
+      "bytes": 191135,
+      "sha256": "224a845f712d6665cf9d22c9feceb08b2866f8368e2b642cde5c5deb564efbd6",
+      "path": "run-logs/debug.log"
+    },
+    {
+      "name": "latest.log",
+      "bytes": 59873,
+      "sha256": "84890133799d0ab6cc3ea44b6049fcdff36867b74bcd52fd64c7cb8a5792d985",
+      "path": "run-logs/latest.log"
+    },
+    {
+      "name": "window-manager.log",
+      "bytes": 85,
+      "sha256": "6f748c3cd02a858c087697c3afac639205c62b7b206558bd40d1bcbd98165a5c",
+      "path": "window-manager.log"
+    }
+  ]
+}

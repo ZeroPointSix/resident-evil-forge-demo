@@ -1,0 +1,245 @@
+{
+  "capture_source_revision": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+  "archive_only": true,
+  "images_modified": false,
+  "videos_modified": false,
+  "manual_playtest": false,
+  "runs": [
+    {
+      "id": 37383615909,
+      "name": "Build",
+      "head_sha": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37383615909",
+      "run_attempt": 1
+    },
+    {
+      "id": 37383619342,
+      "name": "Build",
+      "head_sha": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37383619342",
+      "run_attempt": 1
+    },
+    {
+      "id": 37383619248,
+      "name": "QA Validator Self Tests",
+      "head_sha": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37383619248",
+      "run_attempt": 1
+    },
+    {
+      "id": 37383615908,
+      "name": "Controlled Real Client Evidence",
+      "head_sha": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/ZeroPointSix/resident-evil-forge-demo/actions/runs/37383615908",
+      "run_attempt": 1
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "client",
+      "artifact_id": 11377875010,
+      "run_id": 37383615908,
+      "source_revision": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "archive_sha256": "abe0c9ed47deadbf37957f28fd8360cf58bca8cea8a1c6ef1d6bd6a2abb91ff1",
+      "jars": [
+        {
+          "path": "/data2/re-demo-a35-evidence/6d7ec110db3ae898beb74debefa2d3beb76bdee3/11377875010/files/tested-mod/re_demo-0.1.3.jar",
+          "bytes": 245752,
+          "sha256": "d458618b8f7733d83097143eb984419cc4813e80f47662fc9c0cffaeffcc9b64"
+        }
+      ]
+    },
+    {
+      "kind": "dev",
+      "artifact_id": 11375288906,
+      "run_id": 37383615908,
+      "source_revision": "6d7ec110db3ae898beb74debefa2d3beb76bdee3",
+      "archive_sha256": "ee6a0dba17075240418c22e30c27cc72680f301a112be6ae3a184529d65406b0",
+      "jars": []
+    }
+  ],
+  "files": [
+    {
+      "name": "00-three-creatures.png",
+      "bytes": 170353,
+      "sha256": "b4699129791fabcefffe7ee1b0e30c38e9a2cbf042c67b1c52444817422b4579"
+    },
+    {
+      "name": "01-spawn-eggs.png",
+      "bytes": 201719,
+      "sha256": "d374b5e12c608a8b8ec838963e037bc15767657b6b1e34dc9c47b3e02d89895a"
+    },
+    {
+      "name": "20-block-identification.png",
+      "bytes": 241855,
+      "sha256": "9a56956f56c4e7b5b50d16cf2a887b3cf929cc7858193d99300ecdb133cf0683"
+    },
+    {
+      "name": "99-death-cleared.png",
+      "bytes": 163014,
+      "sha256": "7ce29cd7d3da44a76ccb1ddcca83498ed3f5d80b18667d5101fdce8700309d05"
+    },
+    {
+      "name": "creature-brawl.mp4",
+      "bytes": 6888103,
+      "sha256": "f53bb259cf5aeeab0e5460859a7530b85899bbeec7d60ddf907eb4bb928c8611"
+    },
+    {
+      "name": "g1_birkin-20blocks.png",
+      "bytes": 246253,
+      "sha256": "0e18308e501c394fcf444149f3311ea2c00c5fcdedb107d3ad65a2be039885b8"
+    },
+    {
+      "name": "g1_birkin-attack.mp4",
+      "bytes": 2592169,
+      "sha256": "d977a6f65f30b0f136279bf1e03986169e3e1cc38db4c66b3822c27f863076be"
+    },
+    {
+      "name": "g1_birkin-eye.png",
+      "bytes": 289655,
+      "sha256": "0f4666f28bd2bb6dee02dd6353f9164e2a36031f423a4e39d1f43a90f7f41604"
+    },
+    {
+      "name": "g1_birkin-model-back.png",
+      "bytes": 184130,
+      "sha256": "3887cffbcd6d751f68b7fbf29d589d9063f7530bf5f0a39e4b29a098ce4ac345"
+    },
+    {
+      "name": "g1_birkin-model-side.png",
+      "bytes": 245986,
+      "sha256": "f4b91e16c9bcb92770af63e3b388198df15c450807b21f30721fd4c366044e54"
+    },
+    {
+      "name": "g1_birkin-model.png",
+      "bytes": 310288,
+      "sha256": "9b19c141a3fed43347eef34db09280374f73ba6e785347988632d8f2c5bc2953"
+    },
+    {
+      "name": "licker-20blocks.png",
+      "bytes": 215081,
+      "sha256": "f951dd689a78d1ca3cc57a51566d65707c27b2c467b0ee98f712c1ee4d58c02d"
+    },
+    {
+      "name": "licker-ambush.mp4",
+      "bytes": 3210351,
+      "sha256": "02dbfc8ff5415c6d0ae5f1158d76ced3c7244bd288c036c942075ee3ce4836f8"
+    },
+    {
+      "name": "licker-ambush.png",
+      "bytes": 391866,
+      "sha256": "a536ea0fc461b072d61ce5871efa6495cd2f5a71b23f6d1be61e04583253678a"
+    },
+    {
+      "name": "licker-attack.mp4",
+      "bytes": 2163042,
+      "sha256": "46da482617ebcf99e649d61fa8f69b660249a6003f255f908dc6c5358a266069"
+    },
+    {
+      "name": "licker-climb.mp4",
+      "bytes": 3720111,
+      "sha256": "229ee47c6a755868782b57d2cf177461dd31bc063d82962517f5db1f0a3efb98"
+    },
+    {
+      "name": "licker-climb.png",
+      "bytes": 386040,
+      "sha256": "b8bd60b5b80705dd8ad853f48fb601333270fcf4ae60fea142061505156be228"
+    },
+    {
+      "name": "licker-crawl.mp4",
+      "bytes": 1619774,
+      "sha256": "8d1b9d6bcc710cea94be10e013c02cab12cbbe2f903fdd3f48e4f0aff156a4ec"
+    },
+    {
+      "name": "licker-model-back.png",
+      "bytes": 181193,
+      "sha256": "67f4665fe005df449a7e460ab31927ce9bb8bab8f6ec397e535f3c26d31d2515"
+    },
+    {
+      "name": "licker-model-side.png",
+      "bytes": 200833,
+      "sha256": "d0e7c5bc48b404d9a963b443cb0d8d573bb1d2073095d9a596e51a62a7ffe26b"
+    },
+    {
+      "name": "licker-model.png",
+      "bytes": 271130,
+      "sha256": "b65d1b5f6e31c8866b5c53e42c690593858f5fa9c6c02eaa29e5268b414f7ec9"
+    },
+    {
+      "name": "licker-sneak-silent.png",
+      "bytes": 250199,
+      "sha256": "df688465338b2b6eda525b918e441f2130df76cece967a4c308cad3297c49462"
+    },
+    {
+      "name": "licker-sneak-vs-sprint.mp4",
+      "bytes": 11573085,
+      "sha256": "a806a94066cb3556809d435faa26035a37bfc08207565d336894ce1f783470f7"
+    },
+    {
+      "name": "licker-sprint-hunt.png",
+      "bytes": 246545,
+      "sha256": "ae56766ddeb2c4c4a6ed3a19f8393a6429d824b5e9307b1dbd4fb383cf6c704d"
+    },
+    {
+      "name": "licker-tongue.mp4",
+      "bytes": 2355424,
+      "sha256": "5cda7c17c2d8a5c65a14b2300c1d425fb0f643deeda0a85cb68e494c6efd78ce"
+    },
+    {
+      "name": "tyrant-20blocks.png",
+      "bytes": 242473,
+      "sha256": "77b492caf0fdd907b3f4b683c502914ca5d6ae41c949de197ee9f99c43ab0bf6"
+    },
+    {
+      "name": "tyrant-attack.mp4",
+      "bytes": 1785267,
+      "sha256": "93a80c527ac67be9702e78bed91cb96f356334c4f26076a5b323d372f13ecbb4"
+    },
+    {
+      "name": "tyrant-charge.mp4",
+      "bytes": 1509278,
+      "sha256": "e2cf990fac7cf8d9c8576dab6fbfedede78ec8eaccbd828a5f4a125c40809993"
+    },
+    {
+      "name": "tyrant-model-back.png",
+      "bytes": 183606,
+      "sha256": "58c05d2715171259a331a083b88114c874126d7b7cda89ab21fc2ad32aef5861"
+    },
+    {
+      "name": "tyrant-model-side.png",
+      "bytes": 195325,
+      "sha256": "6329634129f8a237ac30056068ebd242ed6c24ea674a64d716dddd2478e56626"
+    },
+    {
+      "name": "tyrant-model.png",
+      "bytes": 289320,
+      "sha256": "26b84b51cee4f5ce68d86861f31bfae9c833678b2ec87a4c27fdd29c7c3c1d0e"
+    },
+    {
+      "name": "client-report.json",
+      "bytes": 49134,
+      "sha256": "68236aef2a644a2f3b7575c68654f1e8416ce6b4a56a620be504d4db6b17c78f"
+    },
+    {
+      "name": "dev-client-in-world.png",
+      "bytes": 111203,
+      "sha256": "0613429064792c7efe9d13757ab191ea4932f6da4e0ae11beb8ed1a0d784c19a"
+    },
+    {
+      "name": "dev-report.json",
+      "bytes": 2344,
+      "sha256": "e61bd8835f40310c7a6556004690b466f896812da3da9b2c6c49e4531e967ec8"
+    }
+  ]
+}

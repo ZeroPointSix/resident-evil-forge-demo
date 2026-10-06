@@ -1,0 +1,93 @@
+name: Release mod jar
+
+# 合并/推送到 main 即发版；分支/PR 的常规 CI 仍由 build.yml 负责（它不发版）。
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Test + build + GitHub Release (Java 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Unit tests
+        run: ./gradlew test --stacktrace --no-daemon
+
+      - name: Build
+        run: ./gradlew build --stacktrace --no-daemon
+
+      - name: Run real Forge GameTests
+        run: ./gradlew runGameTestServer --stacktrace --no-daemon
+
+      - name: Upload mod JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: re_demo-jar
+          path: build/libs/re_demo-*.jar
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish GitHub Release (main only)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const props = fs.readFileSync("gradle.properties", "utf8").split("\n");
+            function prop(k) {
+              const line = props.find(function (l) { return l.startsWith(k + "="); });
+              return line ? line.slice(k.length + 1).trim() : "";
+            }
+            const version = prop("mod_version");
+            const mc = prop("minecraft_version");
+            const forge = prop("forge_version");
+            const gecko = prop("geckolib_version");
+            const jars = fs.readdirSync("build/libs").filter(function (n) {
+              return n.startsWith("re_demo-") && n.endsWith(".jar") && !n.includes("-sources") && !n.includes("-javadoc");
+            });
+            if (jars.length === 0) { core.setFailed("No re_demo-*.jar in build/libs"); return; }
+            const jar = jars[0];
+            const tag = "v" + version + "-build." + context.runNumber;
+            const body = [
+              "自动发布自 main / Automatic release from main: " + context.sha,
+              "",
+              "- Minecraft " + mc + " · Forge 1.20.1 (" + forge + ")",
+              "- 必需依赖 / Required: GeckoLib " + gecko + "+ (Forge 1.20.1)",
+              "- 安装 / Install: 将 " + jar + " 与 GeckoLib 一起放入 mods/ / drop it into mods/ together with GeckoLib",
+              "- 已通过 / Passed: gradle test + build + runGameTestServer"
+            ].join("\n");
+            const rel = await github.rest.repos.createRelease({
+              owner: context.repo.owner, repo: context.repo.repo,
+              tag_name: tag, target_commitish: context.sha,
+              name: "RE Forge Demo " + version + " (build " + context.runNumber + ")",
+              body: body, make_latest: "true"
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner, repo: context.repo.repo,
+              release_id: rel.data.id, name: jar,
+              data: fs.readFileSync("build/libs/" + jar)
+            });
+            core.notice("Release: " + rel.data.html_url);

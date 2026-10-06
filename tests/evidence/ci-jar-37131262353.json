@@ -1,0 +1,68 @@
+{
+  "run_id": 37131262353,
+  "artifact_id": 11277011615,
+  "head_commit": "125295cecdb6cd44a965835673cc67d5285a444c",
+  "filename": "re_demo-0.1.0.jar",
+  "bytes": 91290,
+  "sha256": "8a21c75bf9ec38576bfcac6136545430637bfdc4f1ebe0c04baf6d408ae75ed2",
+  "duplicate_entries": 0,
+  "resources": [
+    {
+      "path": "assets/re_demo/animations/g1_birkin.animation.json",
+      "sha256": "16f995941618e20a4821a2e3288a045a94135d5c8bac22df25230526e4766f1f",
+      "bytes": 13664
+    },
+    {
+      "path": "assets/re_demo/animations/licker.animation.json",
+      "sha256": "d9d2049687fe25d3124df02de771574e7549e886379191d39864db13f7b97c77",
+      "bytes": 13995
+    },
+    {
+      "path": "assets/re_demo/animations/tyrant.animation.json",
+      "sha256": "0f43b4e7576da5d067082e25645bf0edde8c93637616e101297376f72e6c9b50",
+      "bytes": 14546
+    },
+    {
+      "path": "assets/re_demo/geo/g1_birkin.geo.json",
+      "sha256": "d1249c54098248b4da2b3bec9291e3ed261463c816b32a68829a5de1f76138bc",
+      "bytes": 78475
+    },
+    {
+      "path": "assets/re_demo/geo/licker.geo.json",
+      "sha256": "7726592ad65684a8d061426cbcbee731f13ea9b3a35cb00c33c9569edefde110",
+      "bytes": 93019
+    },
+    {
+      "path": "assets/re_demo/geo/tyrant.geo.json",
+      "sha256": "9b0592e0c1ef424e40153ef6c82802220eb175b26fb009a3ff3b293ea91f7b5d",
+      "bytes": 85998
+    },
+    {
+      "path": "assets/re_demo/textures/entity/g1_birkin.png",
+      "sha256": "cfe175c8e8ae35413dfc9af3ebed3bfbae73dabcb78cd7a0434d59082a24c30c",
+      "bytes": 7976
+    },
+    {
+      "path": "assets/re_demo/textures/entity/licker.png",
+      "sha256": "dc93224150934250139ec3c460f1c6d6eee006cc27b323d298fbfa1927607942",
+      "bytes": 5633
+    },
+    {
+      "path": "assets/re_demo/textures/entity/tyrant.png",
+      "sha256": "d92854988a325aaf9892079ddc686c2c8ed65bb4623d4b2d9981eb4b5bf4fd44",
+      "bytes": 5744
+    }
+  ],
+  "entrypoint_classes": [
+    "com/zeropointsix/redemo/ResidentEvilDemo.class",
+    "com/zeropointsix/redemo/ResidentEvilMod.class"
+  ],
+  "mods_toml": "modLoader=\"javafml\"\nloaderVersion=\"[47,)\"\nlicense=\"MIT\"\nissueTrackerURL=\"https://github.com/ZeroPointSix/resident-evil-forge-demo/issues\"\n\n[[mods]]\nmodId=\"re_demo\"\nversion=\"0.1.0\"\ndisplayName=\"Resident Evil Forge Demo\"\ndisplayURL=\"https://github.com/ZeroPointSix/resident-evil-forge-demo\"\nauthors=\"ZeroPointSix\"\ndescription='''Example mod description.\nNewline characters can be used and will be replaced properly.'''\n\n[[dependencies.re_demo]]\nmodId=\"forge\"\nmandatory=true\nversionRange=\"[47,)\"\nordering=\"NONE\"\nside=\"BOTH\"\n\n[[dependencies.re_demo]]\nmodId=\"minecraft\"\nmandatory=true\nversionRange=\"[1.20.1,1.21)\"\nordering=\"NONE\"\nside=\"BOTH\"\n\n[[dependencies.re_demo]]\nmodId=\"geckolib\"\nmandatory=true\nversionRange=\"[4.4.9,)\"\nordering=\"AFTER\"\nside=\"BOTH\"\n",
+  "gameplay_verified": false,
+  "kind": "real-ci-jar-static-inspection",
+  "resource_commit": "22925da999b68dfe1480cca0ce362bb80e7eac4c",
+  "method": "GitHub CLI artifact download; standard-library ZIP parsing and SHA-256 comparison against independently validated source files",
+  "resource_matches": 9,
+  "installability_verified": false,
+  "known_blocker": "Two re_demo entrypoint classes remain in this historical integration artifact; not approved for final installation."
+}

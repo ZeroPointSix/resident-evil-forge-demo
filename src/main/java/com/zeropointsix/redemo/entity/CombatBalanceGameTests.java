@@ -61,6 +61,10 @@ public final class CombatBalanceGameTests {
     public static void tyrantVersusFiveGolems(GameTestHelper h) { measure(h, ModEntities.TYRANT.get(), 5); }
 
     private static void measure(GameTestHelper h, EntityType<? extends EncounterMob> type, int count) {
+        h.assertTrue(Math.abs(CommonConfig.DAMAGE_SCALE.get() - 1) < 0.0001,
+                "Combat benchmark requires damageScale=1, not a modified server config");
+        h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(24, 1, 24))).is(Blocks.STONE),
+                "Arena template must actually place its flat stone floor before combat");
         int rounds = Math.max(1, Math.min(SEEDS.length, Integer.getInteger("re_demo.combatTrials", 1)));
         Trial[] active = {null};
         int[] wins = {0}, valid = {0};
@@ -69,7 +73,7 @@ public final class CombatBalanceGameTests {
         for (int i = 0; i < rounds; i++) {
             long seed = SEEDS[i];
             sequence.thenExecute(() -> active[0] = new Trial(h, type, count, seed))
-                    .thenWaitUntil(() -> h.assertTrue(active[0].finished(), "Natural AI combat still running"))
+                    .thenWaitUntil(() -> h.assertTrue(active[0] != null && active[0].finished(), "Natural AI combat still running"))
                     .thenExecute(() -> {
                         Trial trial = active[0];
                         try {
@@ -112,17 +116,14 @@ public final class CombatBalanceGameTests {
 
         private Trial(GameTestHelper h, EntityType<? extends EncounterMob> type, int count, long seed) {
             helper = h;
-            h.assertTrue(Math.abs(CommonConfig.DAMAGE_SCALE.get() - 1) < 0.0001,
-                    "Combat benchmark requires damageScale=1, not a modified server config");
             this.seed = seed;
-            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(24, 1, 24)));
-            h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(24, 0, 24))).is(Blocks.STONE),
-                    "Arena template must actually place its flat stone floor before combat");
-            mob = h.spawn(type, new BlockPos(24, 1, 21));
+            // Structure blocks place template y=0 at helper y=1, one block above their origin.
+            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(24, 2, 24)));
+            mob = h.spawn(type, new BlockPos(24, 2, 21));
             mob.getRandom().setSeed(seed);
             mob.setYRot(0);
             for (int i = 0; i < count; i++) {
-                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(24 + (i - count / 2) * 2, 1, 26));
+                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(24 + (i - count / 2) * 2, 2, 26));
                 golem.getRandom().setSeed(seed * 31 + i);
                 golem.setTarget(mob);
                 golems.add(golem);

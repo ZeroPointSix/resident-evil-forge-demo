@@ -20,6 +20,33 @@ public final class CombatPressureGameTests {
     private CombatPressureGameTests() { }
 
     @GameTest(template = "empty", timeoutTicks = 30)
+    public static void clawEngagesAtVictimEdgeWithoutExtendingContact(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
+        var golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 7));
+        licker.setNoAi(true);
+        licker.setNoGravity(true);
+        golem.setNoAi(true);
+        golem.setNoGravity(true);
+        golem.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
+        licker.setTarget(golem);
+        double reach = CommonConfig.LICKER_CLAW_RANGE + golem.getBbWidth() * 0.5;
+        golem.setPos(licker.getX(), licker.getY(), licker.getZ() + reach + 0.1);
+        h.assertTrue(!licker.inClawRange(golem), "Targets beyond the unchanged claw reach must not trigger it");
+        golem.setPos(licker.getX(), licker.getY(), licker.getZ() + reach - 0.1);
+        h.assertTrue(licker.inClawRange(golem), "A wide victim already touching claw reach must not create an idle ring");
+        for (int y = 1; y <= 4; y++) h.setBlock(new BlockPos(4, y, 5), Blocks.STONE);
+        h.assertTrue(!licker.inClawRange(golem), "A victim behind a solid wall is not a claw target");
+        for (int y = 1; y <= 4; y++) h.setBlock(new BlockPos(4, y, 5), Blocks.AIR);
+        licker.startAttack(LickerEntity.CLAW, 20, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        int impact = licker.attackFrameAt(9);
+        h.runAfterDelay(impact - 1, () -> h.assertTrue(golem.getHealth() == 100, "Edge contact keeps its visible windup"));
+        h.runAfterDelay(impact + 2, () -> {
+            h.assertTrue(golem.getHealth() == 90, "Existing contact range must land exactly one normal claw hit");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 30)
     public static void soundPursuitResumesAtEveryTickPhase(GameTestHelper h) {
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) h.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
         var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(5, 1, 3));

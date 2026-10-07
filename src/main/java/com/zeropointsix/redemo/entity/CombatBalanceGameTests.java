@@ -31,6 +31,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -111,7 +112,10 @@ public final class CombatBalanceGameTests {
         }).thenExecute(() -> prepareOpenArena(h));
         for (int i = 0; i < rounds; i++) {
             long seed = SEEDS[i];
-            sequence.thenExecute(() -> active[0] = new Trial(h, type, count, seed))
+            sequence.thenExecute(() -> {
+                        clearArenaCombatants(h);
+                        active[0] = new Trial(h, type, count, seed);
+                    })
                     .thenWaitUntil(() -> h.assertTrue(active[0] != null && active[0].finished(), "Natural AI combat still running"))
                     .thenExecute(() -> {
                         Trial trial = active[0];
@@ -144,6 +148,16 @@ public final class CombatBalanceGameTests {
                 }
             }
         }).thenSucceed();
+    }
+
+    private static void clearArenaCombatants(GameTestHelper h) {
+        AABB bounds = new AABB(h.absolutePos(new BlockPos(0, -4, 0)),
+                h.absolutePos(new BlockPos(128, 16, 128)));
+        var leftovers = h.getLevel().getEntitiesOfClass(LivingEntity.class, bounds,
+                entity -> entity instanceof EncounterMob || entity instanceof IronGolem);
+        if (!leftovers.isEmpty()) LogUtils.getLogger().info("RE_DEMO_ARENA_CLEANUP ids={}",
+                leftovers.stream().map(entity -> entity.getType() + "#" + entity.getId()).toList());
+        leftovers.forEach(LivingEntity::discard);
     }
 
     private static void prepareOpenArena(GameTestHelper h) {

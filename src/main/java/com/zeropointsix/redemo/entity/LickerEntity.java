@@ -67,8 +67,12 @@ public final class LickerEntity extends EncounterMob {
     public Vec3 investigationPoint() { return lastSound; }
     public boolean hasCombatLock() { return combatLock; }
 
-    private boolean inClawRange(LivingEntity target) {
-        return validTarget(target) && distanceTo(target) <= 2.3 && hasLineOfSight(target);
+    boolean inClawRange(LivingEntity target) {
+        // Use the same victim radius as the contact test, avoiding an idle ring
+        // around wide targets while the tongue is cooling down.
+        return validTarget(target)
+                && distanceTo(target) <= CommonConfig.LICKER_CLAW_RANGE + target.getBbWidth() * 0.5
+                && hasLineOfSight(target) && clearAttackLine(target);
     }
 
     public void hear(Vec3 position, LivingEntity source, double radius) {
@@ -110,7 +114,7 @@ public final class LickerEntity extends EncounterMob {
         tongueCooldown = Math.max(0, tongueCooldown - 1);
         hangCooldown = Math.max(0, hangCooldown - 1);
         boolean melee = inClawRange(getTarget());
-        // Only an unobstructed claw target is "melee". A dummy 2.3 blocks away
+        // Only an unobstructed claw target is "melee". A nearby dummy
         // behind a wall still has to be climbed; colliding with that dummy in
         // the open must not spider-climb its hurtbox.
         boolean huntClimb = lastSound != null || combatLock;
@@ -160,7 +164,7 @@ public final class LickerEntity extends EncounterMob {
             startAttack(LEAP, 28, 6, CommonConfig.LICKER_ATTACK_SPEED);
             leapCooldown = CommonConfig.LICKER_LEAP_COOLDOWN;
             playSound(ModSounds.LICKER_HISS.get(), 1, 1.2F);
-        } else if (range <= 2.3) startAttack(CLAW, 20, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        } else if (inClawRange(getTarget())) startAttack(CLAW, 20, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
     }
 
     @Override
@@ -171,7 +175,7 @@ public final class LickerEntity extends EncounterMob {
             if (attack == CLAW) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 1.6);
             else if (attack == TONGUE) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 2.8);
         }
-        if (attack == CLAW && tick == attackFrameAt(9)) strike(2.3, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.15);
+        if (attack == CLAW && tick == attackFrameAt(9)) strike(CommonConfig.LICKER_CLAW_RANGE, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.15);
         if (attack == TONGUE && tick == attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME)) {
             strike(CommonConfig.LICKER_TONGUE_RANGE, CommonConfig.LICKER_TONGUE_ARC, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
             LivingEntity target = getTarget();

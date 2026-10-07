@@ -1,6 +1,8 @@
 import unittest
+from pathlib import Path
+import tempfile
 
-from tools.qa.capture_client_evidence import EvidenceError, validate_animation_sync
+from tools.qa.capture_client_evidence import EvidenceError, log_since, validate_animation_sync
 
 
 class AnimationSyncEvidenceTests(unittest.TestCase):
@@ -25,6 +27,29 @@ class AnimationSyncEvidenceTests(unittest.TestCase):
         self.assertEqual(result["sample_count"], 9)
         self.assertEqual(len(result["late_first_frames"]), 3)
         self.assertEqual(len(result["same_attack_reentries"]), 3)
+
+    def test_accepts_accelerated_attacks_without_weakening_frame_alignment(self):
+        client, server = self.logs()
+        client = client.replace("speed=1.0", "speed=1.8")
+        client = client.replace("prefix=5 point=1.5", "prefix=10 point=1.7")
+        client = client.replace("prefix=10 point=1.5", "prefix=20 point=0.7")
+        self.assertTrue(validate_animation_sync(client, server.replace("speed=1.0", "speed=1.8"))["passed"])
+        with self.assertRaises(EvidenceError):
+            validate_animation_sync(client.replace("point=1.7", "point=0.0", 1), server)
+
+    def test_rejects_a_client_speed_not_replicated_by_the_server(self):
+        client, server = self.logs()
+        with self.assertRaises(EvidenceError):
+            validate_animation_sync(client, server.replace("speed=1.0", "speed=1.8"))
+
+    def test_log_cursor_survives_a_large_existing_trace(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "client.log"
+            path.write_bytes(b"x" * 10_000_001)
+            cursor = path.stat().st_size
+            with path.open("ab") as stream:
+                stream.write(b"new frame\n")
+            self.assertEqual(log_since(path, cursor), "new frame\n")
 
     def test_rejects_animation_restart_at_zero(self):
         client, server = self.logs()

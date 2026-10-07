@@ -77,7 +77,7 @@ public final class TyrantEntity extends EncounterMob {
         entityData.set(RAGING, true);
         var speed = getAttribute(Attributes.MOVEMENT_SPEED);
         if (speed != null && speed.getModifier(SPEED_BONUS) == null) speed.addTransientModifier(new AttributeModifier(SPEED_BONUS, "Limiter break", 0.25, AttributeModifier.Operation.MULTIPLY_TOTAL));
-        if (!attacking()) startAttack(RAGE, 40, 10);
+        startAttack(RAGE, 40, CommonConfig.TYRANT_RECOVERY, CommonConfig.TYRANT_TRANSITION_SPEED);
         playSound(ModSounds.RAGE.get(), 1.6F, 0.7F);
     }
 

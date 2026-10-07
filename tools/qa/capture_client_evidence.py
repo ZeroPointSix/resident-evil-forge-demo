@@ -123,6 +123,12 @@ def tail(path: Path, limit: int = 2_000_000) -> str:
         return stream.read().decode("utf-8", errors="replace")
 
 
+def log_since(path: Path, offset: int) -> str:
+    with path.open("rb") as stream:
+        stream.seek(offset)
+        return stream.read().decode("utf-8", errors="replace")
+
+
 def sync_rows(log: str, role: str) -> list[dict]:
     marker = f"RE_DEMO_SYNC_{role} "
     return [dict(re.findall(r"(\w+)=([^\s]+)", line.split(marker, 1)[1]))
@@ -131,7 +137,7 @@ def sync_rows(log: str, role: str) -> list[dict]:
 
 def validate_animation_sync(client: str, server: str) -> dict:
     samples = sync_rows(client, "CLIENT")
-    server_frames = {(r["uuid"], r["seq"], r["attack"], r["tick"]) for r in sync_rows(server, "SERVER")}
+    server_frames = {(r["uuid"], r["seq"], r["attack"], r["tick"]): r for r in sync_rows(server, "SERVER")}
     late = {}
     reentries = {}
     seen_attacks = {}
@@ -140,6 +146,9 @@ def validate_animation_sync(client: str, server: str) -> dict:
         identity = (row["uuid"], row["seq"], row["attack"], row["tick"])
         if identity not in server_frames:
             raise EvidenceError(f"Client sample has no matching authoritative server frame: {identity}")
+        speed = float(row["speed"])
+        if not math.isfinite(speed) or speed <= 0 or abs(speed - float(server_frames[identity]["speed"])) > 1e-5:
+            raise EvidenceError(f"Client animation speed differs from its authoritative attack: {identity}")
         expected = min((int(row["tick"]) + float(row["partial"])) * float(row["speed"]),
                        math.nextafter(float(row["length"]), -math.inf))
         prefix, segment, point = (float(row[k]) for k in ("prefix", "segment", "point"))
@@ -344,14 +353,14 @@ class Capture:
             if process is not None and process.poll() is not None:
                 raise EvidenceError(f"{name} exited unexpectedly ({process.returncode}); inspect {name}.log")
 
-    def wait(self, predicate, description: str, timeout: float) -> object:
+    def wait(self, predicate, description: str, timeout: float, poll_interval: float = 0.3) -> object:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             self.alive()
             result = predicate()
             if result:
                 return result
-            time.sleep(0.3)
+            time.sleep(poll_interval)
         raise EvidenceError(f"Timed out waiting for {description}")
 
     def run_logged(self, name: str, command: list[str], cwd: Path, timeout: float) -> None:
@@ -969,6 +978,7 @@ class Capture:
         clip_seconds = max(14, self.args.clip_seconds) if entity == "g1_birkin" else self.args.clip_seconds
         recorder = self.record_video(path, clip_seconds)
         time.sleep(1)
+        trace_start = (self.output / "server.log").stat().st_size
         self.command(f"data merge entity {selector} {{NoAI:0b}}")
         self.command(f"damage {selector} 1 minecraft:mob_attack by {dummy}")
         deadline = time.monotonic() + clip_seconds + 40
@@ -992,6 +1002,20 @@ class Capture:
         difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
         if difference < 0.05:
             raise EvidenceError(f"Recording appears frozen for {entity}")
+        if scenario == "lunge":
+            trace = log_since(self.output / "server.log", trace_start)
+            frames = [r for r in sync_rows(trace, "SERVER") if r["asset"] == entity and r["attack"] == "5"]
+            starts = [r for r in frames if r["tick"] == "0"]
+            landed = False
+            for start in starts:
+                end = [r for r in frames if (r["uuid"], r["seq"]) == (start["uuid"], start["seq"])]
+                travelled = max((math.hypot(float(r["x"]) - float(start["x"]),
+                                             float(r["z"]) - float(start["z"])) for r in end), default=0)
+                hit = re.search(rf"RE_DEMO_HIT uuid={re.escape(start['uuid'])} asset={entity} "
+                                rf"seq={start['seq']} attack=5 ", trace)
+                landed |= travelled >= 2 and hit is not None
+            if not landed:
+                raise EvidenceError("G1 lunge must move at least two blocks and land its own real damage")
         self.report["clips"].append(dict(file_record(path), duration_seconds=duration, pixels=metrics,
                                          sampled_motion=round(difference, 3), server_target_damaged=True,
                                          scenario=scenario, initial_target_distance=target_distance,
@@ -1103,6 +1127,7 @@ class Capture:
         time.sleep(4)
         for entity, scenario, distance in (("tyrant", "attack", 1.8),
                                             ("g1_birkin", "attack", 1.8),
+                                            ("g1_birkin", "lunge", 6.0),
                                             ("licker", "attack", 1.8),
                                             ("tyrant", "charge", 7.0),
                                             ("licker", "tongue", 3.4),
@@ -1242,18 +1267,20 @@ class Capture:
                   "are allowed inside the kill window. Does not claim the mod stops externally-played music.")
 
     def mid_attack_reveal_scenes(self) -> None:
-        # New actors are spawned behind the camera and revealed only after the
-        # real server AI has advanced an attack. No combat state is injected.
+        # Separate late-first visibility and early-visible re-entry fixtures so
+        # both fit short real-AI attacks. No combat state or attack speed is injected.
         for entity, _, _, _ in MOBS:
             self.command(f"kill @e[type=re_demo:{entity}]")
         self.command("kill @e[type=minecraft:iron_golem]")
         time.sleep(4)
-        for entity, _, _, _ in MOBS:
+        fixtures = []
+        for entity, purpose in ((mob[0], purpose) for mob in MOBS for purpose in ("late_first", "reentry")):
             succeeded = False
             for attempt in range(4):
-                self.command(f"tp {CAMERA} 6 64 -3 180 0")
+                hidden = purpose == "late_first"
+                self.command(f"tp {CAMERA} 6 64 -3 {180 if hidden else 0} 0")
                 time.sleep(0.6)
-                tag = f"ce_sync_{entity}_{attempt}"
+                tag = f"ce_sync_{entity}_{purpose}_{attempt}"
                 actor = f"@e[type=re_demo:{entity},tag={tag},limit=1]"
                 target = f"@e[type=minecraft:iron_golem,tag={tag},limit=1]"
                 self.command(f"summon re_demo:{entity} 4 64 4 {{Tags:[\"{tag}\"],NoAI:1b,PersistenceRequired:1b}}")
@@ -1261,49 +1288,69 @@ class Capture:
                              f"{{Tags:[\"{tag}\"],NoAI:1b,Health:1000.0f,"
                              'Attributes:[{Name:"minecraft:generic.max_health",Base:1000.0d},'
                              '{Name:"minecraft:generic.knockback_resistance",Base:1.0d}]}')
-                self.confirm(f"if entity {actor} if entity {target}", f"{entity}: hidden live-AI fixture")
-                before = len(tail(self.output / "server.log", 10_000_000))
+                self.confirm(f"if entity {actor} if entity {target}", f"{entity}: {purpose} live-AI fixture")
+                before = (self.output / "server.log").stat().st_size
                 self.command(f"data merge entity {actor} {{NoAI:0b}}")
                 self.command(f"damage {actor} 1 minecraft:mob_attack by {target}")
                 frame = self.wait(lambda: next((r for r in sync_rows(
-                    tail(self.output / "server.log", 10_000_000)[before:], "SERVER")
-                    if r["asset"] == entity and int(r["tick"]) >= 4), None), "attack already in progress", 20)
-                self.command(f"tp {CAMERA} 6 64 -3 0 0")
+                    log_since(self.output / "server.log", before), "SERVER")
+                    if r["asset"] == entity and int(r["tick"]) >= (4 if hidden else 0)), None),
+                    "attack already in progress", 20, poll_interval=0.02)
+                if hidden:
+                    self.command(f"tp {CAMERA} 6 64 -3 0 0")
                 deadline = time.monotonic() + 3
                 while time.monotonic() < deadline:
                     self.alive()
                     rows = sync_rows(tail(self.output / "client.log", 10_000_000), "CLIENT")
-                    succeeded = any(r["uuid"] == frame["uuid"] and r["seq"] == frame["seq"]
-                                    and r["first"] == "true" and int(r["tick"]) >= 4 for r in rows)
+                    evidence_row = next((r for r in rows if r["uuid"] == frame["uuid"] and r["seq"] == frame["seq"]
+                                         and r["attack"] == frame["attack"] and r["first"] == "true"
+                                         and (int(r["tick"]) >= 4 if hidden else int(r["tick"]) <= 4)), None)
+                    succeeded = evidence_row is not None
                     if succeeded:
                         break
-                    time.sleep(0.1)
-                if succeeded:
+                    time.sleep(0.02)
+                if succeeded and not hidden:
                     # Hide an already-rendered attack, then require the same sequence
-                    # to resume after a real gap in GeckoLib's render processing.
+                    # to resume after a real gap. Use a separate early-visible fixture:
+                    # fast attacks cannot fit this after a deliberately late first reveal.
+                    client_cursor = (self.output / "client.log").stat().st_size
+                    before_hide = tail(self.output / "client.log", 10_000_000)
+                    matching = [r for r in sync_rows(before_hide, "CLIENT")
+                                if (r["uuid"], r["seq"], r["attack"]) ==
+                                (frame["uuid"], frame["seq"], frame["attack"])]
+                    last_visible_tick = max(int(r["tick"]) for r in matching)
                     self.command(f"tp {CAMERA} 6 64 -3 180 0")
-                    time.sleep(0.35)
+                    time.sleep(0.25)
                     self.command(f"tp {CAMERA} 6 64 -3 0 0")
                     succeeded = False
                     deadline = time.monotonic() + 3
                     while time.monotonic() < deadline:
                         self.alive()
-                        rows = sync_rows(tail(self.output / "client.log", 10_000_000), "CLIENT")
-                        succeeded = any(r["uuid"] == frame["uuid"] and r["seq"] == frame["seq"]
-                                        and r["resumed"] == "true" and r["first"] == "false"
-                                        and int(r["tick"]) >= int(frame["tick"]) + 4 for r in rows)
+                        rows = sync_rows(log_since(self.output / "client.log", client_cursor), "CLIENT")
+                        previous_tick = last_visible_tick
+                        for row in rows:
+                            if (row["uuid"], row["seq"], row["attack"]) != (frame["uuid"], frame["seq"], frame["attack"]):
+                                continue
+                            tick = int(row["tick"])
+                            if row["resumed"] == "true" and row["first"] == "false" and tick - previous_tick >= 4:
+                                evidence_row = row
+                                succeeded = True
+                                break
+                            previous_tick = tick
                         if succeeded:
                             break
-                        time.sleep(0.1)
+                        time.sleep(0.02)
                 self.command(f"kill {actor}")
                 self.command(f"kill {target}")
                 time.sleep(4)
                 if succeeded:
+                    fixtures.append({"purpose": purpose, **evidence_row})
                     break
             if not succeeded:
-                raise EvidenceError(f"{entity}: missing late first frame or same-attack visibility re-entry")
+                raise EvidenceError(f"{entity}: missing {purpose} real-client visibility evidence")
         result = validate_animation_sync(tail(self.output / "client.log", 10_000_000),
                                          tail(self.output / "server.log", 10_000_000))
+        result["visibility_fixtures"] = fixtures
         proof = self.output / "animation-sync.json"
         proof.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         self.report["animation_sync"] = dict(file_record(proof), **result)
@@ -1378,7 +1425,7 @@ class Capture:
             "99-death-cleared.png",
         }
         expected_clips = {
-            "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4",
+            "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4", "g1_birkin-lunge.mp4",
             "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4", "licker-climb.mp4",
             "licker-ambush.mp4", "licker-sneak-vs-sprint.mp4",
         }
@@ -1388,7 +1435,7 @@ class Capture:
             raise EvidenceError(f"Incomplete evidence set shots={sorted(got_shots)} clips={sorted(got_clips)}")
         ordered = ["creature-brawl.mp4", "licker-climb.mp4", "licker-ambush.mp4",
                    "licker-sneak-vs-sprint.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4",
-                   "g1_birkin-attack.mp4", "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
+                   "g1_birkin-attack.mp4", "g1_birkin-lunge.mp4", "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
         playlist = self.output / "showcase-concat.txt"
         playlist.write_text("".join(f"file '{name}'\n" for name in ordered), encoding="utf-8")
         showcase = self.output / "encounter-showcase.mp4"

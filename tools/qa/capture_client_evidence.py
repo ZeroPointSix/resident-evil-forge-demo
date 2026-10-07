@@ -1452,7 +1452,7 @@ def main() -> int:
     parser.add_argument("--project", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("build/client-evidence"),
                         help="Must not already exist; records only this run's evidence")
-    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.3.jar"))
+    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.4.jar"))
     parser.add_argument("--port", type=int, default=25575)
     parser.add_argument("--clip-seconds", type=int, default=10)
     parser.add_argument("--build-timeout", type=int, default=1500)

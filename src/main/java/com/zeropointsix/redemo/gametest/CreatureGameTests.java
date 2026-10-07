@@ -160,7 +160,7 @@ public final class CreatureGameTests {
     }
 
     @GameTest(template = "empty", timeoutTicks = 60)
-    public static void lickerClawHasWindupAndSingleHit(GameTestHelper h) {
+    public static void lickerTongueHasWindupAndSingleHit(GameTestHelper h) {
         var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 1, 4));
         var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 6));
         target.setNoAi(true);
@@ -171,10 +171,10 @@ public final class CreatureGameTests {
         licker.hear(target.position(), target, 16);
         licker.hear(target.position(), target, 16);
         float original = target.getHealth();
-        h.runAfterDelay(5, () -> h.assertTrue(target.getHealth() == original, "Claw must not damage during telegraph"));
-        h.runAfterDelay(14, () -> h.assertTrue(Math.abs(target.getHealth() - (original - 10)) < 0.001, "Claw must land one 10 damage hit at animation frame 9"));
-        h.runAfterDelay(25, () -> {
-            h.assertTrue(Math.abs(target.getHealth() - (original - 10)) < 0.001, "Same animation must never hit twice");
+        h.runAfterDelay(5, () -> h.assertTrue(target.getHealth() == original, "Tongue must not damage during telegraph"));
+        h.runAfterDelay(12, () -> h.assertTrue(Math.abs(target.getHealth() - (original - 8)) < 0.001, "Close combat must use the eight-damage tongue at the retimed contact frame"));
+        h.runAfterDelay(14, () -> {
+            h.assertTrue(Math.abs(target.getHealth() - (original - 8)) < 0.001, "Same animation must never hit twice");
             h.succeed();
         });
     }
@@ -199,6 +199,9 @@ public final class CreatureGameTests {
     public static void tyrantRespectsMobGriefingAndBlockTag(GameTestHelper h) {
         var tyrant = h.spawn(ModEntities.TYRANT.get(), new BlockPos(4, 1, 4));
         tyrant.setNoAi(true);
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 1, 9));
+        target.setNoAi(true);
+        tyrant.setTarget(target);
         BlockPos glass = tyrant.blockPosition().south();
         BlockPos stone = glass.above();
         ServerLevel level = h.getLevel();

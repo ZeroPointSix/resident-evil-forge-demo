@@ -22,6 +22,32 @@ public final class CommonConfig {
     public static final float G1_SWEEP_DAMAGE = 18;
     public static final float G1_GRAB_DAMAGE = 6;
     public static final float G1_GRAB_THROW_DAMAGE = 8;
+    public static final double LICKER_ATTACK_SPEED = 1.8;
+    public static final int LICKER_RECOVERY = 2;
+    public static final int LICKER_TONGUE_COOLDOWN = 28;
+    public static final int LICKER_LEAP_COOLDOWN = 65;
+    public static final double LICKER_KNOCKBACK_RESISTANCE = 0.65;
+    public static final double LICKER_MOVE_SPEED = 0.32;
+    public static final double TYRANT_ATTACK_SPEED = 1.5;
+    public static final double TYRANT_RAGE_ATTACK_SPEED = 1.85;
+    public static final int TYRANT_RECOVERY = 4;
+    public static final int TYRANT_CHARGE_COOLDOWN = 90;
+    public static final int TYRANT_BREAK_COOLDOWN = 30;
+    public static final int TYRANT_BREAK_LIMIT = 6;
+    public static final double TYRANT_MAX_BREAK_HARDNESS = 3;
+    public static final double TYRANT_MOVE_SPEED = 0.24;
+    public static final double TYRANT_PRESSURE_STEP = 0.16;
+    public static final double G1_ATTACK_SPEED = 1.45;
+    public static final double G1_BERSERK_ATTACK_SPEED = 1.85;
+    public static final double G1_GRAB_MAX_SPEED = 1.5;
+    public static final int G1_RECOVERY = 6;
+    public static final int G1_BERSERK_RECOVERY = 2;
+    public static final int G1_LUNGE_COOLDOWN = 55;
+    public static final int G1_BERSERK_LUNGE_COOLDOWN = 35;
+    public static final double G1_LUNGE_SPEED = 0.52;
+    public static final double G1_LUNGE_RANGE = 6.5;
+    public static final int G1_EYE_WINDOW = 24;
+    public static final int G1_BERSERK_EYE_WINDOW = 70;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();

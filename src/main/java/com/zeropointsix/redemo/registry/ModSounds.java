@@ -10,6 +10,9 @@ import net.minecraftforge.registries.RegistryObject;
 public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, ResidentEvilMod.MOD_ID);
     public static final RegistryObject<SoundEvent> LICKER_HISS = sound("licker_hiss");
+    public static final RegistryObject<SoundEvent> LICKER_HURT = sound("licker_hurt");
+    public static final RegistryObject<SoundEvent> LICKER_DEATH = sound("licker_death");
+    public static final RegistryObject<SoundEvent> LICKER_TONGUE = sound("licker_tongue");
     public static final RegistryObject<SoundEvent> HEAVY_STEP = sound("heavy_step");
     public static final RegistryObject<SoundEvent> IMPACT = sound("impact");
     public static final RegistryObject<SoundEvent> RAGE = sound("rage");

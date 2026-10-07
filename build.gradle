@@ -109,6 +109,11 @@ minecraft {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
+            property 'forge.logging.console.level', 'info'
+            property 're_demo.combatTrials', System.getProperty('re_demo.combatTrials', '3')
+            property 're_demo.requireBalance', System.getProperty('re_demo.requireBalance', 'true')
+            property 're_demo.combatLabel', System.getProperty('re_demo.combatLabel', 'regression')
+            jvmArgs '-Xmx2G'
         }
 
         data {

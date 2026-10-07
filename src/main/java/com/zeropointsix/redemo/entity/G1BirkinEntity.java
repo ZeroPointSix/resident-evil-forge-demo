@@ -35,7 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.entity.PartEntity;
 
 public final class G1BirkinEntity extends EncounterMob {
-    public static final int SLAM = 1, SWEEP = 2, GRAB = 3, RAGE = 4;
+    public static final int SLAM = 1, SWEEP = 2, GRAB = 3, RAGE = 4, LUNGE = 5;
     // Center of the visible eye cubes in the stable exposure pose, in model pixels.
     // GeckoLib reverses model Z when the entity faces Minecraft's positive Z.
     public static final Vec3 EYE_LOCAL_CENTER = new Vec3(9.600001 / 16, 38.080002 / 16, 9.800001 / 16);
@@ -46,6 +46,7 @@ public final class G1BirkinEntity extends EncounterMob {
     private final PartEntity<?>[] parts;
     private int weakTicks;
     private int skillSequence;
+    private int lungeCooldown;
     private UUID grabbed;
     private boolean resolvingWeakHit;
 
@@ -108,8 +109,19 @@ public final class G1BirkinEntity extends EncounterMob {
         entityData.set(EYE_OPEN, true);
     }
 
+    @Override
+    protected void startAttack(int attack, int duration, int recovery, double rate) {
+        int previous = attackSequence();
+        super.startAttack(attack, duration, recovery, rate);
+        if (attackSequence() != previous && attack != RAGE) {
+            // Release the fixed exposure pose during each windup; impact reopens the eye.
+            weakTicks = 0;
+            entityData.set(EYE_OPEN, false);
+        }
+    }
+
     public void updatePhase() {
-        if (level().isClientSide || !isAlive() || isBerserk() || getHealth() > getMaxHealth() * 0.30F) return;
+        if (level().isClientSide || !isAlive() || isBerserk() || attacking() || getHealth() > getMaxHealth() * 0.30F) return;
         entityData.set(BERSERK, true);
         openWeakPoint(100);
         if (!attacking()) startAttack(RAGE, 40, 15);
@@ -123,30 +135,45 @@ public final class G1BirkinEntity extends EncounterMob {
         eye.setPos(location.x, location.y - eye.getBbHeight() * 0.5, location.z);
         if (level().isClientSide || !isAlive()) return;
         updatePhase();
+        lungeCooldown = Math.max(0, lungeCooldown - 1);
         if (weakTicks > 0) weakTicks--;
         entityData.set(EYE_OPEN, weakTicks > 0);
         if (isEyeOpen() && tickCount % 6 == 0 && level() instanceof ServerLevel server) {
             server.sendParticles(ParticleTypes.CRIT, location.x, location.y, location.z, 2, 0.12, 0.12, 0.12, 0);
         }
         if (!validTarget(getTarget())) setTarget(null);
-        if (!isNoAi() && !attacking() && cooldown == 0 && getTarget() != null && distanceTo(getTarget()) <= 3.4 && hasLineOfSight(getTarget())) {
-            int skill = switch (skillSequence++ % 3) { case 1 -> SWEEP; case 2 -> GRAB; default -> SLAM; };
-            startAttack(skill, skill == SLAM ? 36 : 40, isBerserk() ? 12 : 35);
+        if (isNoAi() || attacking() || cooldown > 0 || getTarget() == null || !hasLineOfSight(getTarget())) return;
+        double distance = distanceTo(getTarget());
+        double speed = isBerserk() ? CommonConfig.G1_BERSERK_ATTACK_SPEED : CommonConfig.G1_ATTACK_SPEED;
+        int recovery = isBerserk() ? CommonConfig.G1_BERSERK_RECOVERY : CommonConfig.G1_RECOVERY;
+        if (distance > 3 && distance <= CommonConfig.G1_LUNGE_RANGE && lungeCooldown == 0 && onGround()) {
+            startAttack(LUNGE, 36, recovery, speed);
+            lungeCooldown = isBerserk() ? CommonConfig.G1_BERSERK_LUNGE_COOLDOWN : CommonConfig.G1_LUNGE_COOLDOWN;
+        } else if (distance <= 3.4) {
+            int skill = switch (skillSequence++ % 4) { case 1, 3 -> SWEEP; case 2 -> GRAB; default -> SLAM; };
+            // Keep the grab and throw at least ten server ticks apart for vanilla hurt immunity.
+            startAttack(skill, skill == SLAM ? 36 : 40, recovery,
+                    skill == GRAB ? Math.min(speed, CommonConfig.G1_GRAB_MAX_SPEED) : speed);
         }
     }
 
     @Override
     protected void attackFrame(int attack, int tick) {
-        if (attack == SLAM && tick == 18) {
+        int hitFrame = attack == GRAB ? 15 : attack == SWEEP ? 20 : 18;
+        if (attack != RAGE && tick < attackFrameAt(hitFrame)) trackWindup(10);
+        if (attack == LUNGE && tick >= attackFrameAt(5) && tick < attackFrameAt(18)) {
+            advanceTowardTarget(CommonConfig.G1_LUNGE_SPEED, 2.2);
+        }
+        if ((attack == SLAM || attack == LUNGE) && tick == attackFrameAt(18)) {
             strike(3.3, 140, CommonConfig.G1_SLAM_DAMAGE, 0.7);
-            openWeakPoint(isBerserk() ? 100 : 60);
+            openWeakPoint(isBerserk() ? CommonConfig.G1_BERSERK_EYE_WINDOW : CommonConfig.G1_EYE_WINDOW);
             if (level() instanceof ServerLevel server) server.sendParticles(ParticleTypes.POOF, getX() + forward().x * 2, getY() + 0.1, getZ() + forward().z * 2, 20, 1.2, 0.1, 1.2, 0.05);
         }
-        if (attack == SWEEP && tick == 20) {
+        if (attack == SWEEP && tick == attackFrameAt(20)) {
             strike(3.6, 160, CommonConfig.G1_SWEEP_DAMAGE, 1.0);
-            openWeakPoint(isBerserk() ? 110 : 65);
+            openWeakPoint(isBerserk() ? CommonConfig.G1_BERSERK_EYE_WINDOW : CommonConfig.G1_EYE_WINDOW);
         }
-        if (attack == GRAB && tick == 15) {
+        if (attack == GRAB && tick == attackFrameAt(15)) {
             strike(2.8, 75, CommonConfig.G1_GRAB_DAMAGE, 0);
             LivingEntity target = getTarget();
             if (target != null && attackHits.contains(target.getUUID())) {
@@ -154,7 +181,7 @@ public final class G1BirkinEntity extends EncounterMob {
                 target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 18, 5, false, true));
             }
         }
-        if (attack == GRAB && tick == 30) {
+        if (attack == GRAB && tick == attackFrameAt(30)) {
             if (grabbed != null && level() instanceof ServerLevel server && server.getEntity(grabbed) instanceof LivingEntity victim && validTarget(victim) && distanceTo(victim) <= 4 && clearAttackLine(victim)) {
                 victim.hurt(damageSources().mobAttack(this), CommonConfig.G1_GRAB_THROW_DAMAGE * CommonConfig.DAMAGE_SCALE.get().floatValue());
                 Vec3 direction = forward();
@@ -162,7 +189,7 @@ public final class G1BirkinEntity extends EncounterMob {
                 victim.hurtMarked = true;
             }
             grabbed = null;
-            openWeakPoint(isBerserk() ? 110 : 65);
+            openWeakPoint(isBerserk() ? CommonConfig.G1_BERSERK_EYE_WINDOW : CommonConfig.G1_EYE_WINDOW);
         }
     }
 

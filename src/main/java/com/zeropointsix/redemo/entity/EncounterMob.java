@@ -4,6 +4,7 @@ import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModSounds;
 import com.mojang.logging.LogUtils;
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
@@ -182,8 +183,18 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     }
 
     protected void strike(double range, double arcDegrees, float damage, double knockback) {
+        strike(range, arcDegrees, damage, knockback, Integer.MAX_VALUE);
+    }
+
+    protected void strike(double range, double arcDegrees, float damage, double knockback, int maxTargets) {
         Vec3 direction = forward();
-        for (LivingEntity victim : level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(range, 1.5, range))) {
+        var candidates = level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(range, 1.5, range));
+        if (maxTargets != Integer.MAX_VALUE) {
+            candidates.sort(Comparator.comparingInt((LivingEntity victim) -> victim == getTarget() ? 0 : 1)
+                    .thenComparingDouble(this::distanceToSqr));
+        }
+        for (LivingEntity victim : candidates) {
+            if (attackHits.size() >= maxTargets) break;
             if (victim == this || !validTarget(victim) || isAlliedTo(victim)) continue;
             // Area attacks may hit active combatants, never unrelated passive mobs.
             if (victim != getTarget() && !(victim instanceof Player)

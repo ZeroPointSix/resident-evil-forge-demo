@@ -36,9 +36,9 @@ public final class CommonConfig {
     public static final int LICKER_REPATH_TICKS = 4;
     public static final double LICKER_PURSUIT_SPEED = 1.2;
     public static final double LICKER_INVESTIGATION_SPEED = 0.8;
-    public static final double TYRANT_ATTACK_SPEED = 1.72;
-    public static final double TYRANT_RAGE_ATTACK_SPEED = 2.1;
-    public static final double TYRANT_TRANSITION_SPEED = 1.75;
+    public static final double TYRANT_ATTACK_SPEED = 1.90;
+    public static final double TYRANT_RAGE_ATTACK_SPEED = 2.3;
+    public static final double TYRANT_TRANSITION_SPEED = 2.0;
     public static final int TYRANT_RECOVERY = 2;
     public static final int TYRANT_CHARGE_COOLDOWN = 90;
     public static final int TYRANT_BREAK_COOLDOWN = 30;
@@ -51,6 +51,7 @@ public final class CommonConfig {
     public static final double G1_GRAB_MAX_SPEED = 1.5;
     public static final int G1_RECOVERY = 12;
     public static final int G1_BERSERK_RECOVERY = 6;
+    public static final int G1_MAX_ATTACK_TARGETS = 2;
     public static final double G1_KNOCKBACK_RESISTANCE = 0.45;
     public static final double G1_SLAM_RANGE = 3.3;
     public static final double G1_SLAM_ARC = 80;

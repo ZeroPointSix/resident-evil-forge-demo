@@ -1,6 +1,7 @@
 package com.zeropointsix.redemo.entity;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.logging.LogUtils;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.registry.ModEntities;
 import java.util.UUID;
@@ -152,13 +153,24 @@ public final class CombatRegressionGameTests {
                         .thenIdle(arrow ? 5 : 1)
                         .thenExecute(() -> {
                             if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1, shots);
-                            if (++completed[0] == mobs.length * 2) h.succeed();
+                            if (++completed[0] == mobs.length * 2) {
+                                shots.values().forEach(Arrow::discard);
+                                for (G1BirkinEntity fixture : mobs) fixture.discard();
+                                h.succeed();
+                            }
                         });
             }
         }
     }
 
     private static G1BirkinEntity[] sweepFixtures(GameTestHelper h) {
+        // A saved GameTest world may still contain the previous run's shoulder parts.
+        // Clear only this probe's template volume before registering fresh fixtures.
+        var leftovers = h.getLevel().getEntitiesOfClass(G1BirkinEntity.class,
+                new AABB(h.absolutePos(BlockPos.ZERO), h.absolutePos(new BlockPos(16, 8, 16))));
+        if (!leftovers.isEmpty()) LogUtils.getLogger().info("RE_DEMO_SWEEP_CLEANUP ids={}",
+                leftovers.stream().map(G1BirkinEntity::getId).toList());
+        leftovers.forEach(G1BirkinEntity::discard);
         G1BirkinEntity[] mobs = new G1BirkinEntity[4];
         for (int i = 0; i < mobs.length; i++) {
             // Keep every 3-block projectile origin inside the 16x16 template, including yaw 270.
@@ -198,7 +210,9 @@ public final class CombatRegressionGameTests {
                             + " frame=" + mob.attackTick() + " mob=" + mob.getId() + " start=" + start + " end=" + end
                             + " eye=" + mob.eyePart().getBoundingBox() + " body=" + mob.getBoundingBox()
                             + " predicted=" + (predicted == null ? "none" : predicted.getEntity().getType()
-                                    + "#" + predicted.getEntity().getId() + " at " + predicted.getLocation()));
+                                    + "#" + predicted.getEntity().getId() + " at " + predicted.getLocation()
+                                    + " parent=" + (predicted.getEntity() instanceof net.minecraftforge.entity.PartEntity<?> part
+                                            ? part.getParent().getId() : "not-a-part")));
             h.assertTrue(h.getLevel().addFreshEntity(arrow), "Probe arrow must be registered in the real world");
             shots.put(mob, arrow);
         }

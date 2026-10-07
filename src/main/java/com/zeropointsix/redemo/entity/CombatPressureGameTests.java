@@ -96,19 +96,82 @@ public final class CombatPressureGameTests {
         tyrant.setNoGravity(true);
         var first = h.spawn(EntityType.IRON_GOLEM, new BlockPos(6, 2, 6));
         var second = h.spawn(EntityType.IRON_GOLEM, new BlockPos(8, 2, 6));
+        var third = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 6));
         var bystander = h.spawn(EntityType.COW, new BlockPos(7, 2, 7));
-        for (var victim : new net.minecraft.world.entity.Mob[] {first, second, bystander}) {
+        for (var victim : new net.minecraft.world.entity.Mob[] {first, second, third, bystander}) {
             victim.setNoAi(true);
             victim.setNoGravity(true);
         }
         first.setTarget(tyrant);
         second.setTarget(tyrant);
+        third.setTarget(tyrant);
         tyrant.setTarget(first);
         tyrant.attackYaw = 0;
         tyrant.strike(4, 160, 10, 0);
         tyrant.strike(4, 160, 10, 0);
-        h.assertTrue(first.getHealth() == 90 && second.getHealth() == 90, "Every hostile in the arc gets one hit");
+        h.assertTrue(first.getHealth() == 90 && second.getHealth() == 90 && third.getHealth() == 90,
+                "Tyrant retains broad pressure: all three hostiles in the arc get one hit");
         h.assertTrue(bystander.getHealth() == bystander.getMaxHealth(), "Unrelated passive mobs are not collateral targets");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void birkinCleavePrioritizesTargetAndResetsBudget(GameTestHelper h) {
+        var birkin = h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(7, 2, 4));
+        birkin.setNoAi(true);
+        birkin.setNoGravity(true);
+        var near = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 6));
+        var middle = h.spawn(EntityType.IRON_GOLEM, new BlockPos(8, 2, 6));
+        var far = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 7));
+        var golems = new net.minecraft.world.entity.animal.IronGolem[] {near, middle, far};
+        for (var golem : golems) {
+            golem.setNoAi(true);
+            golem.setNoGravity(true);
+            golem.setTarget(birkin);
+        }
+        birkin.setTarget(far);
+        birkin.startAttack(G1BirkinEntity.SWEEP, 1, 1);
+        birkin.strike(4, 160, 18, 0);
+        h.assertTrue(far.getHealth() == 82 && near.getHealth() == 82 && middle.getHealth() == 100,
+                "The locked target takes priority over a nearer secondary opponent");
+        h.runAfterDelay(3, () -> {
+            for (var golem : golems) {
+                golem.setHealth(100);
+                golem.invulnerableTime = 0;
+            }
+            birkin.setTarget(middle);
+            birkin.startAttack(G1BirkinEntity.SWEEP, 40, 6);
+            birkin.strike(4, 160, 18, 0);
+            h.assertTrue(birkin.attackSequence() == 2 && middle.getHealth() == 82
+                            && near.getHealth() == 82 && far.getHealth() == 100,
+                    "A new attack sequence must reset its two-target hit budget");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void birkinCleaveBudgetCountsSuccessfulTargetsAcrossFrames(GameTestHelper h) {
+        var birkin = h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(7, 2, 4));
+        birkin.setNoAi(true);
+        birkin.setNoGravity(true);
+        var near = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 6));
+        var middle = h.spawn(EntityType.IRON_GOLEM, new BlockPos(8, 2, 6));
+        var primary = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 7));
+        for (var golem : new net.minecraft.world.entity.animal.IronGolem[] {near, middle, primary}) {
+            golem.setNoAi(true);
+            golem.setNoGravity(true);
+            golem.setTarget(birkin);
+        }
+        near.setInvulnerable(true);
+        birkin.setTarget(primary);
+        birkin.startAttack(G1BirkinEntity.SWEEP, 40, 6);
+        birkin.strike(4, 160, 18, 0);
+        h.assertTrue(primary.getHealth() == 82 && middle.getHealth() == 82 && near.getHealth() == 100,
+                "Primary and nearest damageable opponent get the two successful-hit slots");
+        near.setInvulnerable(false);
+        birkin.strike(4, 160, 18, 0);
+        h.assertTrue(near.getHealth() == 100 && primary.getHealth() == 82 && middle.getHealth() == 82,
+                "Later strike frames must not acquire a third victim or repeat the first two hits");
         h.succeed();
     }
 

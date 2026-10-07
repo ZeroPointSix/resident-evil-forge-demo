@@ -196,6 +196,12 @@ public final class G1BirkinEntity extends EncounterMob {
     @Override
     protected void onAttackFinished() { grabbed = null; }
 
+    @Override
+    protected void strike(double range, double arcDegrees, float damage, double knockback) {
+        // Birkin's focused cleaves pressure a pair; Tyrant retains broad crowd suppression.
+        super.strike(range, arcDegrees, damage, knockback, CommonConfig.G1_MAX_ATTACK_TARGETS);
+    }
+
     private boolean attackIntersectsEye(DamageSource source) {
         if (!isEyeOpen()) return false;
         if (source.getDirectEntity() instanceof Projectile p) {

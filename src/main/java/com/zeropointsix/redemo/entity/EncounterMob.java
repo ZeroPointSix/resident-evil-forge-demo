@@ -188,7 +188,8 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
 
     protected void strike(double range, double arcDegrees, float damage, double knockback, int maxTargets) {
         Vec3 direction = forward();
-        var candidates = level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(range, 1.5, range));
+        var candidates = level().getEntitiesOfClass(LivingEntity.class,
+                getBoundingBox().inflate(range, CommonConfig.MELEE_VERTICAL_SEARCH, range));
         if (maxTargets != Integer.MAX_VALUE) {
             candidates.sort(Comparator.comparingInt((LivingEntity victim) -> victim == getTarget() ? 0 : 1)
                     .thenComparingDouble(this::distanceToSqr));
@@ -201,7 +202,8 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
                     && !(victim instanceof Mob mob && mob.getTarget() == this)) continue;
             Vec3 offset = victim.position().subtract(position());
             double planar = Math.sqrt(offset.x * offset.x + offset.z * offset.z);
-            if (planar > range + victim.getBbWidth() * 0.5 || Math.abs(offset.y) > 2.5) continue;
+            if (planar > range + victim.getBbWidth() * 0.5
+                    || Math.abs(offset.y) > CommonConfig.MELEE_MAX_Y_DIFFERENCE) continue;
             if (planar > 0.1 && direction.dot(new Vec3(offset.x, 0, offset.z).normalize()) < Math.cos(Math.toRadians(arcDegrees / 2))) continue;
             if (!clearAttackLine(victim) || attackHits.contains(victim.getUUID())) continue;
             if (victim.hurt(damageSources().mobAttack(this), damage * CommonConfig.DAMAGE_SCALE.get().floatValue())) {

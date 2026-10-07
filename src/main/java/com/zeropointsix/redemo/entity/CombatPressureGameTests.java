@@ -53,6 +53,10 @@ public final class CombatPressureGameTests {
         golem.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
         licker.setTarget(golem);
         double reach = CommonConfig.LICKER_CLAW_RANGE + golem.getBbWidth() * 0.5;
+        for (double height : new double[]{2.6, 2.8}) {
+            golem.setPos(licker.getX(), licker.getY() + height, licker.getZ());
+            h.assertTrue(!licker.inClawRange(golem), "Out-of-height victims must not suppress climbing: " + height);
+        }
         golem.setPos(licker.getX(), licker.getY(), licker.getZ() + reach + 0.1);
         h.assertTrue(!licker.inClawRange(golem), "Targets beyond the unchanged claw reach must not trigger it");
         golem.setPos(licker.getX(), licker.getY(), licker.getZ() + reach - 0.1);

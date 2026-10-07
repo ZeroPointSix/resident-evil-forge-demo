@@ -22,6 +22,8 @@ public final class CommonConfig {
     public static final float G1_SWEEP_DAMAGE = 18;
     public static final float G1_GRAB_DAMAGE = 6;
     public static final float G1_GRAB_THROW_DAMAGE = 8;
+    public static final double MELEE_MAX_Y_DIFFERENCE = 2.5;
+    public static final double MELEE_VERTICAL_SEARCH = 1.5;
     public static final double LICKER_ATTACK_SPEED = 1.90;
     public static final int LICKER_RECOVERY = 3;
     public static final int LICKER_TONGUE_COOLDOWN = 21;

@@ -72,6 +72,9 @@ public final class LickerEntity extends EncounterMob {
         // around wide targets while the tongue is cooling down.
         return validTarget(target)
                 && distanceTo(target) <= CommonConfig.LICKER_CLAW_RANGE + target.getBbWidth() * 0.5
+                && Math.abs(target.getY() - getY()) <= CommonConfig.MELEE_MAX_Y_DIFFERENCE
+                && getBoundingBox().inflate(CommonConfig.LICKER_CLAW_RANGE, CommonConfig.MELEE_VERTICAL_SEARCH,
+                        CommonConfig.LICKER_CLAW_RANGE).intersects(target.getBoundingBox())
                 && hasLineOfSight(target) && clearAttackLine(target);
     }
 

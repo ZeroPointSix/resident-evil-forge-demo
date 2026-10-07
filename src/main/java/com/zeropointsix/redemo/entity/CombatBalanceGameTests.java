@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
@@ -23,6 +25,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -32,8 +35,11 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 public final class CombatBalanceGameTests {
     private static final String BATCH = "combat_balance";
     private static final int ROUND_LIMIT = 2000;
+    private static final int ARENA_CENTER = 64;
+    private static final int ARENA_RADIUS = 60;
     private static final long[] SEEDS = {11, 29, 47, 83, 101, 131, 167, 191, 229, 257};
     private static Difficulty previousDifficulty;
+    private static final Set<Long> FORCED_ARENA_CHUNKS = new HashSet<>();
 
     private CombatBalanceGameTests() { }
 
@@ -46,6 +52,11 @@ public final class CombatBalanceGameTests {
     @AfterBatch(batch = BATCH)
     public static void restoreDifficulty(ServerLevel level) {
         if (previousDifficulty != null) level.getServer().setDifficulty(previousDifficulty, true);
+        for (long packed : FORCED_ARENA_CHUNKS) {
+            ChunkPos chunk = new ChunkPos(packed);
+            level.setChunkForced(chunk.x, chunk.z, false);
+        }
+        FORCED_ARENA_CHUNKS.clear();
     }
 
     @GameTest(template = "combat_arena", batch = BATCH, timeoutTicks = 21000)
@@ -61,15 +72,29 @@ public final class CombatBalanceGameTests {
     public static void tyrantVersusFiveGolems(GameTestHelper h) { measure(h, ModEntities.TYRANT.get(), 5); }
 
     private static void measure(GameTestHelper h, EntityType<? extends EncounterMob> type, int count) {
+        // GameTest only forces chunks near the structure origin, not a large arena's center.
+        // Keep the whole open floor active; never steer or teleport its combatants.
+        ChunkPos first = new ChunkPos(h.absolutePos(new BlockPos(0, 1, 0)));
+        ChunkPos last = new ChunkPos(h.absolutePos(new BlockPos(127, 1, 127)));
+        for (int x = first.x; x <= last.x; x++) for (int z = first.z; z <= last.z; z++) {
+            long packed = ChunkPos.asLong(x, z);
+            if (!h.getLevel().getForcedChunks().contains(packed)) {
+                h.getLevel().setChunkForced(x, z, true);
+                FORCED_ARENA_CHUNKS.add(packed);
+            }
+        }
         h.assertTrue(Math.abs(CommonConfig.DAMAGE_SCALE.get() - 1) < 0.0001,
                 "Combat benchmark requires damageScale=1, not a modified server config");
-        h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(24, 1, 24))).is(Blocks.STONE),
+        h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(ARENA_CENTER, 1, ARENA_CENTER))).is(Blocks.STONE),
                 "Arena template must actually place its flat stone floor before combat");
         int rounds = Math.max(1, Math.min(SEEDS.length, Integer.getInteger("re_demo.combatTrials", 1)));
         Trial[] active = {null};
         int[] wins = {0}, valid = {0};
         double[] threeGolemScore = {0};
         var sequence = h.startSequence();
+        sequence.thenWaitUntil(() -> h.assertTrue(h.getLevel().isPositionEntityTicking(
+                        h.absolutePos(new BlockPos(ARENA_CENTER, 2, ARENA_CENTER))),
+                "Arena center must be entity-ticking before spawning a duel"));
         for (int i = 0; i < rounds; i++) {
             long seed = SEEDS[i];
             sequence.thenExecute(() -> active[0] = new Trial(h, type, count, seed))
@@ -92,12 +117,16 @@ public final class CombatBalanceGameTests {
         sequence.thenExecute(() -> {
             h.assertTrue(valid[0] == rounds, "Every duel must finish on the unobstructed arena, without timeout");
             if (Boolean.getBoolean("re_demo.requireBalance")) {
-                int required = count == 3 ? 0 : count == 1 ? (rounds + 1) / 2 : rounds;
+                int required = count == 3 ? (rounds + 4) / 5 : count == 1 ? (rounds + 1) / 2 : rounds;
                 h.assertTrue(wins[0] >= required, "Combat win target: " + wins[0] + "/" + rounds + ", required=" + required);
+                if (count == 1 && rounds >= 5) h.assertTrue(wins[0] * 5 <= rounds * 4,
+                        "Licker vs 1 must remain near parity (at most 80% wins), got " + wins[0] + "/" + rounds);
                 if (count == 3) {
                     double score = threeGolemScore[0] / rounds;
-                    h.assertTrue(score >= 2 && score <= 3.35,
-                            "G1 vs 3 must be contested (2-3.35 golem-equivalent remaining-health score), got " + score);
+                    h.assertTrue(score >= 2 && score <= 3.2,
+                            "G1 vs 3 must be contested (2-3.2 golem-equivalent remaining-health score), got " + score);
+                    if (rounds >= 5) h.assertTrue(wins[0] * 5 <= rounds * 4,
+                            "G1 vs 3 requires 20-80% wins, got " + wins[0] + "/" + rounds);
                 }
             }
         }).thenSucceed();
@@ -110,7 +139,12 @@ public final class CombatBalanceGameTests {
         private final Vec3 center;
         private final long seed, start;
         private final int[] attacks = new int[8];
+        private final int[] damageEvents = new int[8];
+        private final double[] damageByAttack = new double[8];
+        private final float[] previousGolemHp;
         private int lastSequence;
+        private int idleTicks, idleStreak, longestIdleStreak;
+        private double maxDistanceFromCenter;
         private boolean valid = true;
         private String outcome = "running";
 
@@ -118,16 +152,18 @@ public final class CombatBalanceGameTests {
             helper = h;
             this.seed = seed;
             // Structure blocks place template y=0 at helper y=1, one block above their origin.
-            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(24, 2, 24)));
-            mob = h.spawn(type, new BlockPos(24, 2, 21));
+            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(ARENA_CENTER, 2, ARENA_CENTER)));
+            mob = h.spawn(type, new BlockPos(ARENA_CENTER, 2, ARENA_CENTER - 3));
             mob.getRandom().setSeed(seed);
             mob.setYRot(0);
             for (int i = 0; i < count; i++) {
-                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(24 + (i - count / 2) * 2, 2, 26));
+                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(ARENA_CENTER + (i - count / 2) * 2, 2, ARENA_CENTER + 2));
                 golem.getRandom().setSeed(seed * 31 + i);
                 golem.setTarget(mob);
                 golems.add(golem);
             }
+            previousGolemHp = new float[count];
+            for (int i = 0; i < count; i++) previousGolemHp[i] = golems.get(i).getHealth();
             IronGolem nearest = golems.get(count / 2);
             mob.setTarget(nearest);
             if (mob instanceof LickerEntity licker) {
@@ -138,6 +174,29 @@ public final class CombatBalanceGameTests {
         }
 
         private boolean finished() {
+            long elapsed = helper.getLevel().getGameTime() - start;
+            if (elapsed >= 20 && (mob.tickCount < elapsed - 3
+                    || golems.stream().anyMatch(g -> g.isAlive() && g.tickCount < elapsed - 3))) {
+                outcome = "inactive_entities";
+                valid = false;
+                return true;
+            }
+            int attack = mob.attack() >= 0 && mob.attack() < damageEvents.length ? mob.attack() : 0;
+            for (int i = 0; i < golems.size(); i++) {
+                float health = Math.max(0, golems.get(i).getHealth());
+                float damage = previousGolemHp[i] - health;
+                if (damage > 0) {
+                    damageEvents[attack]++;
+                    damageByAttack[attack] += damage;
+                }
+                previousGolemHp[i] = health;
+            }
+            boolean idleInReach = !mob.attacking() && EncounterMob.validTarget(mob.getTarget())
+                    && mob.distanceTo(mob.getTarget()) <= 4.2 && mob.hasLineOfSight(mob.getTarget());
+            idleStreak = idleInReach ? idleStreak + 1 : 0;
+            if (idleInReach) idleTicks++;
+            longestIdleStreak = Math.max(longestIdleStreak, idleStreak);
+            maxDistanceFromCenter = Math.max(maxDistanceFromCenter, mob.position().subtract(center).horizontalDistance());
             if (mob.attackSequence() != lastSequence) {
                 lastSequence = mob.attackSequence();
                 if (mob.attack() > 0 && mob.attack() < attacks.length) attacks[mob.attack()]++;
@@ -160,7 +219,8 @@ public final class CombatBalanceGameTests {
         }
 
         private boolean escaped(Vec3 position) {
-            return Math.abs(position.x - center.x) > 21 || Math.abs(position.z - center.z) > 21 || position.y < center.y - 0.5;
+            // No walls, teleports or inward steering: leave ample room for natural knockback.
+            return Math.abs(position.x - center.x) > ARENA_RADIUS || Math.abs(position.z - center.z) > ARENA_RADIUS || position.y < center.y - 0.5;
         }
 
         private void record() {
@@ -170,7 +230,14 @@ public final class CombatBalanceGameTests {
             report.addProperty("golems", golems.size());
             report.addProperty("seed", seed);
             report.addProperty("difficulty", helper.getLevel().getDifficulty().name());
-            report.addProperty("arena", "48x48 stone, open, full AI, normal attributes, initial targets only");
+            report.addProperty("arena", "128x128 stone, open, full AI, normal attributes, initial targets only");
+            report.addProperty("world_seed", helper.getLevel().getSeed());
+            report.addProperty("start_game_time", start);
+            report.addProperty("mob_entity_id", mob.getId());
+            report.addProperty("arena_center", center.toString());
+            report.addProperty("idle_in_reach_ticks", idleTicks);
+            report.addProperty("longest_idle_in_reach_ticks", longestIdleStreak);
+            report.addProperty("max_distance_from_center", maxDistanceFromCenter);
             report.addProperty("winner", outcome);
             report.addProperty("valid", valid);
             report.addProperty("ticks", helper.getLevel().getGameTime() - start);
@@ -181,11 +248,15 @@ public final class CombatBalanceGameTests {
             report.addProperty("armor", mob.getAttributeValue(Attributes.ARMOR));
             report.addProperty("movement_speed", mob.getAttributeValue(Attributes.MOVEMENT_SPEED));
             report.addProperty("knockback_resistance", mob.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
-            JsonArray hp = new JsonArray(), skillCounts = new JsonArray();
+            JsonArray hp = new JsonArray(), skillCounts = new JsonArray(), hits = new JsonArray(), damage = new JsonArray();
             golems.forEach(g -> hp.add(Math.max(0, g.getHealth())));
             for (int value : attacks) skillCounts.add(value);
+            for (int value : damageEvents) hits.add(value);
+            for (double value : damageByAttack) damage.add(value);
             report.add("golem_hp", hp);
             report.add("attack_counts_by_id", skillCounts);
+            report.add("observed_damage_events_by_attack_id", hits);
+            report.add("observed_damage_by_attack_id", damage);
             LogUtils.getLogger().info("RE_DEMO_COMBAT {}", report);
             try {
                 Files.writeString(Path.of("combat-results.jsonl"), report + System.lineSeparator(),

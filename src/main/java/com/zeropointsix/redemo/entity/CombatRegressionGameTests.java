@@ -4,6 +4,8 @@ import com.mojang.authlib.GameProfile;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.registry.ModEntities;
 import java.util.UUID;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -26,6 +28,10 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 @GameTestHolder(ResidentEvilMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class CombatRegressionGameTests {
+    private static final double ARROW_START_DISTANCE = 3;
+    private static final double ARROW_SPEED = 3;
+    private static final double ARROW_BASE_DAMAGE = 2;
+
     private CombatRegressionGameTests() { }
 
     @GameTest(template = "empty", timeoutTicks = 30)
@@ -127,6 +133,7 @@ public final class CombatRegressionGameTests {
 
     private static void exerciseSweepHits(GameTestHelper h, boolean arrow, boolean fromFront) {
         G1BirkinEntity[] mobs = sweepFixtures(h);
+        Map<G1BirkinEntity, Arrow> shots = new IdentityHashMap<>();
         int[] completed = {0};
         for (G1BirkinEntity mob : mobs) {
             G1BirkinEntity[] one = {mob};
@@ -139,12 +146,12 @@ public final class CombatRegressionGameTests {
                                 "Weak-point probe must run at exact sweep frame " + frame
                                         + ", actual=" + mob.attackTick()))
                         .thenExecute(() -> {
-                            if (arrow) shootAtEyeHeight(h, one, fromFront);
+                            if (arrow) shootAtEyeHeight(h, one, fromFront, shots);
                             else meleeAtEyeHeight(h, one, fromFront);
                         })
-                        .thenIdle(arrow ? 3 : 1)
+                        .thenIdle(arrow ? 5 : 1)
                         .thenExecute(() -> {
-                            if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1);
+                            if (arrow) assertArrowDamage(h, one, fromFront ? 1.75F : 1, shots);
                             if (++completed[0] == mobs.length * 2) h.succeed();
                         });
             }
@@ -154,7 +161,8 @@ public final class CombatRegressionGameTests {
     private static G1BirkinEntity[] sweepFixtures(GameTestHelper h) {
         G1BirkinEntity[] mobs = new G1BirkinEntity[4];
         for (int i = 0; i < mobs.length; i++) {
-            var mob = h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(4 + (i % 2) * 8, 2, 4 + (i / 2) * 8));
+            // Keep every 3-block projectile origin inside the 16x16 template, including yaw 270.
+            var mob = h.spawn(ModEntities.G1_BIRKIN.get(), new BlockPos(4 + (i % 2) * 7, 2, 4 + (i / 2) * 7));
             mob.setNoAi(true);
             mob.setNoGravity(true);
             mob.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1);
@@ -169,7 +177,7 @@ public final class CombatRegressionGameTests {
         return new Vec3(0, 0, 1).yRot(-mob.yBodyRot * Mth.DEG_TO_RAD);
     }
 
-    private static void shootAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront) {
+    private static void shootAtEyeHeight(GameTestHelper h, G1BirkinEntity[] mobs, boolean fromFront, Map<G1BirkinEntity, Arrow> shots) {
         for (G1BirkinEntity mob : mobs) {
             h.assertTrue(mob.isEyeOpen(), "Sweep must expose the eye at ticks 20 and 29");
             h.assertTrue(mob.eyePart().getBoundingBox().getCenter().distanceTo(mob.eyeCenter()) < 0.001,
@@ -177,21 +185,31 @@ public final class CombatRegressionGameTests {
             mob.invulnerableTime = 0;
             mob.setHealth(mob.getMaxHealth());
             Vec3 direction = front(mob).scale(fromFront ? 1 : -1);
-            Vec3 start = mob.eyeCenter().add(direction.scale(3));
+            Vec3 start = mob.eyeCenter().add(direction.scale(ARROW_START_DISTANCE));
             Arrow arrow = new Arrow(h.getLevel(), start.x, start.y, start.z);
             arrow.setNoGravity(true);
-            arrow.setBaseDamage(2);
-            arrow.setDeltaMovement(direction.scale(-3));
-            h.getLevel().addFreshEntity(arrow);
+            arrow.setBaseDamage(ARROW_BASE_DAMAGE);
+            arrow.setDeltaMovement(direction.scale(-ARROW_SPEED));
+            Vec3 end = start.subtract(direction.scale(ARROW_START_DISTANCE + 1));
+            var predicted = ProjectileUtil.getEntityHitResult(h.getLevel(), arrow, start, end,
+                    new AABB(start, end).inflate(0.3), entity -> entity.isPickable() && !entity.isSpectator());
+            h.assertTrue(predicted != null && (predicted.getEntity() == mob || predicted.getEntity() == mob.eyePart()),
+                    "Arrow path must intersect the actual boss/eye before release: yaw=" + mob.yBodyRot);
+            h.assertTrue(h.getLevel().addFreshEntity(arrow), "Probe arrow must be registered in the real world");
+            shots.put(mob, arrow);
         }
     }
 
-    private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs, float multiplier) {
-        float expected = CombatRules.getDamageAfterAbsorb(6, 8, 0) * multiplier;
+    private static void assertArrowDamage(GameTestHelper h, G1BirkinEntity[] mobs, float multiplier, Map<G1BirkinEntity, Arrow> shots) {
+        float expected = CombatRules.getDamageAfterAbsorb(Mth.ceil(ARROW_SPEED * ARROW_BASE_DAMAGE), 8, 0) * multiplier;
         for (G1BirkinEntity mob : mobs) {
+            Arrow shot = shots.get(mob);
             h.assertTrue(Math.abs(mob.getMaxHealth() - mob.getHealth() - expected) < 0.01,
                     "Moving vanilla arrow must respect the first hit region, multiplier=" + multiplier
-                            + " yaw=" + mob.yBodyRot + " actual=" + (mob.getMaxHealth() - mob.getHealth()));
+                            + " yaw=" + mob.yBodyRot + " actual=" + (mob.getMaxHealth() - mob.getHealth())
+                            + " arrowTick=" + shot.tickCount + " arrowPos=" + shot.position()
+                            + " arrowVelocity=" + shot.getDeltaMovement() + " removed=" + shot.isRemoved()
+                            + " eye=" + mob.eyePart().getBoundingBox() + " body=" + mob.getBoundingBox());
         }
     }
 

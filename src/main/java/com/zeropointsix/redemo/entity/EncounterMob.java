@@ -146,7 +146,8 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     protected double animationSpeed() { return attacking() ? entityData.get(ATTACK_RATE) : 1; }
 
     protected int attackFrameAt(int modelTick) {
-        return Math.max(1, (int) Math.ceil(modelTick / animationSpeed()));
+        // Network float precision must not turn exact contacts (9 / 1.8) into a late tick.
+        return Math.max(1, (int) Math.ceil(modelTick / animationSpeed() - 1.0e-6));
     }
 
     protected void trackWindup(float turnDegrees) {

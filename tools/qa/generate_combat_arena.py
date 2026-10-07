@@ -1,9 +1,10 @@
-"""Generate an open 48x48 arena within Minecraft's structure-block size limit."""
+"""Generate an open 128x128 arena loaded directly by the GameTest structure API."""
 
 import gzip
 from pathlib import Path
 import struct
 
+SIZE = 128
 
 def string(value):
     data = value.encode("utf-8")
@@ -27,10 +28,10 @@ def generate():
     blocks = [
         list_tag("pos", 3, [integer(x), integer(0), integer(z)])
         + tag(3, "state", integer(0)) + b"\x00"
-        for x in range(48) for z in range(48)
+        for x in range(SIZE) for z in range(SIZE)
     ]
     body = tag(3, "DataVersion", integer(3465))
-    body += list_tag("size", 3, [integer(48), integer(12), integer(48)])
+    body += list_tag("size", 3, [integer(SIZE), integer(12), integer(SIZE)])
     body += list_tag("palette", 10, [palette])
     body += list_tag("blocks", 10, blocks)
     body += list_tag("entities", 10, []) + b"\x00"

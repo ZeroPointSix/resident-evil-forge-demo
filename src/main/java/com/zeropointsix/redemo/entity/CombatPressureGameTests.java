@@ -2,6 +2,7 @@ package com.zeropointsix.redemo.entity;
 
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.config.CommonConfig;
+import com.zeropointsix.redemo.entity.ai.SoundInvestigateGoal;
 import com.zeropointsix.redemo.registry.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -17,6 +18,56 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class CombatPressureGameTests {
     private CombatPressureGameTests() { }
+
+    @GameTest(template = "empty", timeoutTicks = 30)
+    public static void soundPursuitResumesAtEveryTickPhase(GameTestHelper h) {
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) h.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(5, 1, 3));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(5, 1, 10));
+        licker.setNoAi(true);
+        target.setNoAi(true);
+        // This test drives only the goal lifecycle, before the first physics tick.
+        licker.setOnGround(true);
+        licker.setTarget(target);
+        var goal = new SoundInvestigateGoal(licker);
+        h.assertTrue(goal.requiresUpdateEveryTick(), "Pursuit must not depend on alternate goal ticks");
+        for (int phase = 0; phase < 10; phase++) {
+            licker.tickCount = phase;
+            goal.stop();
+            goal.start();
+            h.assertTrue(!licker.getNavigation().isDone(), "Attack recovery must resume navigation immediately at phase " + phase);
+        }
+        goal.stop();
+        licker.startAttack(LickerEntity.CLAW, 20, 2, 1.8);
+        goal.start();
+        goal.tick();
+        h.assertTrue(licker.getNavigation().isDone(), "An alternate goal tick must not restart navigation during an attack");
+        h.assertTrue(licker.attackFrameAt(9) == 5, "Exact model contact must not be delayed by float replication");
+        h.assertTrue(licker.attackFrameAt(20) == 12, "Fractional end frames must still round upward");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void acceleratedTongueHitsAtContactAndPullsOnce(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
+        var golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 7));
+        licker.setNoAi(true);
+        licker.setNoGravity(true);
+        golem.setNoAi(true);
+        golem.setNoGravity(true);
+        licker.setTarget(golem);
+        licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        int impact = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME);
+        h.runAfterDelay(impact - 1, () -> h.assertTrue(golem.getHealth() == 100, "Tongue telegraph must not deal early damage"));
+        h.runAfterDelay(impact + 1, () -> {
+            h.assertTrue(golem.getHealth() == 92, "Tongue contact must land its configured damage exactly once");
+            h.assertTrue(golem.getDeltaMovement().z < 0, "A landed tongue must pull toward the Licker");
+        });
+        h.runAfterDelay(22, () -> {
+            h.assertTrue(golem.getHealth() == 92 && !licker.attacking(), "Tongue recovery cannot repeat the hit");
+            h.succeed();
+        });
+    }
 
     @GameTest(template = "empty", timeoutTicks = 50)
     public static void acceleratedClawKeepsTelegraphAndSingleHit(GameTestHelper h) {

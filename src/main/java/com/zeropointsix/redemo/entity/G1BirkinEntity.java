@@ -63,7 +63,7 @@ public final class G1BirkinEntity extends EncounterMob {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.BIRKIN_HEALTH)
                 .add(Attributes.ARMOR, 8).add(Attributes.MOVEMENT_SPEED, 0.24)
                 .add(Attributes.ATTACK_DAMAGE, CommonConfig.G1_SLAM_DAMAGE).add(Attributes.FOLLOW_RANGE, 40)
-                .add(Attributes.KNOCKBACK_RESISTANCE, 0.7);
+                .add(Attributes.KNOCKBACK_RESISTANCE, CommonConfig.G1_KNOCKBACK_RESISTANCE);
     }
 
     @Override
@@ -165,12 +165,12 @@ public final class G1BirkinEntity extends EncounterMob {
             advanceTowardTarget(CommonConfig.G1_LUNGE_SPEED, 2.2);
         }
         if ((attack == SLAM || attack == LUNGE) && tick == attackFrameAt(18)) {
-            strike(3.3, 140, CommonConfig.G1_SLAM_DAMAGE, 0.7);
+            strike(CommonConfig.G1_SLAM_RANGE, CommonConfig.G1_SLAM_ARC, CommonConfig.G1_SLAM_DAMAGE, 0.7);
             openWeakPoint(isBerserk() ? CommonConfig.G1_BERSERK_EYE_WINDOW : CommonConfig.G1_EYE_WINDOW);
             if (level() instanceof ServerLevel server) server.sendParticles(ParticleTypes.POOF, getX() + forward().x * 2, getY() + 0.1, getZ() + forward().z * 2, 20, 1.2, 0.1, 1.2, 0.05);
         }
         if (attack == SWEEP && tick == attackFrameAt(20)) {
-            strike(3.6, 160, CommonConfig.G1_SWEEP_DAMAGE, 1.0);
+            strike(CommonConfig.G1_SWEEP_RANGE, CommonConfig.G1_SWEEP_ARC, CommonConfig.G1_SWEEP_DAMAGE, 1.0);
             openWeakPoint(isBerserk() ? CommonConfig.G1_BERSERK_EYE_WINDOW : CommonConfig.G1_EYE_WINDOW);
         }
         if (attack == GRAB && tick == attackFrameAt(15)) {

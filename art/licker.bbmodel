@@ -28911,7 +28911,7 @@
                 }
               ],
               "uuid": "95e0ad40-faeb-5580-82da-dbbfbc4de580",
-              "time": 0.55,
+              "time": 0.45,
               "color": -1,
               "interpolation": "linear"
             },
@@ -28925,7 +28925,7 @@
                 }
               ],
               "uuid": "a47dd169-3561-5f75-9a50-077da40d6f23",
-              "time": 0.55,
+              "time": 0.45,
               "color": -1,
               "interpolation": "linear"
             },
@@ -29001,7 +29001,7 @@
                 }
               ],
               "uuid": "92c68bfb-a6a5-5ea6-8563-a8b4c2651b2f",
-              "time": 0.55,
+              "time": 0.45,
               "color": -1,
               "interpolation": "linear"
             },
@@ -29063,7 +29063,7 @@
                 }
               ],
               "uuid": "c3fd198d-1154-52ef-8165-b3e8dd7e05cb",
-              "time": 0.55,
+              "time": 0.45,
               "color": -1,
               "interpolation": "linear"
             },

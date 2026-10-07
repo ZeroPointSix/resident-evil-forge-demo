@@ -31,6 +31,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -163,10 +164,20 @@ public final class CombatBalanceGameTests {
     private static void prepareOpenArena(GameTestHelper h) {
         // Finish chunk generation before clearing: newly generated neighbor features must
         // not refill the test volume after the template was initially placed.
-        for (int x = 0; x < 128; x++) for (int z = 0; z < 128; z++) for (int y = 1; y <= 13; y++) {
-            BlockPos position = h.absolutePos(new BlockPos(x, y, z));
-            var wanted = y == 1 ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState();
-            if (h.getLevel().getBlockState(position) != wanted) h.getLevel().setBlock(position, wanted, 2);
+        for (int x = 0; x < 128; x++) for (int z = 0; z < 128; z++) {
+            prepareOpenColumn(h.getLevel(), h.absolutePos(new BlockPos(x, 1, z)));
+        }
+    }
+
+    static void prepareOpenColumn(ServerLevel level, BlockPos floor) {
+        // Clearing only the template height leaves generated fluids above it free
+        // to fall into later rounds. Clear the actual column before any AI spawns.
+        int top = Math.min(level.getMaxBuildHeight() - 1, Math.max(floor.getY() + 12,
+                level.getHeight(Heightmap.Types.WORLD_SURFACE, floor.getX(), floor.getZ())));
+        for (int y = floor.getY(); y <= top; y++) {
+            BlockPos position = new BlockPos(floor.getX(), y, floor.getZ());
+            var wanted = y == floor.getY() ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState();
+            if (level.getBlockState(position) != wanted) level.setBlock(position, wanted, 2);
         }
     }
 

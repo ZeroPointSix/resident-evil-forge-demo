@@ -19,6 +19,29 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 public final class CombatPressureGameTests {
     private CombatPressureGameTests() { }
 
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void openArenaColumnRemovesOverheadFluidBeforeCombat(GameTestHelper h) {
+        BlockPos floor = h.absolutePos(new BlockPos(4, 1, 4));
+        BlockPos overhead = floor.above(20);
+        BlockPos neighbor = overhead.east();
+        var level = h.getLevel();
+        level.setBlock(overhead, Blocks.LAVA.defaultBlockState(), 2);
+        level.setBlock(overhead.above(), Blocks.STONE.defaultBlockState(), 2);
+        level.setBlock(neighbor, Blocks.GLASS.defaultBlockState(), 2);
+        try {
+            CombatBalanceGameTests.prepareOpenColumn(level, floor);
+            h.assertTrue(level.getBlockState(floor).is(Blocks.STONE), "Arena keeps its solid floor");
+            h.assertTrue(level.getBlockState(overhead).isAir() && level.getBlockState(overhead.above()).isAir(),
+                    "A generated lava source and roof above template height must be cleared before combat");
+            h.assertTrue(level.getBlockState(neighbor).is(Blocks.GLASS), "Column preparation must not modify its neighbor");
+            h.succeed();
+        } finally {
+            level.setBlock(overhead, Blocks.AIR.defaultBlockState(), 2);
+            level.setBlock(overhead.above(), Blocks.AIR.defaultBlockState(), 2);
+            level.setBlock(neighbor, Blocks.AIR.defaultBlockState(), 2);
+        }
+    }
+
     @GameTest(template = "empty", timeoutTicks = 30)
     public static void clawEngagesAtVictimEdgeWithoutExtendingContact(GameTestHelper h) {
         var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));

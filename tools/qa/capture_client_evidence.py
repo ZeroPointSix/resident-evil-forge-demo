@@ -1332,6 +1332,8 @@ class Capture:
                             if (row["uuid"], row["seq"], row["attack"]) != (frame["uuid"], frame["seq"], frame["attack"]):
                                 continue
                             tick = int(row["tick"])
+                            if tick <= last_visible_tick:
+                                continue
                             if row["resumed"] == "true" and row["first"] == "false" and tick - previous_tick >= 4:
                                 evidence_row = row
                                 succeeded = True

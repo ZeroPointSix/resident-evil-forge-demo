@@ -35,7 +35,7 @@ jobs:
       - name: Run real Forge GameTests
         run: |
           set -o pipefail
-          ./gradlew runGameTestServer --stacktrace --no-daemon -Dre_demo.combatTrials=5 -Dre_demo.combatLabel=${{ github.sha }} 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
+          ./gradlew runGameTestServer --stacktrace --no-daemon -Dre_demo.combatTrials=10 -Dre_demo.combatLabel=${{ github.sha }} 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:

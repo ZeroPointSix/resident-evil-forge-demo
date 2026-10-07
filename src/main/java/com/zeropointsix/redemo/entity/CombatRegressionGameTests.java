@@ -194,7 +194,11 @@ public final class CombatRegressionGameTests {
             var predicted = ProjectileUtil.getEntityHitResult(h.getLevel(), arrow, start, end,
                     new AABB(start, end).inflate(0.3), entity -> entity.isPickable() && !entity.isSpectator());
             h.assertTrue(predicted != null && (predicted.getEntity() == mob || predicted.getEntity() == mob.eyePart()),
-                    "Arrow path must intersect the actual boss/eye before release: yaw=" + mob.yBodyRot);
+                    "Arrow path must intersect the actual boss/eye before release: yaw=" + mob.yBodyRot
+                            + " frame=" + mob.attackTick() + " mob=" + mob.getId() + " start=" + start + " end=" + end
+                            + " eye=" + mob.eyePart().getBoundingBox() + " body=" + mob.getBoundingBox()
+                            + " predicted=" + (predicted == null ? "none" : predicted.getEntity().getType()
+                                    + "#" + predicted.getEntity().getId() + " at " + predicted.getLocation()));
             h.assertTrue(h.getLevel().addFreshEntity(arrow), "Probe arrow must be registered in the real world");
             shots.put(mob, arrow);
         }

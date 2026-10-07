@@ -481,15 +481,15 @@ public final class CreatureGameTests {
         licker.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0);
         licker.hear(attacker.position(), attacker, 16);
         licker.hear(attacker.position(), attacker, 16);
-        h.runAfterDelay(3, () -> {
-            h.assertTrue(licker.attacking(), "Fixture must be attacking before lethal damage");
+        h.startSequence().thenWaitUntil(() -> {
+            h.assertTrue(licker.isAlive() && licker.getTarget() == attacker && licker.attacking(),
+                    "Fixture must naturally acquire its attacker and start attacking before lethal damage");
+        }).thenExecute(() -> {
             licker.hurt(licker.damageSources().mobAttack(attacker), 10000);
             h.assertTrue(!licker.isAlive() && licker.getTarget() == null && !licker.attacking(), "Lethal damage must clear target and animation in the same tick");
-        });
-        h.runAfterDelay(5, () -> {
+        }).thenIdle(2).thenExecute(() -> {
             h.assertTrue(licker.getTarget() == null && !licker.attacking(), "Dead Licker must not reacquire its attacker");
-            h.succeed();
-        });
+        }).thenSucceed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 200)

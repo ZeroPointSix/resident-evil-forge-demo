@@ -13,6 +13,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.AfterBatch;
@@ -21,7 +23,10 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.level.block.Blocks;
@@ -161,6 +166,8 @@ public final class CombatBalanceGameTests {
         private final int[] damageEvents = new int[8];
         private final double[] damageByAttack = new double[8];
         private final float[] previousGolemHp;
+        private final Map<LivingEntity, Double> peakHeights = new IdentityHashMap<>();
+        private final JsonArray naturalFalls = new JsonArray();
         private int lastSequence;
         private int idleTicks, idleStreak, longestIdleStreak;
         private double maxDistanceFromCenter;
@@ -211,9 +218,12 @@ public final class CombatBalanceGameTests {
                 return true;
             }
             int attack = mob.attack() >= 0 && mob.attack() < damageEvents.length ? mob.attack() : 0;
+            peakHeights.merge(mob, mob.getY() - center.y, Math::max);
+            for (IronGolem golem : golems) peakHeights.merge(golem, golem.getY() - center.y, Math::max);
             if (mob.getHealth() < previousMobHp) {
                 var source = mob.getLastDamageSource();
-                if (source == null || !golems.contains(source.getEntity())) {
+                if ((source == null || !golems.contains(source.getEntity()))
+                        && !naturalCombatFall(mob, source, previousMobHp - mob.getHealth())) {
                     outcome = "environmental_damage";
                     invalidReason = "Mob hurt by " + (source == null ? "unknown" : source.getMsgId());
                     valid = false;
@@ -226,14 +236,17 @@ public final class CombatBalanceGameTests {
                 float damage = previousGolemHp[i] - health;
                 if (damage > 0) {
                     var source = golems.get(i).getLastDamageSource();
-                    if (source == null || source.getEntity() != mob) {
+                    if ((source == null || source.getEntity() != mob)
+                            && !naturalCombatFall(golems.get(i), source, damage)) {
                         outcome = "environmental_damage";
                         invalidReason = "Golem hurt by " + (source == null ? "unknown" : source.getMsgId());
                         valid = false;
                         return true;
                     }
-                    damageEvents[attack]++;
-                    damageByAttack[attack] += damage;
+                    if (source != null && source.getEntity() == mob) {
+                        damageEvents[attack]++;
+                        damageByAttack[attack] += damage;
+                    }
                 }
                 previousGolemHp[i] = health;
             }
@@ -269,6 +282,28 @@ public final class CombatBalanceGameTests {
             return Math.abs(position.x - center.x) > ARENA_RADIUS || Math.abs(position.z - center.z) > ARENA_RADIUS || position.y < center.y - 0.5;
         }
 
+        private boolean naturalCombatFall(LivingEntity victim, DamageSource source, float damage) {
+            if (source == null || !source.is(DamageTypes.FALL) || escaped(victim.position())) return false;
+            LivingEntity attacker = victim.getLastHurtByMob();
+            int sinceHit = victim.tickCount - victim.getLastHurtByMobTimestamp();
+            boolean opponent = victim == mob ? golems.contains(attacker) : attacker == mob;
+            double peak = peakHeights.getOrDefault(victim, 0.0);
+            if (!opponent || sinceHit < 0 || sinceHit > 100 || peak <= 1
+                    || Math.abs(victim.getY() - center.y) > 0.05
+                    || !helper.getLevel().getBlockState(victim.blockPosition().below()).is(Blocks.STONE)) return false;
+            // Golem uppercuts and G1 throws may naturally cause a fall onto the flat floor.
+            // Record that physics damage separately; suffocation and other terrain damage stay invalid.
+            JsonObject fall = new JsonObject();
+            fall.addProperty("entity_id", victim.getId());
+            fall.addProperty("tick", helper.getLevel().getGameTime() - start);
+            fall.addProperty("damage", damage);
+            fall.addProperty("peak_height", peak);
+            fall.addProperty("ticks_since_opponent_hit", sinceHit);
+            naturalFalls.add(fall);
+            peakHeights.put(victim, 0.0);
+            return true;
+        }
+
         private void record() {
             JsonObject report = new JsonObject();
             report.addProperty("label", System.getProperty("re_demo.combatLabel", "unlabelled"));
@@ -287,6 +322,7 @@ public final class CombatBalanceGameTests {
             report.addProperty("winner", outcome);
             report.addProperty("valid", valid);
             report.addProperty("invalid_reason", invalidReason);
+            report.add("natural_combat_falls", naturalFalls);
             report.addProperty("ticks", helper.getLevel().getGameTime() - start);
             report.addProperty("seconds", (helper.getLevel().getGameTime() - start) / 20.0);
             report.addProperty("mob_hp", Math.max(0, mob.getHealth()));

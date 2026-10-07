@@ -49,8 +49,8 @@ public final class CommonConfig {
     public static final double G1_ATTACK_SPEED = 1.35;
     public static final double G1_BERSERK_ATTACK_SPEED = 1.75;
     public static final double G1_GRAB_MAX_SPEED = 1.5;
-    public static final int G1_RECOVERY = 10;
-    public static final int G1_BERSERK_RECOVERY = 5;
+    public static final int G1_RECOVERY = 12;
+    public static final int G1_BERSERK_RECOVERY = 6;
     public static final double G1_KNOCKBACK_RESISTANCE = 0.45;
     public static final double G1_SLAM_RANGE = 3.3;
     public static final double G1_SLAM_ARC = 80;

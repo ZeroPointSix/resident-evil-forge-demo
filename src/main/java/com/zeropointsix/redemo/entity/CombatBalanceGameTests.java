@@ -52,11 +52,16 @@ public final class CombatBalanceGameTests {
     @AfterBatch(batch = BATCH)
     public static void restoreDifficulty(ServerLevel level) {
         if (previousDifficulty != null) level.getServer().setDifficulty(previousDifficulty, true);
+        int owned = FORCED_ARENA_CHUNKS.size();
         for (long packed : FORCED_ARENA_CHUNKS) {
             ChunkPos chunk = new ChunkPos(packed);
             level.setChunkForced(chunk.x, chunk.z, false);
         }
+        boolean released = FORCED_ARENA_CHUNKS.stream().noneMatch(level.getForcedChunks()::contains);
+        LogUtils.getLogger().info("RE_DEMO_ARENA_RELEASE owned={} released={} remaining_forced={}",
+                owned, released, level.getForcedChunks().size());
         FORCED_ARENA_CHUNKS.clear();
+        if (!released) throw new IllegalStateException("Combat arena chunk tickets must be released after the batch");
     }
 
     @GameTest(template = "combat_arena", batch = BATCH, timeoutTicks = 21000)
@@ -83,6 +88,7 @@ public final class CombatBalanceGameTests {
                 FORCED_ARENA_CHUNKS.add(packed);
             }
         }
+        LogUtils.getLogger().info("RE_DEMO_ARENA_FORCE mob={} golems={} owned_chunks={}", type, count, FORCED_ARENA_CHUNKS);
         h.assertTrue(Math.abs(CommonConfig.DAMAGE_SCALE.get() - 1) < 0.0001,
                 "Combat benchmark requires damageScale=1, not a modified server config");
         h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(ARENA_CENTER, 1, ARENA_CENTER))).is(Blocks.STONE),
@@ -92,9 +98,12 @@ public final class CombatBalanceGameTests {
         int[] wins = {0}, valid = {0};
         double[] threeGolemScore = {0};
         var sequence = h.startSequence();
-        sequence.thenWaitUntil(() -> h.assertTrue(h.getLevel().isPositionEntityTicking(
-                        h.absolutePos(new BlockPos(ARENA_CENTER, 2, ARENA_CENTER))),
-                "Arena center must be entity-ticking before spawning a duel"));
+        sequence.thenWaitUntil(() -> {
+            for (int x = first.x; x <= last.x; x++) for (int z = first.z; z <= last.z; z++) {
+                h.assertTrue(h.getLevel().isPositionEntityTicking(new BlockPos(x * 16 + 8, 0, z * 16 + 8)),
+                        "Every arena chunk must be entity-ticking before either side spawns: " + x + "," + z);
+            }
+        }).thenExecute(() -> prepareOpenArena(h));
         for (int i = 0; i < rounds; i++) {
             long seed = SEEDS[i];
             sequence.thenExecute(() -> active[0] = new Trial(h, type, count, seed))
@@ -132,6 +141,16 @@ public final class CombatBalanceGameTests {
         }).thenSucceed();
     }
 
+    private static void prepareOpenArena(GameTestHelper h) {
+        // Finish chunk generation before clearing: newly generated neighbor features must
+        // not refill the test volume after the template was initially placed.
+        for (int x = 0; x < 128; x++) for (int z = 0; z < 128; z++) for (int y = 1; y <= 13; y++) {
+            BlockPos position = h.absolutePos(new BlockPos(x, y, z));
+            var wanted = y == 1 ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState();
+            if (h.getLevel().getBlockState(position) != wanted) h.getLevel().setBlock(position, wanted, 2);
+        }
+    }
+
     private static final class Trial {
         private final GameTestHelper helper;
         private final EncounterMob mob;
@@ -145,6 +164,8 @@ public final class CombatBalanceGameTests {
         private int lastSequence;
         private int idleTicks, idleStreak, longestIdleStreak;
         private double maxDistanceFromCenter;
+        private float previousMobHp;
+        private String invalidReason = "";
         private boolean valid = true;
         private String outcome = "running";
 
@@ -164,6 +185,13 @@ public final class CombatBalanceGameTests {
             }
             previousGolemHp = new float[count];
             for (int i = 0; i < count; i++) previousGolemHp[i] = golems.get(i).getHealth();
+            previousMobHp = mob.getHealth();
+            if (h.getLevel().getBlockCollisions(mob, mob.getBoundingBox()).iterator().hasNext()
+                    || golems.stream().anyMatch(g -> h.getLevel().getBlockCollisions(g, g.getBoundingBox()).iterator().hasNext())) {
+                valid = false;
+                outcome = "obstructed_spawn";
+                invalidReason = "A combatant spawned inside a block";
+            }
             IronGolem nearest = golems.get(count / 2);
             mob.setTarget(nearest);
             if (mob instanceof LickerEntity licker) {
@@ -174,6 +202,7 @@ public final class CombatBalanceGameTests {
         }
 
         private boolean finished() {
+            if (!valid) return true;
             long elapsed = helper.getLevel().getGameTime() - start;
             if (elapsed >= 20 && (mob.tickCount < elapsed - 3
                     || golems.stream().anyMatch(g -> g.isAlive() && g.tickCount < elapsed - 3))) {
@@ -182,10 +211,27 @@ public final class CombatBalanceGameTests {
                 return true;
             }
             int attack = mob.attack() >= 0 && mob.attack() < damageEvents.length ? mob.attack() : 0;
+            if (mob.getHealth() < previousMobHp) {
+                var source = mob.getLastDamageSource();
+                if (source == null || !golems.contains(source.getEntity())) {
+                    outcome = "environmental_damage";
+                    invalidReason = "Mob hurt by " + (source == null ? "unknown" : source.getMsgId());
+                    valid = false;
+                    return true;
+                }
+            }
+            previousMobHp = mob.getHealth();
             for (int i = 0; i < golems.size(); i++) {
                 float health = Math.max(0, golems.get(i).getHealth());
                 float damage = previousGolemHp[i] - health;
                 if (damage > 0) {
+                    var source = golems.get(i).getLastDamageSource();
+                    if (source == null || source.getEntity() != mob) {
+                        outcome = "environmental_damage";
+                        invalidReason = "Golem hurt by " + (source == null ? "unknown" : source.getMsgId());
+                        valid = false;
+                        return true;
+                    }
                     damageEvents[attack]++;
                     damageByAttack[attack] += damage;
                 }
@@ -240,6 +286,7 @@ public final class CombatBalanceGameTests {
             report.addProperty("max_distance_from_center", maxDistanceFromCenter);
             report.addProperty("winner", outcome);
             report.addProperty("valid", valid);
+            report.addProperty("invalid_reason", invalidReason);
             report.addProperty("ticks", helper.getLevel().getGameTime() - start);
             report.addProperty("seconds", (helper.getLevel().getGameTime() - start) / 20.0);
             report.addProperty("mob_hp", Math.max(0, mob.getHealth()));

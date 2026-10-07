@@ -22,6 +22,7 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -114,12 +115,14 @@ public final class CombatBalanceGameTests {
             h.assertTrue(Math.abs(CommonConfig.DAMAGE_SCALE.get() - 1) < 0.0001,
                     "Combat benchmark requires damageScale=1, not a modified server config");
             this.seed = seed;
-            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(32, 1, 32)));
-            mob = h.spawn(type, new BlockPos(32, 1, 29));
+            center = Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(24, 1, 24)));
+            h.assertTrue(h.getLevel().getBlockState(h.absolutePos(new BlockPos(24, 0, 24))).is(Blocks.STONE),
+                    "Arena template must actually place its flat stone floor before combat");
+            mob = h.spawn(type, new BlockPos(24, 1, 21));
             mob.getRandom().setSeed(seed);
             mob.setYRot(0);
             for (int i = 0; i < count; i++) {
-                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(32 + (i - count / 2) * 2, 1, 34));
+                IronGolem golem = h.spawn(EntityType.IRON_GOLEM, new BlockPos(24 + (i - count / 2) * 2, 1, 26));
                 golem.getRandom().setSeed(seed * 31 + i);
                 golem.setTarget(mob);
                 golems.add(golem);
@@ -156,7 +159,7 @@ public final class CombatBalanceGameTests {
         }
 
         private boolean escaped(Vec3 position) {
-            return Math.abs(position.x - center.x) > 29 || Math.abs(position.z - center.z) > 29 || position.y < center.y - 0.5;
+            return Math.abs(position.x - center.x) > 21 || Math.abs(position.z - center.z) > 21 || position.y < center.y - 0.5;
         }
 
         private void record() {
@@ -166,7 +169,7 @@ public final class CombatBalanceGameTests {
             report.addProperty("golems", golems.size());
             report.addProperty("seed", seed);
             report.addProperty("difficulty", helper.getLevel().getDifficulty().name());
-            report.addProperty("arena", "64x64 stone, open, full AI, normal attributes, initial targets only");
+            report.addProperty("arena", "48x48 stone, open, full AI, normal attributes, initial targets only");
             report.addProperty("winner", outcome);
             report.addProperty("valid", valid);
             report.addProperty("ticks", helper.getLevel().getGameTime() - start);

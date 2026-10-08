@@ -133,8 +133,8 @@ public final class CombatPressureGameTests {
         target.setNoGravity(true);
         licker.setTarget(target);
         licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
-        h.assertTrue(licker.cooldown == licker.attackFrameAt(24) + 2,
-                "Tongue recovery is two ticks after its complete animation, not a truncated clip");
+        h.assertTrue(licker.cooldown == licker.attackFrameAt(24) + 1,
+                "Tongue recovery is one tick after its complete animation, not a truncated clip");
         target.setPos(licker.getX() + 3, licker.getY(), licker.getZ());
         licker.attackFrame(LickerEntity.TONGUE, 1);
         h.assertTrue(Math.abs(licker.attackYaw + 20) < 0.01, "Tongue turns at the bounded 20 degrees per windup tick");

@@ -70,7 +70,7 @@ public final class LickerEntity extends EncounterMob {
 
     int nextTongueRecovery() {
         // Carry fractional ticks across attacks instead of rounding every
-        // recovery up; 1.5 ticks becomes a repeatable 2, 1 cadence.
+        // recovery up; 1.25 ticks becomes a repeatable 2, 1, 1, 1 cadence.
         double budget = CommonConfig.LICKER_TONGUE_RECOVERY + tongueRecoveryRemainder;
         int ticks = (int) Math.ceil(budget);
         tongueRecoveryRemainder = budget - ticks;

@@ -135,9 +135,9 @@ public final class CombatPressureGameTests {
         licker.startAttack(LickerEntity.TONGUE, 24, licker.nextTongueRecovery(), CommonConfig.LICKER_ATTACK_SPEED);
         h.assertTrue(licker.cooldown == licker.attackFrameAt(24) + 2,
                 "The first tongue completes its whole animation before two recovery ticks");
-        h.assertTrue(licker.nextTongueRecovery() == 1 && licker.nextTongueRecovery() == 2
-                        && licker.nextTongueRecovery() == 1,
-                "Fractional recovery carries across attacks as 2,1,2,1 ticks without random jitter");
+        h.assertTrue(licker.nextTongueRecovery() == 1 && licker.nextTongueRecovery() == 1
+                        && licker.nextTongueRecovery() == 1 && licker.nextTongueRecovery() == 2,
+                "Fractional recovery carries across attacks as 2,1,1,1 ticks without random jitter");
         target.setPos(licker.getX() + 3, licker.getY(), licker.getZ());
         licker.attackFrame(LickerEntity.TONGUE, 1);
         h.assertTrue(Math.abs(licker.attackYaw + 20) < 0.01, "Tongue turns at the bounded 20 degrees per windup tick");

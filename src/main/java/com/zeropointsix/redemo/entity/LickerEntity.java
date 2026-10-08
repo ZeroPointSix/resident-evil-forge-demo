@@ -32,6 +32,7 @@ public final class LickerEntity extends EncounterMob {
     private int hangTicks;
     private int leapCooldown;
     private int tongueCooldown;
+    private double tongueRecoveryRemainder;
     private int hangCooldown;
 
     public LickerEntity(EntityType<? extends Monster> type, Level level) { super(type, level); }
@@ -66,6 +67,15 @@ public final class LickerEntity extends EncounterMob {
     public boolean isHanging() { return entityData.get(HANGING); }
     public Vec3 investigationPoint() { return lastSound; }
     public boolean hasCombatLock() { return combatLock; }
+
+    int nextTongueRecovery() {
+        // Carry fractional ticks across attacks instead of rounding every
+        // recovery up; 1.5 ticks becomes a repeatable 2, 1 cadence.
+        double budget = CommonConfig.LICKER_TONGUE_RECOVERY + tongueRecoveryRemainder;
+        int ticks = (int) Math.ceil(budget);
+        tongueRecoveryRemainder = budget - ticks;
+        return ticks;
+    }
 
     boolean inClawRange(LivingEntity target) {
         // Use the same victim radius as the contact test, avoiding an idle ring
@@ -129,6 +139,7 @@ public final class LickerEntity extends EncounterMob {
         if (!validTarget(getTarget())) {
             setTarget(null);
             combatLock = false;
+            tongueRecoveryRemainder = 0;
         }
         if (onClimbable() && huntClimb && !isHanging() && !attacking() && !melee) {
             setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
@@ -160,7 +171,7 @@ public final class LickerEntity extends EncounterMob {
         double range = distanceTo(getTarget());
         if (!hasLineOfSight(getTarget())) return;
         if (range <= CommonConfig.LICKER_TONGUE_RANGE && tongueCooldown == 0) {
-            startAttack(TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+            startAttack(TONGUE, 24, nextTongueRecovery(), CommonConfig.LICKER_ATTACK_SPEED);
             tongueCooldown = CommonConfig.LICKER_TONGUE_COOLDOWN;
             playSound(ModSounds.LICKER_TONGUE.get(), 1, 1);
         } else if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {

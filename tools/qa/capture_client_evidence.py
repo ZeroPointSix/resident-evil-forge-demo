@@ -100,6 +100,30 @@ def check_external_geckolib(archive: zipfile.ZipFile) -> None:
                     raise EvidenceError("Release JAR must not embed GeckoLib as a jar-in-jar dependency")
 
 
+def check_original_licker_sounds(archive: zipfile.ZipFile) -> dict:
+    root = "assets/re_demo/"
+    try:
+        events = json.loads(archive.read(root + "sounds.json"))
+        provenance = json.loads(archive.read(root + "sounds/licker/provenance.json"))
+        if (provenance.get("license") != "MIT"
+                or provenance.get("generator") != "tools/generate_licker_sounds.py"
+                or provenance.get("origin") != "Original deterministic synthesis; no external samples"):
+            raise EvidenceError("Installed Licker audio lacks original synthesis provenance")
+        result = {}
+        for name in ("hiss", "hurt", "death", "tongue"):
+            if events["licker_" + name]["sounds"] != ["re_demo:licker/" + name]:
+                raise EvidenceError(f"Installed Licker audio must use its independent resource: {name}")
+            path = root + "sounds/licker/" + name + ".ogg"
+            data = archive.read(path)
+            digest = hashlib.sha256(data).hexdigest()
+            if not data.startswith(b"OggS") or digest != provenance["files"][name + ".ogg"]["sha256"]:
+                raise EvidenceError(f"Installed Licker audio content/provenance mismatch: {name}")
+            result[name] = {"resource": "re_demo:licker/" + name, "sha256": digest, "bytes": len(data)}
+        return result
+    except (KeyError, ValueError, TypeError, AttributeError) as exc:
+        raise EvidenceError("Installed Licker audio contract is missing or malformed") from exc
+
+
 def stream_digest(stream, algorithm: str) -> str:
     # hashlib.file_digest is 3.11+; chunked streaming works on every
     # supported Python and never holds the whole file in memory.
@@ -510,6 +534,28 @@ class Capture:
                                                identity=match_music(path, original))
         self.command(f"stopsound {CAMERA} music {MUSIC_EVENT}")
 
+    def verify_licker_playback(self) -> None:
+        self.report["licker_client_playback"] = {}
+        for name in ("hiss", "hurt", "death", "tongue"):
+            self.command(f"stopsound {CAMERA}")
+            time.sleep(1)
+            path = self.output / f"licker-{name}-client.wav"
+            recorder = self.start(f"ffmpeg-licker-{name}-check", [
+                "ffmpeg", "-hide_banner", "-loglevel", "warning", "-nostdin", "-y",
+                "-f", "pulse", "-i", "re_demo_capture.monitor", "-t", "4",
+                "-c:a", "pcm_s16le", "-ar", "44100", "-ac", "2", str(path)], self.work)
+            time.sleep(1)
+            event = "re_demo:licker_" + name
+            self.command(f"execute at {CAMERA} store success score ce_audio ce_health run "
+                         f"playsound {event} hostile {CAMERA} ~ ~ ~ 1 1")
+            self.confirm("if score ce_audio ce_health matches 1", f"Licker {name} sent to installed client")
+            if recorder.wait(timeout=20) != 0:
+                raise EvidenceError(f"Licker client sound recording failed: {name}")
+            self.report["licker_client_playback"][name] = dict(
+                file_record(path), event=event, audio=check_audio(path),
+                check="isolated event playback; non-silence, not a subjective listening verdict")
+        self.command(f"stopsound {CAMERA}")
+
     def install_server(self) -> None:
         assert self.work is not None
         installer = self.work / "forge-installer.jar"
@@ -533,13 +579,7 @@ class Capture:
             if "META-INF/mods.toml" not in archive.namelist():
                 raise EvidenceError("Release JAR lacks Forge mods.toml")
             check_external_geckolib(archive)
-            sound_events = json.loads(archive.read("assets/re_demo/sounds.json"))
-            spider_aliases = {"hiss": "ambient", "hurt": "hurt", "death": "death", "tongue": "ambient"}
-            for event, vanilla in spider_aliases.items():
-                expected_sound = [{"name": "minecraft:entity.spider." + vanilla, "type": "event"}]
-                if sound_events["licker_" + event]["sounds"] != expected_sound:
-                    raise EvidenceError(f"Installed JAR still uses non-spider Licker audio: {event}")
-            self.report["licker_spider_sound_aliases"] = spider_aliases
+            self.report["licker_original_sounds"] = check_original_licker_sounds(archive)
         mods = self.server_dir / "mods"
         mods.mkdir(exist_ok=True)
         shutil.copy2(jar, mods / jar.name)
@@ -1413,6 +1453,7 @@ class Capture:
         self.ambush_scene()
         self.climb_scene()
         self.verify_music_playback()
+        self.verify_licker_playback()
         self.brawl_scene()
         self.mid_attack_reveal_scenes()
         self.identify_scene()
@@ -1508,7 +1549,7 @@ def main() -> int:
     parser.add_argument("--project", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("build/client-evidence"),
                         help="Must not already exist; records only this run's evidence")
-    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.9.jar"))
+    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.10.jar"))
     parser.add_argument("--port", type=int, default=25575)
     parser.add_argument("--clip-seconds", type=int, default=10)
     parser.add_argument("--build-timeout", type=int, default=1500)

@@ -31,6 +31,7 @@ public final class CommonConfig {
     public static final double LICKER_CLAW_RANGE = 2.3;
     public static final int LICKER_LEAP_COOLDOWN = 65;
     public static final int LICKER_TONGUE_HIT_FRAME = 9;
+    public static final int LICKER_TONGUE_CONTACT_END_FRAME = 11;
     public static final double LICKER_TONGUE_RANGE = 4.2;
     public static final double LICKER_TONGUE_ARC = 46;
     public static final float LICKER_TONGUE_TRACKING = 20;

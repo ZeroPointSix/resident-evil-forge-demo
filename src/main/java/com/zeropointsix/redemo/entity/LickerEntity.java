@@ -190,10 +190,13 @@ public final class LickerEntity extends EncounterMob {
             else if (attack == TONGUE) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 2.8);
         }
         if (attack == CLAW && tick == attackFrameAt(9)) strike(CommonConfig.LICKER_CLAW_RANGE, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.15);
-        if (attack == TONGUE && tick == attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME)) {
-            strike(CommonConfig.LICKER_TONGUE_RANGE, CommonConfig.LICKER_TONGUE_ARC, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
+        if (attack == TONGUE && tick >= attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME)
+                && tick <= attackFrameAt(CommonConfig.LICKER_TONGUE_CONTACT_END_FRAME)) {
+            // The extended tongue stays active briefly, without tracking after contact.
             LivingEntity target = getTarget();
-            if (target != null && attackHits.contains(target.getUUID())) {
+            boolean alreadyHit = target != null && attackHits.contains(target.getUUID());
+            strike(CommonConfig.LICKER_TONGUE_RANGE, CommonConfig.LICKER_TONGUE_ARC, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
+            if (target != null && !alreadyHit && attackHits.contains(target.getUUID())) {
                 Vec3 pull = position().subtract(target.position()).normalize().scale(CommonConfig.LICKER_TONGUE_PULL);
                 target.push(pull.x, 0.12, pull.z);
                 target.hurtMarked = true;

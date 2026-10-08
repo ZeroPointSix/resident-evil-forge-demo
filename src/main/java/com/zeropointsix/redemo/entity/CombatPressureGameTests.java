@@ -124,6 +124,60 @@ public final class CombatPressureGameTests {
     }
 
     @GameTest(template = "empty", timeoutTicks = 20)
+    public static void tongueActiveWindowCatchesEntryAndPullsOnlyOnce(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 4));
+        licker.setNoAi(true);
+        licker.setNoGravity(true);
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        licker.setTarget(target);
+        licker.startAttack(LickerEntity.TONGUE, 24, licker.nextTongueRecovery(), CommonConfig.LICKER_ATTACK_SPEED);
+        licker.attackYaw = 0;
+        int impact = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME);
+        int end = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_CONTACT_END_FRAME);
+        h.assertTrue(impact == 5 && end == 6, "Visible tongue contact spans only server ticks 5 and 6");
+        licker.attackFrame(LickerEntity.TONGUE, impact);
+        h.assertTrue(target.getHealth() == 100, "A target outside the fixed cone can evade initial contact");
+        target.setPos(licker.getX(), licker.getY(), licker.getZ() + 3);
+        licker.attackFrame(LickerEntity.TONGUE, end);
+        h.assertTrue(target.getHealth() == 92 && target.getDeltaMovement().z < 0,
+                "Entering the still-extended tongue lands one normal hit and pull");
+        target.invulnerableTime = 0;
+        target.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        licker.attackFrame(LickerEntity.TONGUE, end);
+        h.assertTrue(target.getHealth() == 92 && target.getDeltaMovement().lengthSqr() == 0,
+                "The active window cannot repeat damage or pull, even without victim immunity");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void tongueActiveWindowKeepsFacingAndRejectsLateEntry(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 4));
+        licker.setNoAi(true);
+        licker.setNoGravity(true);
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        licker.setTarget(target);
+        licker.startAttack(LickerEntity.TONGUE, 24, licker.nextTongueRecovery(), CommonConfig.LICKER_ATTACK_SPEED);
+        licker.attackYaw = 0;
+        int end = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_CONTACT_END_FRAME);
+        licker.attackFrame(LickerEntity.TONGUE, end);
+        h.assertTrue(licker.attackYaw == 0 && target.getHealth() == 100,
+                "A late sidestep stays safe: the extended tongue cannot track or widen its cone");
+        target.setPos(licker.getX(), licker.getY(), licker.getZ() + 3);
+        for (int y = 1; y <= 4; y++) h.setBlock(new BlockPos(4, y, 5), Blocks.STONE);
+        licker.attackFrame(LickerEntity.TONGUE, end);
+        h.assertTrue(target.getHealth() == 100, "The extra contact tick cannot hit through a wall");
+        for (int y = 1; y <= 4; y++) h.setBlock(new BlockPos(4, y, 5), Blocks.AIR);
+        licker.attackFrame(LickerEntity.TONGUE, end + 1);
+        h.assertTrue(target.getHealth() == 100 && licker.attackHits.isEmpty(),
+                "Recovery cannot hit a victim entering after the contact window closes");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
     public static void tongueTracksDuringWindupButLocksAtContact(GameTestHelper h) {
         var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
         var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 7));

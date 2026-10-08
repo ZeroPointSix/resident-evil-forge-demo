@@ -1,4 +1,4 @@
-"""Validate the original creature Foley and its packaged resource references."""
+"""Validate active vanilla spider aliases and preserved legacy audio provenance."""
 
 import hashlib
 import json
@@ -22,17 +22,22 @@ class LickerSoundTests(unittest.TestCase):
             self.assertEqual(len(samples), round(RATE * duration) * 2)
             self.assertGreater(len(set(samples)), 100)
 
-    def test_every_licker_event_uses_original_hashed_ogg(self):
+    def test_every_active_licker_event_uses_vanilla_spider_audio(self):
         events = json.loads((ASSETS / "sounds.json").read_text())
+        aliases = {"hiss": "ambient", "hurt": "hurt", "death": "death", "tongue": "ambient"}
+        source = (ROOT / "src/main/java/com/zeropointsix/redemo/entity/LickerEntity.java").read_text()
+        for name, vanilla in aliases.items():
+            self.assertEqual(events["licker_" + name]["sounds"],
+                             [{"name": "minecraft:entity.spider." + vanilla, "type": "event"}])
+            self.assertIn("ModSounds.LICKER_" + name.upper() + ".get()", source)
+
+    def test_unused_legacy_audio_keeps_original_hashes(self):
         manifest = json.loads((ASSETS / "sounds/licker/provenance.json").read_text())
         self.assertEqual(manifest["license"], "MIT")
         for name in DURATIONS:
-            self.assertEqual(events["licker_" + name]["sounds"], ["re_demo:licker/" + name])
             data = (ASSETS / "sounds/licker" / (name + ".ogg")).read_bytes()
             self.assertTrue(data.startswith(b"OggS"))
             self.assertEqual(hashlib.sha256(data).hexdigest(), manifest["files"][name + ".ogg"]["sha256"])
-        source = (ROOT / "src/main/java/com/zeropointsix/redemo/entity/LickerEntity.java").read_text()
-        self.assertNotIn("SPIDER", source)
 
     @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg required for decoded audio validation")
     def test_original_ogg_files_decode(self):

@@ -110,7 +110,7 @@ public final class CombatPressureGameTests {
         golem.setNoAi(true);
         golem.setNoGravity(true);
         licker.setTarget(golem);
-        licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
         int impact = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME);
         h.runAfterDelay(impact - 1, () -> h.assertTrue(golem.getHealth() == 100, "Tongue telegraph must not deal early damage"));
         h.runAfterDelay(impact + 1, () -> {
@@ -121,6 +121,54 @@ public final class CombatPressureGameTests {
             h.assertTrue(golem.getHealth() == 92 && !licker.attacking(), "Tongue recovery cannot repeat the hit");
             h.succeed();
         });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void tongueTracksDuringWindupButLocksAtContact(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(4, 2, 4));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 7));
+        licker.setNoAi(true);
+        licker.setNoGravity(true);
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        licker.setTarget(target);
+        licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        h.assertTrue(licker.cooldown == licker.attackFrameAt(24) + 2,
+                "Tongue recovery is two ticks after its complete animation, not a truncated clip");
+        target.setPos(licker.getX() + 3, licker.getY(), licker.getZ());
+        licker.attackFrame(LickerEntity.TONGUE, 1);
+        h.assertTrue(Math.abs(licker.attackYaw + 20) < 0.01, "Tongue turns at the bounded 20 degrees per windup tick");
+        h.assertTrue(target.getHealth() == 100, "Tracking during windup cannot inflict early damage");
+        licker.attackFrame(LickerEntity.TONGUE, licker.attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME));
+        h.assertTrue(Math.abs(licker.attackYaw + 20) < 0.01 && target.getHealth() == 100,
+                "Contact cannot snap to a target that has moved outside the telegraphed cone");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void tongueCatchesSidestepWithoutBecomingWideSweep(GameTestHelper h) {
+        var licker = h.spawn(ModEntities.LICKER.get(), new BlockPos(6, 2, 4));
+        var sidestep = h.spawn(EntityType.IRON_GOLEM, new BlockPos(7, 2, 7));
+        var outside = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 7));
+        for (var actor : new net.minecraft.world.entity.Mob[] {licker, sidestep, outside}) {
+            actor.setNoAi(true);
+            actor.setNoGravity(true);
+        }
+        sidestep.setPos(licker.getX() + Math.sin(Math.toRadians(21)) * 3,
+                licker.getY(), licker.getZ() + Math.cos(Math.toRadians(21)) * 3);
+        outside.setPos(licker.getX() - Math.sin(Math.toRadians(35)) * 3,
+                licker.getY(), licker.getZ() + Math.cos(Math.toRadians(35)) * 3);
+        outside.setTarget(licker);
+        licker.setTarget(sidestep);
+        licker.startAttack(LickerEntity.TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+        // Simulate a sidestep after the final windup tracking tick.
+        licker.attackYaw = 0;
+        int impact = licker.attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME);
+        licker.attackFrame(LickerEntity.TONGUE, impact);
+        h.assertTrue(sidestep.getHealth() == 92, "A small final-tick sidestep still takes the unchanged tongue hit");
+        h.assertTrue(outside.getHealth() == 100, "Tongue must not become a broad cleave");
+        h.assertTrue(licker.attackHits.size() == 1, "Only the victim in the narrow contact cone is hit");
+        h.succeed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 50)

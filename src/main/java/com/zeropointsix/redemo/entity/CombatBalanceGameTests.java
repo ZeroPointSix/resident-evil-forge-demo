@@ -136,7 +136,7 @@ public final class CombatBalanceGameTests {
         sequence.thenExecute(() -> {
             h.assertTrue(valid[0] == rounds, "Every duel must finish on the unobstructed arena, without timeout");
             if (Boolean.getBoolean("re_demo.requireBalance")) {
-                int required = count == 3 ? (rounds + 4) / 5 : count == 1 ? (rounds + 1) / 2 : rounds;
+                int required = count == 3 ? (rounds + 4) / 5 : count == 1 ? rounds / 2 + 1 : rounds;
                 h.assertTrue(wins[0] >= required, "Combat win target: " + wins[0] + "/" + rounds + ", required=" + required);
                 if (count == 1 && rounds >= 5) h.assertTrue(wins[0] * 5 <= rounds * 4,
                         "Licker vs 1 must remain near parity (at most 80% wins), got " + wins[0] + "/" + rounds);

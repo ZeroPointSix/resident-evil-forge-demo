@@ -160,7 +160,7 @@ public final class LickerEntity extends EncounterMob {
         double range = distanceTo(getTarget());
         if (!hasLineOfSight(getTarget())) return;
         if (range <= CommonConfig.LICKER_TONGUE_RANGE && tongueCooldown == 0) {
-            startAttack(TONGUE, 24, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
+            startAttack(TONGUE, 24, CommonConfig.LICKER_TONGUE_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
             tongueCooldown = CommonConfig.LICKER_TONGUE_COOLDOWN;
             playSound(ModSounds.LICKER_TONGUE.get(), 1, 1);
         } else if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {
@@ -174,7 +174,7 @@ public final class LickerEntity extends EncounterMob {
     protected void attackFrame(int attack, int tick) {
         int hitFrame = attack == CLAW ? 9 : attack == TONGUE ? CommonConfig.LICKER_TONGUE_HIT_FRAME : attack == LEAP ? 12 : 8;
         if (tick < attackFrameAt(hitFrame)) {
-            trackWindup(16);
+            trackWindup(attack == TONGUE ? CommonConfig.LICKER_TONGUE_TRACKING : 16);
             if (attack == CLAW) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 1.6);
             else if (attack == TONGUE) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 2.8);
         }

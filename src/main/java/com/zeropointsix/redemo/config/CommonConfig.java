@@ -26,12 +26,14 @@ public final class CommonConfig {
     public static final double MELEE_VERTICAL_SEARCH = 1.5;
     public static final double LICKER_ATTACK_SPEED = 1.90;
     public static final int LICKER_RECOVERY = 3;
+    public static final int LICKER_TONGUE_RECOVERY = 2;
     public static final int LICKER_TONGUE_COOLDOWN = 21;
     public static final double LICKER_CLAW_RANGE = 2.3;
     public static final int LICKER_LEAP_COOLDOWN = 65;
     public static final int LICKER_TONGUE_HIT_FRAME = 9;
     public static final double LICKER_TONGUE_RANGE = 4.2;
-    public static final double LICKER_TONGUE_ARC = 34;
+    public static final double LICKER_TONGUE_ARC = 46;
+    public static final float LICKER_TONGUE_TRACKING = 20;
     public static final double LICKER_TONGUE_PULL = 0.50;
     public static final double LICKER_PRESSURE_STEP = 0.12;
     public static final double LICKER_KNOCKBACK_RESISTANCE = 0.45;

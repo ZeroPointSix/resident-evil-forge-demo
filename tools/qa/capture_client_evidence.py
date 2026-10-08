@@ -533,6 +533,13 @@ class Capture:
             if "META-INF/mods.toml" not in archive.namelist():
                 raise EvidenceError("Release JAR lacks Forge mods.toml")
             check_external_geckolib(archive)
+            sound_events = json.loads(archive.read("assets/re_demo/sounds.json"))
+            spider_aliases = {"hiss": "ambient", "hurt": "hurt", "death": "death", "tongue": "ambient"}
+            for event, vanilla in spider_aliases.items():
+                expected_sound = [{"name": "minecraft:entity.spider." + vanilla, "type": "event"}]
+                if sound_events["licker_" + event]["sounds"] != expected_sound:
+                    raise EvidenceError(f"Installed JAR still uses non-spider Licker audio: {event}")
+            self.report["licker_spider_sound_aliases"] = spider_aliases
         mods = self.server_dir / "mods"
         mods.mkdir(exist_ok=True)
         shutil.copy2(jar, mods / jar.name)
@@ -1501,7 +1508,7 @@ def main() -> int:
     parser.add_argument("--project", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("build/client-evidence"),
                         help="Must not already exist; records only this run's evidence")
-    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.5.jar"))
+    parser.add_argument("--jar", type=Path, default=Path("build/libs/re_demo-0.1.6.jar"))
     parser.add_argument("--port", type=int, default=25575)
     parser.add_argument("--clip-seconds", type=int, default=10)
     parser.add_argument("--build-timeout", type=int, default=1500)

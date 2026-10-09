@@ -2,6 +2,7 @@ package com.zeropointsix.redemo.entity;
 
 import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModEntities;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -53,8 +54,11 @@ public final class TyrantDebrisEntity extends ThrowableItemProjectile {
     protected void onHitEntity(EntityHitResult result) {
         super.onHitEntity(result);
         if (!level().isClientSide && getOwner() instanceof TyrantEntity owner && canHitEntity(result.getEntity())) {
-            result.getEntity().hurt(damageSources().thrown(this, owner),
+            boolean hit = result.getEntity().hurt(damageSources().thrown(this, owner),
                     CommonConfig.TYRANT_DEBRIS_DAMAGE * CommonConfig.DAMAGE_SCALE.get().floatValue());
+            if (hit && EncounterMob.ANIMATION_TRACE) LogUtils.getLogger().info(
+                    "RE_DEMO_DEBRIS_HIT owner={} projectile={} target={} x={} y={} z={}",
+                    owner.getUUID(), getUUID(), result.getEntity().getUUID(), getX(), getY(), getZ());
         }
     }
 

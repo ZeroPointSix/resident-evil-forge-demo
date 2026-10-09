@@ -40,7 +40,7 @@ GECKO_VERSION = "4.4.9"
 MUSIC_EVENT = "re_demo:encounter_theme"
 CAMERA = "EvidenceCamera"
 SIZE = (1280, 720)
-MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 6, 1.6),
+MOBS = (("licker", "Licker", 0, 0.7), ("tyrant", "Tyrant", 6, 2.0),
         ("g1_birkin", "G1 Birkin", 12, 1.7))
 FORGE_URL = ("https://maven.minecraftforge.net/net/minecraftforge/forge/"
              f"{MC_VERSION}-{FORGE_VERSION}/forge-{MC_VERSION}-{FORGE_VERSION}-installer.jar")
@@ -1049,6 +1049,24 @@ class Capture:
         difference = sum(abs(a - b) for a, b in zip(first, later)) / len(first)
         if difference < 0.05:
             raise EvidenceError(f"Recording appears frozen for {entity}")
+        if entity == "tyrant":
+            trace = log_since(self.output / "server.log", trace_start)
+            frames = [r for r in sync_rows(trace, "SERVER") if r["asset"] == entity]
+            attacks = {int(r["attack"]) for r in frames}
+            expected = {1, 2, 6, 7} if scenario == "attack" else {9, 10} if scenario == "rage" else {8} if scenario == "throw" else {3}
+            if not expected.issubset(attacks):
+                raise EvidenceError(f"Tyrant {scenario} missing real attack states: {expected - attacks}")
+            if scenario == "rage" and 8 in attacks:
+                raise EvidenceError("Raging Tyrant must never start a ranged throw")
+            if scenario == "throw" and "RE_DEMO_DEBRIS_HIT " not in trace:
+                raise EvidenceError("Throw clip needs actual projectile impact, not only a melee health decrease")
+            if scenario == "charge":
+                starts = [r for r in frames if r["attack"] == "3" and r["tick"] == "0"]
+                travelled = max((math.hypot(float(r["x"]) - float(start["x"]), float(r["z"]) - float(start["z"]))
+                                 for start in starts for r in frames
+                                 if (r["uuid"], r["seq"]) == (start["uuid"], start["seq"])), default=0)
+                if travelled < 2 or not re.search(r"RE_DEMO_HIT [^\n]*asset=tyrant[^\n]*attack=3 ", trace):
+                    raise EvidenceError("Tyrant charge must move its body and land its own contact hit")
         if scenario == "lunge":
             trace = log_since(self.output / "server.log", trace_start)
             frames = [r for r in sync_rows(trace, "SERVER") if r["asset"] == entity and r["attack"] == "5"]
@@ -1176,7 +1194,9 @@ class Capture:
                                             ("g1_birkin", "attack", 1.8),
                                             ("g1_birkin", "lunge", 6.0),
                                             ("licker", "attack", 1.8),
-                                            ("tyrant", "charge", 7.0),
+                                            ("tyrant", "charge", 6.0),
+                                            ("tyrant", "throw", 12.0),
+                                            ("tyrant", "rage", 1.8),
                                             ("licker", "tongue", 3.4),
                                             ("licker", "crawl", 12.0)):
             x = 4
@@ -1184,9 +1204,17 @@ class Capture:
                          f"{{Tags:[\"ce_{entity}\"],PersistenceRequired:1b,NoAI:1b,Rotation:[-90.0f,0.0f]}}")
             self.confirm(f"if entity @e[type=re_demo:{entity},tag=ce_{entity},limit=1]",
                          f"fresh normal-AI {scenario} scene")
+            if entity == "tyrant" and scenario == "rage":
+                self.command(f'data merge entity @e[type=re_demo:tyrant,tag=ce_tyrant,limit=1] {{Health:120.0f}}')
+                self.confirm('if entity @e[type=re_demo:tyrant,tag=ce_tyrant,nbt={TyrantRaging:1b}]',
+                             "Tyrant transformed at exactly thirty percent health")
+                self.camera(x + 4, -3, x, 66, 4, "Tyrant limiter broken: shoulder eye and blade arms")
+                self.screenshot("tyrant-rage.png", hide_gui=True)
+                self.camera(x + 2.2, 1, x + .8, 67.25, 4, "Tyrant right shoulder eye", cam_y=66)
+                self.screenshot("tyrant-eye.png", hide_gui=True)
             center = x + distance * 0.5
             self.camera(center + 1, -3 if scenario in ("tongue", "attack") else -6 if scenario == "charge" else -9,
-                        center, 64.6 if entity == "licker" else 65.1, 4,
+                        center, 64.6 if entity == "licker" else 66 if entity == "tyrant" else 65.1, 4,
                         f"{entity}: {scenario}")
             self.combat_clip(entity, x, scenario, distance)
             self.command(f"kill @e[type=re_demo:{entity},tag=ce_{entity}]")
@@ -1470,12 +1498,14 @@ class Capture:
             "g1_birkin-model.png", "licker-model-side.png", "tyrant-model-side.png",
             "g1_birkin-model-side.png", "licker-model-back.png", "tyrant-model-back.png",
             "g1_birkin-model-back.png", "g1_birkin-eye.png", "licker-ambush.png", "20-block-identification.png",
+            "tyrant-rage.png", "tyrant-eye.png",
             "licker-20blocks.png", "tyrant-20blocks.png", "g1_birkin-20blocks.png",
             "licker-climb.png", "licker-sneak-silent.png", "licker-sprint-hunt.png",
             "99-death-cleared.png",
         }
         expected_clips = {
             "creature-brawl.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "g1_birkin-attack.mp4", "g1_birkin-lunge.mp4",
+            "tyrant-throw.mp4", "tyrant-rage.mp4",
             "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4", "licker-climb.mp4",
             "licker-ambush.mp4", "licker-sneak-vs-sprint.mp4",
         }
@@ -1484,7 +1514,7 @@ class Capture:
         if got_shots != expected_shots or got_clips != expected_clips:
             raise EvidenceError(f"Incomplete evidence set shots={sorted(got_shots)} clips={sorted(got_clips)}")
         ordered = ["creature-brawl.mp4", "licker-climb.mp4", "licker-ambush.mp4",
-                   "licker-sneak-vs-sprint.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4",
+                   "licker-sneak-vs-sprint.mp4", "tyrant-attack.mp4", "tyrant-charge.mp4", "tyrant-throw.mp4", "tyrant-rage.mp4",
                    "g1_birkin-attack.mp4", "g1_birkin-lunge.mp4", "licker-crawl.mp4", "licker-tongue.mp4", "licker-attack.mp4"]
         playlist = self.output / "showcase-concat.txt"
         playlist.write_text("".join(f"file '{name}'\n" for name in ordered), encoding="utf-8")

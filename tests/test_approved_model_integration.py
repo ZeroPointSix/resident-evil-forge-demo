@@ -65,7 +65,9 @@ def posed_part(creature, part, action, time, eye_open=False):
     model = bones(ASSETS / "geo" / f"{creature}.geo.json")
     animation = read(ASSETS / "animations" / f"{creature}.animation.json")
     tracks = animation["animations"][f"animation.{creature}.{action}"]["bones"]
-    frozen = {"root", "pelvis", "torso", "chest", "right_shoulder", "eye_open"} if eye_open else set()
+    exposed = {"root", "pelvis", "torso", "chest", "tyrant_eye"} if creature == "tyrant" else {
+        "root", "pelvis", "torso", "chest", "right_shoulder", "eye_open"}
+    frozen = exposed if eye_open else set()
     bone = model[part]
     points = [p for cube in bone["cubes"] for p in vertices(cube)]
     while bone:
@@ -217,6 +219,55 @@ class ApprovedModelIntegrationTests(unittest.TestCase):
     def test_charge_leans_head_and_hat_toward_travel(self):
         for part in ("part_head", "part_hat_brim"):
             self.assertLess(center(posed_part("tyrant", part, "charge", 1.55))[2], -7)
+
+    def test_tyrant_normal_height_is_four_blocks_without_widening(self):
+        model = bones(ASSETS / "geo/tyrant.geo.json")
+        points = [p for name, bone in model.items() if name.startswith("part_")
+                  for cube in bone.get("cubes", []) for p in vertices(cube)]
+        height = max(p[1] for p in points) - min(p[1] for p in points)
+        self.assertAlmostEqual(height / 16, 4, delta=.03)
+        self.assertLess((max(p[0] for p in points) - min(p[0] for p in points)) / height, .7)
+
+    def test_tyrant_eye_matches_hitbox_and_stays_aligned_during_rage_actions(self):
+        model = bones(ASSETS / "geo/tyrant.geo.json")
+        points = [p for cube in model["tyrant_eye"]["cubes"] for p in vertices(cube)]
+        actual = center(points)
+        java = (ROOT / "src/main/java/com/zeropointsix/redemo/entity/TyrantEntity.java").read_text()
+        declaration = re.search(r"EYE_LOCAL_CENTER = new Vec3\(([^;]+)\);", java).group(1)
+        expected = [float(v.strip().split("/")[0]) for v in declaration.split(",")]
+        self.assertLess(math.dist([actual[0], actual[1], -actual[2]], expected), .0001)
+        self.assertLess(actual[0], 0, "The weak eye must be on the Tyrant's right shoulder")
+        self.assertEqual(model["tyrant_eye"]["parent"], "chest")
+        for action in ("idle", "walk", "rage", "charge", "slash", "slash_left"):
+            for time in (0, .3, .5, .8, 1):
+                posed = posed_part("tyrant", "tyrant_eye", action, time, True)
+                self.assertLess(math.dist(center(posed), actual), .0001, (action, time))
+
+    def test_tyrant_left_and_right_attacks_have_mirrored_contact_poses(self):
+        for action, time in (("punch", .8), ("shove", .5), ("slash", .5)):
+            part = "blade_r" if action == "slash" else "part_fist_-1"
+            opposite = "blade_l" if action == "slash" else "part_fist_1"
+            right = center(posed_part("tyrant", part, action, time, action == "slash"))
+            left = center(posed_part("tyrant", opposite, action + "_left", time, action == "slash"))
+            self.assertLess(math.dist([-right[0], right[1], right[2]], left), .001, action)
+            self.assertLess(right[2], -10, action)
+
+    def test_tyrant_phase_meshes_follow_their_attacking_limbs(self):
+        model = bones(ASSETS / "geo/tyrant.geo.json")
+        for side in ("r", "l"):
+            self.assertEqual(model["blade_" + side]["parent"], "hand_" + side)
+            self.assertEqual(model["mutant_upper_" + side]["parent"], "upper_arm_" + side)
+            self.assertEqual(model["mutant_forearm_" + side]["parent"], "forearm_" + side)
+            action = "slash" if side == "r" else "slash_left"
+            windup = center(posed_part("tyrant", "blade_" + side, action, .3, True))
+            impact = center(posed_part("tyrant", "blade_" + side, action, .5, True))
+            self.assertLess(impact[2], windup[2] - 15)
+
+    def test_tyrant_charge_has_no_render_only_displacement(self):
+        animations = read(ASSETS / "animations/tyrant.animation.json")["animations"]
+        self.assertEqual(animations["animation.tyrant.walk"]["animation_length"], .9)
+        positions = animations["animation.tyrant.charge"]["bones"]["root"]["position"]
+        self.assertTrue(all(value == [0, 0, 0] for value in positions.values()))
 
     def test_giant_arm_slam_descends_forward_without_eye_pose_snap(self):
         for exposed in (False, True):

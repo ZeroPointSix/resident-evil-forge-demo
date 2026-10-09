@@ -3,6 +3,7 @@ package com.zeropointsix.redemo.entity;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModEntities;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -23,6 +24,11 @@ public final class TyrantPhaseGameTests {
         mob.setNoAi(true);
         mob.setNoGravity(true);
         return mob;
+    }
+
+    private static List<TyrantDebrisEntity> debris(GameTestHelper h, TyrantEntity owner) {
+        return h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class, owner.getBoundingBox().inflate(40),
+                rock -> rock.getOwner() == owner);
     }
 
     @GameTest(template = "empty", timeoutTicks = 20)
@@ -82,16 +88,21 @@ public final class TyrantPhaseGameTests {
         mob.setTarget(target);
         mob.startAttack(TyrantEntity.THROW, 36, 8, 1.25);
         int launch = mob.attackFrameAt(20);
-        h.runAfterDelay(launch - 1, () -> h.assertTrue(h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class,
-                mob.getBoundingBox().inflate(20)).isEmpty(), "Throw cannot spawn before visible release"));
-        h.runAfterDelay(launch + 1, () -> h.assertTrue(!h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class,
-                mob.getBoundingBox().inflate(20)).isEmpty(), "The release creates actual moving stone projectiles"));
+        h.runAfterDelay(launch - 1, () -> h.assertTrue(debris(h, mob).isEmpty(), "Throw cannot spawn before visible release"));
+        h.runAfterDelay(launch + 1, () -> {
+            var rocks = debris(h, mob);
+            h.assertTrue(rocks.size() == 3, "The release creates three real moving stone projectiles");
+            h.assertTrue(rocks.stream().allMatch(rock -> rock.getDeltaMovement().length() > 1), "Debris has real travel velocity");
+        });
+        h.runAfterDelay(launch + 3, () -> h.assertTrue(debris(h, mob).stream().anyMatch(
+                rock -> rock.getZ() > mob.getZ() + 2 && rock.getDeltaMovement().y < 0),
+                "Rocks travel forward and descend toward the lower target under gravity"));
         h.runAfterDelay(40, () -> {
             h.assertTrue(target.getHealth() < 100, "A ranged target must take a real projectile hit");
-            h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class, mob.getBoundingBox().inflate(40)).forEach(entity -> entity.discard());
+            debris(h, mob).forEach(entity -> entity.discard());
             mob.setHealth(120);
             mob.throwDebris();
-            h.assertTrue(h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class, mob.getBoundingBox().inflate(40)).isEmpty(),
+            h.assertTrue(debris(h, mob).isEmpty(),
                     "Health threshold blocks throw immediately, even before phase transition finishes");
             h.succeed();
         });
@@ -110,13 +121,30 @@ public final class TyrantPhaseGameTests {
         h.runAfterDelay(45, () -> {
             h.assertTrue(target.getHealth() == 100, "Stone projectiles cannot pass through a wall");
             h.assertTrue(h.getBlockState(new BlockPos(4, 4, 6)).is(Blocks.STONE), "Projectile impacts never destroy terrain");
-            h.assertTrue(h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class, mob.getBoundingBox().inflate(20)).isEmpty(),
+            h.assertTrue(debris(h, mob).isEmpty(),
                     "Collided debris must be discarded");
             h.succeed();
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 20)
+    @GameTest(template = "empty", timeoutTicks = 50)
+    public static void chargeActuallyMovesAndHitsOnce(GameTestHelper h) {
+        var mob = tyrant(h);
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 9));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        mob.setTarget(target);
+        double startZ = mob.getZ();
+        mob.startAttack(TyrantEntity.CHARGE, 40, 1, CommonConfig.TYRANT_ATTACK_SPEED);
+        h.runAfterDelay(9, () -> h.assertTrue(target.getHealth() == 100, "Charge windup cannot deal early damage"));
+        h.runAfterDelay(25, () -> {
+            h.assertTrue(mob.getZ() > startZ + 3, "Charge moves the real collision body at least three blocks");
+            h.assertTrue(Math.abs(target.getHealth() - 78) < .001, "Charge deals one real twenty-two damage contact hit");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 50)
     public static void slashKeepsContactFrameAndSingleHitBudget(GameTestHelper h) {
         var mob = tyrant(h);
         var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 5));
@@ -125,16 +153,21 @@ public final class TyrantPhaseGameTests {
         mob.setTarget(target);
         mob.setHealth(120);
         mob.updatePhase();
-        mob.attackYaw = 0;
-        float health = target.getHealth();
-        int frame = mob.attackFrameAt(10);
-        mob.attackFrame(TyrantEntity.SLASH, frame - 1);
-        h.assertTrue(target.getHealth() == health, "Blade windup does not deal early damage");
-        mob.attackFrame(TyrantEntity.SLASH, frame);
-        h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "Blade impact uses the rage damage multiplier");
-        target.invulnerableTime = 0;
-        mob.attackFrame(TyrantEntity.SLASH, frame);
-        h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "One swing cannot damage a victim twice");
-        h.succeed();
+        h.runAfterDelay(24, () -> {
+            mob.startAttack(TyrantEntity.SLASH, 24, 1, CommonConfig.TYRANT_RAGE_ATTACK_SPEED);
+            mob.attackYaw = 0;
+            h.assertTrue(mob.attack() == TyrantEntity.SLASH && mob.animationSpeed() == 3,
+                    "The real slash state runs faster than the normal attack rate of two");
+            float health = target.getHealth();
+            int frame = mob.attackFrameAt(10);
+            mob.attackFrame(TyrantEntity.SLASH, frame - 1);
+            h.assertTrue(target.getHealth() == health, "Blade windup does not deal early damage");
+            mob.attackFrame(TyrantEntity.SLASH, frame);
+            h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "Blade impact uses the rage damage multiplier");
+            target.invulnerableTime = 0;
+            mob.attackFrame(TyrantEntity.SLASH, frame);
+            h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "One swing cannot damage a victim twice");
+            h.succeed();
+        });
     }
 }

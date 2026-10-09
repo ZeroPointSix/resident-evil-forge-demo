@@ -11,9 +11,9 @@
     },
     "tyrant": {
       "approved_geometry_sha256": "2be45369e25aae3923a59f56c2f12d304f3c71a67675cad5d1739308e56b3d8f",
-      "runtime_geometry_sha256": "4b502c8e5d25834ec2bca18678c7c2fca9cf9b38f97a0f31772eec5ce2a6f958",
-      "bones": 86,
-      "cubes": 268
+      "runtime_geometry_sha256": "2bab96224ce87e295e7aaa25ba1590cfbb83a722018b3101725febcf039cfd0a",
+      "bones": 87,
+      "cubes": 273
     },
     "g1_birkin": {
       "approved_geometry_sha256": "c3f850346a63e51d23c1387548709d956c41ee6002808c2de2c61ccac1880b0f",

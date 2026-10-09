@@ -27,11 +27,11 @@ jobs:
           set -o pipefail
           ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
       - name: Verify packaged asset contract
-        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.11.jar --report build/reports/asset-contract.json
+        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.2.0.jar --report build/reports/asset-contract.json
       - name: Install audio verifier
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Verify original music and exact packaged bytes
-        run: python tools/qa/validate_music.py --root . --jar build/libs/re_demo-0.1.11.jar --report build/reports/music-contract.json
+        run: python tools/qa/validate_music.py --root . --jar build/libs/re_demo-0.2.0.jar --report build/reports/music-contract.json
       - name: Run real Forge GameTests
         run: |
           set -o pipefail

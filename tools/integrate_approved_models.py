@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 
 from creature_assets_lib import build_blockbench_animation, get_models, keyframes, stable_uuid
+from tyrant_phase_assets import upgrade_tyrant
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -232,7 +233,7 @@ def animation_data(spec):
 def bb_source(creature, geometry, animations, spec):
     result = json.loads((APPROVED / f"{creature}.bbmodel").read_text())
     elements, nodes = [], {}
-    hidden = {"coat_torn"} if creature == "tyrant" else {"eye_closed"}
+    hidden = {"coat_torn", "tyrant_eye", "mutant_chest", "mutant_upper_r", "mutant_upper_l", "mutant_forearm_r", "mutant_forearm_l", "blade_r", "blade_l"} if creature == "tyrant" else {"eye_closed"}
     for bone in geometry["bones"]:
         pivot = bone["pivot"]
         node = {"name": bone["name"], "origin": [-pivot[0], pivot[1], pivot[2]],
@@ -314,15 +315,20 @@ def assemble(creature, spec):
     geometry["description"]["visible_bounds_width"] = 8
     geometry["description"]["visible_bounds_height"] = 6
     geometry["description"]["visible_bounds_offset"] = [0, 1.5, 0]
-    return {"format_version": "1.12.0", "minecraft:geometry": [geometry]}, animation_data(spec)
+    animations = animation_data(spec)
+    if creature == "tyrant":
+        upgrade_tyrant(geometry, animations)
+    return {"format_version": "1.12.0", "minecraft:geometry": [geometry]}, animations
 
 
-def generate_all(root=ROOT):
+def generate_all(root=ROOT, only=None):
     if root != ROOT:
         raise ValueError("Generate from this script's checked-out repository")
     report = {"source_commit": SOURCE_COMMIT, "source_directory": str(APPROVED.relative_to(ROOT)),
               "source_to_runtime_y_rotation_degrees": 180, "creatures": {}}
     for creature, spec in get_models().items():
+        if only is not None and creature != only:
+            continue
         model, animations = assemble(creature, spec)
         texture = APPROVED / f"{creature}_palette.png"
         project = bb_source(creature, model["minecraft:geometry"][0], animations, spec)
@@ -340,9 +346,16 @@ def generate_all(root=ROOT):
             "bones": len(model["minecraft:geometry"][0]["bones"]),
             "cubes": sum(len(b.get("cubes", [])) for b in model["minecraft:geometry"][0]["bones"]),
         }
+    if only is not None:
+        existing = json.loads((ROOT / "art/runtime_remodel_manifest.json").read_text())
+        existing["creatures"].update(report["creatures"])
+        report = existing
     (ROOT / "art/runtime_remodel_manifest.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
 
 
 if __name__ == "__main__":
-    print(json.dumps(generate_all(), indent=2))
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only", choices=("tyrant", "licker", "g1_birkin"))
+    print(json.dumps(generate_all(only=parser.parse_args().only), indent=2))

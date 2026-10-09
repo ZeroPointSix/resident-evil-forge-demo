@@ -26908,9 +26908,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 45,
-                  "y": -45,
-                  "z": 30
+                  "x": 40,
+                  "y": 40,
+                  "z": 10
                 }
               ],
               "uuid": "44f15d9d-1d03-504c-9788-458281d9e8a4",
@@ -26922,9 +26922,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -65,
-                  "y": 35,
-                  "z": -30
+                  "x": -55,
+                  "y": -35,
+                  "z": 0
                 }
               ],
               "uuid": "83dbc613-16c4-5dd2-b452-1bdad5931a19",
@@ -26936,9 +26936,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -45,
-                  "y": 55,
-                  "z": -15
+                  "x": -35,
+                  "y": -60,
+                  "z": 0
                 }
               ],
               "uuid": "697a2cd7-ddf0-59f0-b9c9-151b3d421e6c",
@@ -26984,7 +26984,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -75,
+                  "x": 0,
                   "y": 0,
                   "z": 0
                 }
@@ -26998,13 +26998,27 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -10,
-                  "y": 20,
+                  "x": 20,
+                  "y": 0,
                   "z": 0
                 }
               ],
               "uuid": "8698833a-4da3-5aed-a6e0-4399e5023480",
               "time": 0.5,
+              "color": -1,
+              "interpolation": "linear"
+            },
+            {
+              "channel": "rotation",
+              "data_points": [
+                {
+                  "x": 10,
+                  "y": 0,
+                  "z": 0
+                }
+              ],
+              "uuid": "1cd54ae2-730f-58cf-b818-de8aa496086d",
+              "time": 0.75,
               "color": -1,
               "interpolation": "linear"
             },
@@ -27123,9 +27137,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": 45,
-                  "y": 45,
-                  "z": -30
+                  "x": 40,
+                  "y": -40,
+                  "z": -10
                 }
               ],
               "uuid": "47f93a54-0b66-5a8e-9f1f-7a95c9f431a4",
@@ -27137,9 +27151,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -65,
-                  "y": -35,
-                  "z": 30
+                  "x": -55,
+                  "y": 35,
+                  "z": 0
                 }
               ],
               "uuid": "d0894c14-19a4-5b74-9300-9e3f2769f4e9",
@@ -27151,9 +27165,9 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -45,
-                  "y": -55,
-                  "z": 15
+                  "x": -35,
+                  "y": 60,
+                  "z": 0
                 }
               ],
               "uuid": "ef67b510-4bcb-5674-bbc1-1f931d9a38d2",
@@ -27199,7 +27213,7 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -75,
+                  "x": 0,
                   "y": 0,
                   "z": 0
                 }
@@ -27213,13 +27227,27 @@
               "channel": "rotation",
               "data_points": [
                 {
-                  "x": -10,
-                  "y": -20,
+                  "x": 20,
+                  "y": 0,
                   "z": 0
                 }
               ],
               "uuid": "e89751f2-8f1e-5318-b284-62c7e6ddbab5",
               "time": 0.5,
+              "color": -1,
+              "interpolation": "linear"
+            },
+            {
+              "channel": "rotation",
+              "data_points": [
+                {
+                  "x": 10,
+                  "y": 0,
+                  "z": 0
+                }
+              ],
+              "uuid": "b4499219-2247-5c14-a714-5393dd47a5df",
+              "time": 0.75,
               "color": -1,
               "interpolation": "linear"
             },

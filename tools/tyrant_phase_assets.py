@@ -80,8 +80,8 @@ def upgrade_tyrant(geometry, animation_data):
     }
     animations["animation.tyrant.shove_left"] = mirrored(animations["animation.tyrant.shove"])
     animations["animation.tyrant.slash"] = {"loop": False, "animation_length": 1.2, "bones": {
-        "upper_arm_r": rotation((0, [0, 0, 0]), (.3, [45, -45, 30]), (.5, [-65, 35, -30]), (.75, [-45, 55, -15]), (1.2, [0, 0, 0])),
-        "forearm_r": rotation((0, [0, 0, 0]), (.3, [-75, 0, 0]), (.5, [-10, 20, 0]), (1.2, [0, 0, 0])),
+        "upper_arm_r": rotation((0, [0, 0, 0]), (.3, [40, 40, 10]), (.5, [-55, -35, 0]), (.75, [-35, -60, 0]), (1.2, [0, 0, 0])),
+        "forearm_r": rotation((0, [0, 0, 0]), (.3, [0, 0, 0]), (.5, [20, 0, 0]), (.75, [10, 0, 0]), (1.2, [0, 0, 0])),
         "upper_arm_l": rotation((0, [0, 0, 0]), (.3, [-15, 10, -15]), (.5, [20, -10, -20]), (1.2, [0, 0, 0])),
     }}
     animations["animation.tyrant.slash_left"] = mirrored(animations["animation.tyrant.slash"])

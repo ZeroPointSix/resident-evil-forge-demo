@@ -135,10 +135,11 @@ public final class TyrantPhaseGameTests {
         target.setNoGravity(true);
         mob.setTarget(target);
         double startZ = mob.getZ();
+        mob.setNoAi(false);
         mob.startAttack(TyrantEntity.CHARGE, 40, 1, CommonConfig.TYRANT_ATTACK_SPEED);
         h.runAfterDelay(9, () -> h.assertTrue(target.getHealth() == 100, "Charge windup cannot deal early damage"));
-        h.runAfterDelay(25, () -> {
-            h.assertTrue(mob.getZ() > startZ + 3, "Charge moves the real collision body at least three blocks");
+        h.runAfterDelay(19, () -> {
+            h.assertTrue(mob.getZ() > startZ + 3, "Charge must move at least three blocks; travelled=" + (mob.getZ() - startZ));
             h.assertTrue(Math.abs(target.getHealth() - 78) < .001, "Charge deals one real twenty-two damage contact hit");
             h.succeed();
         });

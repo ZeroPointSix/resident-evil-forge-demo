@@ -233,7 +233,7 @@ def animation_data(spec):
 def bb_source(creature, geometry, animations, spec):
     result = json.loads((APPROVED / f"{creature}.bbmodel").read_text())
     elements, nodes = [], {}
-    hidden = {"coat_torn", "tyrant_eye", "mutant_chest", "mutant_upper_r", "mutant_upper_l", "mutant_forearm_r", "mutant_forearm_l", "blade_r", "blade_l"} if creature == "tyrant" else {"eye_closed"}
+    hidden = {"coat_torn", "tyrant_eye", "mutant_chest", "mutant_shoulder", "mutant_upper_r", "mutant_upper_l", "mutant_forearm_r", "mutant_forearm_l", "blade_r", "blade_l"} if creature == "tyrant" else {"eye_closed"}
     for bone in geometry["bones"]:
         pivot = bone["pivot"]
         node = {"name": bone["name"], "origin": [-pivot[0], pivot[1], pivot[2]],

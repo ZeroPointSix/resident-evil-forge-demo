@@ -34,7 +34,7 @@ public final class CreatureModel<T extends EncounterMob> extends GeoModel<T> {
                     "part_high_collar_-1", "part_high_collar_1", "part_shoulder_yoke_-1", "part_shoulder_yoke_1",
                     "part_upper_sleeve_-1", "part_upper_sleeve_1", "part_fore_sleeve_-1", "part_fore_sleeve_1",
                     "part_cuff_-1", "part_cuff_1" }) hide(name, tyrant.isRaging());
-            for (String name : new String[] { "mutant_chest", "mutant_upper_r", "mutant_upper_l",
+            for (String name : new String[] { "mutant_chest", "mutant_shoulder", "mutant_upper_r", "mutant_upper_l",
                     "mutant_forearm_r", "mutant_forearm_l", "blade_r", "blade_l" }) hide(name, !tyrant.isRaging());
             if (tyrant.isAlive() && tyrant.isRaging()) {
                 for (String name : TyrantEntity.EXPOSURE_BONES) {

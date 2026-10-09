@@ -263,6 +263,19 @@ class ApprovedModelIntegrationTests(unittest.TestCase):
             impact = center(posed_part("tyrant", "blade_" + side, action, .5, True))
             self.assertLess(impact[2], windup[2] - 15)
 
+    def test_tyrant_eye_is_connected_to_the_chest_by_shoulder_tissue(self):
+        model = bones(ASSETS / "geo/tyrant.geo.json")
+        self.assertEqual(model["mutant_shoulder"]["parent"], "chest")
+
+        def bounds(name):
+            points = [p for cube in model[name]["cubes"] for p in vertices(cube)]
+            return [(min(p[i] for p in points), max(p[i] for p in points)) for i in range(3)]
+
+        mount = bounds("mutant_shoulder")
+        for part in ("mutant_chest", "tyrant_eye"):
+            self.assertTrue(all(min(a[1], b[1]) > max(a[0], b[0]) for a, b in zip(mount, bounds(part))),
+                            "Exposed eye must visibly connect to the body, not float beside it")
+
     def test_tyrant_charge_has_no_render_only_displacement(self):
         animations = read(ASSETS / "animations/tyrant.animation.json")["animations"]
         self.assertEqual(animations["animation.tyrant.walk"]["animation_length"], .9)

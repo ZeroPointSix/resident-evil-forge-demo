@@ -34,10 +34,17 @@ def upgrade_tyrant(geometry, animation_data):
     def cube(name, origin, size, uv):
         return {"name": name, "origin": origin, "size": size, "uv": copy.deepcopy(uv)}
 
-    # The exposed eye has a fixed chest-local center shared with TyrantEntity.
+    bones.append({"name": "mutant_shoulder", "parent": "chest", "pivot": [-12.8, 52, -5], "cubes": [
+        cube("shoulder_outer", [-16.5, 46, -8], [11, 9, 8], skin),
+        cube("shoulder_upper", [-14.5, 45, -7], [10, 11, 8], skin),
+        cube("shoulder_root", [-12.5, 43, -6], [8, 9, 8], skin),
+    ]})
+    # The eye protrudes from connected shoulder tissue; its gameplay center stays fixed.
     bones.append({"name": "tyrant_eye", "parent": "chest", "pivot": [-12.8, 52, -8.8], "cubes": [
-        cube("tyrant_eye_sclera", [-16.8, 48, -11.2], [8, 8, 4.8], light),
-        cube("tyrant_eye_iris", [-15.2, 49.5, -11.24], [4.8, 5, 0.04], skin),
+        cube("tyrant_eye_sclera", [-16.8, 49, -11.2], [8, 6, 4.8], skin),
+        cube("tyrant_eye_sclera_top", [-15.8, 55, -11.2], [6, 1, 4.8], skin),
+        cube("tyrant_eye_sclera_bottom", [-15.8, 48, -11.2], [6, 1, 4.8], skin),
+        cube("tyrant_eye_iris", [-15.2, 49.5, -11.24], [4.8, 5, 0.04], light),
         cube("tyrant_eye_pupil", [-13.8, 50, -11.28], [2, 4, 0.04], dark),
     ]})
     for side, sign in (("r", -1), ("l", 1)):
@@ -48,7 +55,7 @@ def upgrade_tyrant(geometry, animation_data):
             width = 4.5 - index
             blades.append(cube(f"blade_{side}_edge_{index}",
                                [x + sign * 3 - width / 2, y - 4 - index * 4, z - 7 - index * 1.5],
-                               [width, 6, 5], light))
+                               [width, 6, 5], skin))
         bones.append({"name": "blade_" + side, "parent": "hand_" + side, "pivot": anchor[:], "cubes": blades})
     geometry["description"]["visible_bounds_height"] = 7
     geometry["description"]["visible_bounds_offset"] = [0, 2, 0]

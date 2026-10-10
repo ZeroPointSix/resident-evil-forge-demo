@@ -200,6 +200,61 @@ public final class TyrantPhaseGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void pendingRageSurvivesHealingAndReloadDuringThrow(GameTestHelper h) {
+        var mob = tyrant(h);
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 12));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        mob.setTarget(target);
+        mob.startAttack(TyrantEntity.THROW, 36, 8, 1.25);
+        var inFlight = new ArrayList<TyrantDebrisEntity>();
+        int launch = mob.attackFrameAt(20);
+        h.runAfterDelay(launch + 2, () -> {
+            inFlight.addAll(debris(h, mob));
+            h.assertTrue(inFlight.size() == 3 && inFlight.stream().allMatch(
+                    rock -> !rock.isRemoved() && rock.tickCount > 0 && rock.getZ() > mob.getZ() + 1),
+                    "Fixture has three projectiles moving on real ticks before healing");
+            h.assertTrue(mob.attack() == TyrantEntity.THROW && !mob.isRaging(),
+                    "The original throw is active before the threshold");
+            mob.setHealth(120);
+            mob.heal(1);
+            h.assertTrue(mob.getHealth() == 121 && !mob.canThrowDebris(),
+                    "Healing from 120 to 121 during the attack cannot undo the threshold");
+            mob.heal(79);
+            h.assertTrue(mob.getHealth() == 200 && !mob.canThrowDebris(),
+                    "Healing during the attack cannot undo the threshold or re-enable ranged attacks");
+            h.assertTrue(inFlight.stream().noneMatch(rock -> rock.canHitEntity(target)),
+                    "Healing cannot restore collision damage to the original volley");
+            mob.throwDebris();
+            h.assertTrue(debris(h, mob).equals(inFlight), "Healing cannot permit a replacement volley");
+            CompoundTag saved = new CompoundTag();
+            mob.addAdditionalSaveData(saved);
+            var restored = ModEntities.TYRANT.get().create(h.getLevel());
+            restored.readAdditionalSaveData(saved);
+            restored.readAdditionalSaveData(saved);
+            h.assertTrue(restored.getHealth() == 200 && !restored.canThrowDebris(),
+                    "A healed pending transformation survives save and repeated reload");
+            restored.updatePhase();
+            h.assertTrue(restored.isRaging() && restored.getArmorValue() == 4
+                    && Math.abs(restored.getAttributeValue(Attributes.MOVEMENT_SPEED) - .4) < .001,
+                    "Reload completes the pending transformation with one set of phase modifiers");
+        });
+        h.runAfterDelay(launch + 3, () -> {
+            h.assertTrue(inFlight.stream().allMatch(rock -> rock.isRemoved()) && debris(h, mob).isEmpty(),
+                    "The real cleanup tick removes the original volley even after immediate healing");
+            h.assertTrue(target.getHealth() == 100, "No cleared projectile can damage the target");
+        });
+        h.runAfterDelay(45, () -> {
+            h.assertTrue(mob.isRaging() && mob.getHealth() == 200 && !mob.canThrowDebris()
+                    && mob.eyePart().isPickable() && mob.getArmorValue() == 4,
+                    "Healing cannot cancel the delayed transformation or its combat tradeoffs");
+            h.assertTrue(target.getHealth() == 100 && debris(h, mob).isEmpty(),
+                    "The healed Tyrant never resumes ranged damage");
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 70)
     public static void debrisStopsAtWallsAndNeverEditsTerrain(GameTestHelper h) {
         var mob = tyrant(h);

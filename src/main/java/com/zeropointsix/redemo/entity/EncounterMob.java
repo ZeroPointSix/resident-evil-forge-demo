@@ -4,6 +4,7 @@ import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModSounds;
 import com.mojang.logging.LogUtils;
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
@@ -19,6 +20,7 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -35,6 +37,7 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     private static final EntityDataAccessor<Integer> ATTACK = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ATTACK_TICK = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> ATTACK_SEQUENCE = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> ATTACK_RATE = SynchedEntityData.defineId(EncounterMob.class, EntityDataSerializers.FLOAT);
     static final boolean ANIMATION_TRACE = Boolean.getBoolean("re_demo.animationTrace");
     private final AnimatableInstanceCache animationCache = GeckoLibUtil.createInstanceCache(this);
     protected final Set<UUID> attackHits = new HashSet<>();
@@ -60,6 +63,7 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         entityData.define(ATTACK, 0);
         entityData.define(ATTACK_TICK, 0);
         entityData.define(ATTACK_SEQUENCE, 0);
+        entityData.define(ATTACK_RATE, 1F);
     }
 
     public int attack() { return entityData.get(ATTACK); }
@@ -72,6 +76,10 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     protected abstract void attackFrame(int attack, int tick);
 
     protected void startAttack(int attack, int duration, int recovery) {
+        startAttack(attack, duration, recovery, 1);
+    }
+
+    protected void startAttack(int attack, int duration, int recovery, double rate) {
         if (level().isClientSide || attacking() || !isAlive()) return;
         attackYaw = getYRot();
         if (getTarget() != null) {
@@ -84,8 +92,9 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
         entityData.set(ATTACK, attack);
         entityData.set(ATTACK_TICK, 0);
         entityData.set(ATTACK_SEQUENCE, attackSequence() + 1);
-        attackDuration = duration;
-        cooldown = duration + recovery;
+        entityData.set(ATTACK_RATE, (float) rate);
+        attackDuration = attackFrameAt(duration);
+        cooldown = attackDuration + recovery;
         attackHits.clear();
         getNavigation().stop();
         traceAttackFrame(0);
@@ -135,7 +144,30 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
 
     protected void onAttackFinished() { }
 
-    protected double animationSpeed() { return 1; }
+    protected double animationSpeed() { return attacking() ? entityData.get(ATTACK_RATE) : 1; }
+
+    protected int attackFrameAt(int modelTick) {
+        // Network float precision must not turn exact contacts (9 / 1.8) into a late tick.
+        return Math.max(1, (int) Math.ceil(modelTick / animationSpeed() - 1.0e-6));
+    }
+
+    protected void trackWindup(float turnDegrees) {
+        if (!validTarget(getTarget())) return;
+        Vec3 offset = getTarget().position().subtract(position());
+        float desired = (float) (Mth.atan2(offset.z, offset.x) * 180 / Math.PI) - 90;
+        attackYaw = Mth.approachDegrees(attackYaw, desired, turnDegrees);
+        setYRot(attackYaw);
+        setYHeadRot(attackYaw);
+        yBodyRot = attackYaw;
+    }
+
+    protected void advanceTowardTarget(double speed, double stoppingDistance) {
+        if (!onGround() || horizontalCollision || !validTarget(getTarget())
+                || distanceTo(getTarget()) <= stoppingDistance || !clearAttackLine(getTarget())) return;
+        Vec3 direction = forward();
+        setDeltaMovement(direction.x * speed, getDeltaMovement().y, direction.z * speed);
+        hasImpulse = true;
+    }
 
     public static boolean validTarget(LivingEntity target) {
         return target != null && target.isAlive() && (!(target instanceof Player p) || (!p.isCreative() && !p.isSpectator()));
@@ -151,12 +183,27 @@ public abstract class EncounterMob extends Monster implements GeoEntity {
     }
 
     protected void strike(double range, double arcDegrees, float damage, double knockback) {
+        strike(range, arcDegrees, damage, knockback, Integer.MAX_VALUE);
+    }
+
+    protected void strike(double range, double arcDegrees, float damage, double knockback, int maxTargets) {
         Vec3 direction = forward();
-        for (LivingEntity victim : level().getEntitiesOfClass(LivingEntity.class, getBoundingBox().inflate(range, 1.5, range))) {
-            if (victim == this || !validTarget(victim) || (victim != getTarget() && !(victim instanceof Player))) continue;
+        var candidates = level().getEntitiesOfClass(LivingEntity.class,
+                getBoundingBox().inflate(range, CommonConfig.MELEE_VERTICAL_SEARCH, range));
+        if (maxTargets != Integer.MAX_VALUE) {
+            candidates.sort(Comparator.comparingInt((LivingEntity victim) -> victim == getTarget() ? 0 : 1)
+                    .thenComparingDouble(this::distanceToSqr));
+        }
+        for (LivingEntity victim : candidates) {
+            if (attackHits.size() >= maxTargets) break;
+            if (victim == this || !validTarget(victim) || isAlliedTo(victim)) continue;
+            // Area attacks may hit active combatants, never unrelated passive mobs.
+            if (victim != getTarget() && !(victim instanceof Player)
+                    && !(victim instanceof Mob mob && mob.getTarget() == this)) continue;
             Vec3 offset = victim.position().subtract(position());
             double planar = Math.sqrt(offset.x * offset.x + offset.z * offset.z);
-            if (planar > range + victim.getBbWidth() * 0.5 || Math.abs(offset.y) > 2.5) continue;
+            if (planar > range + victim.getBbWidth() * 0.5
+                    || Math.abs(offset.y) > CommonConfig.MELEE_MAX_Y_DIFFERENCE) continue;
             if (planar > 0.1 && direction.dot(new Vec3(offset.x, 0, offset.z).normalize()) < Math.cos(Math.toRadians(arcDegrees / 2))) continue;
             if (!clearAttackLine(victim) || attackHits.contains(victim.getUUID())) continue;
             if (victim.hurt(damageSources().mobAttack(this), damage * CommonConfig.DAMAGE_SCALE.get().floatValue())) {

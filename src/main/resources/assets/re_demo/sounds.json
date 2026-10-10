@@ -1,5 +1,8 @@
 {
-  "licker_hiss": {"subtitle":"subtitles.re_demo.licker_hiss","sounds":[{"name":"minecraft:entity.spider.ambient","type":"event"}]},
+  "licker_hiss": {"subtitle":"subtitles.re_demo.licker_hiss","sounds":["re_demo:licker/hiss"]},
+  "licker_hurt": {"subtitle":"subtitles.re_demo.licker_hurt","sounds":["re_demo:licker/hurt"]},
+  "licker_death": {"subtitle":"subtitles.re_demo.licker_death","sounds":["re_demo:licker/death"]},
+  "licker_tongue": {"subtitle":"subtitles.re_demo.licker_tongue","sounds":["re_demo:licker/tongue"]},
   "heavy_step": {"subtitle":"subtitles.re_demo.heavy_step","sounds":[{"name":"minecraft:entity.iron_golem.step","type":"event"}]},
   "impact": {"subtitle":"subtitles.re_demo.impact","sounds":[{"name":"minecraft:entity.iron_golem.attack","type":"event"}]},
   "rage": {"subtitle":"subtitles.re_demo.rage","sounds":[{"name":"minecraft:entity.ravager.roar","type":"event"}]},

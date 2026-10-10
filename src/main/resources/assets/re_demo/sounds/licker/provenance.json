@@ -1,0 +1,23 @@
+{
+  "origin": "Original deterministic synthesis; no external samples",
+  "license": "MIT",
+  "generator": "tools/generate_licker_sounds.py",
+  "files": {
+    "hiss.ogg": {
+      "seconds": 0.75,
+      "sha256": "6da27f68c51900942592c195e88fc033f893ea473bacf52daabc919baaa43449"
+    },
+    "hurt.ogg": {
+      "seconds": 0.42,
+      "sha256": "10fcffd3a742d70d28d77639e39cf640f20e891e2a9d61e93b8a1a59342422f9"
+    },
+    "death.ogg": {
+      "seconds": 1.2,
+      "sha256": "cd098783b06233c73903c0042f5a5aace70c6b647e287989f939859dd15dc64c"
+    },
+    "tongue.ogg": {
+      "seconds": 0.32,
+      "sha256": "35693446d8457dce9dd5381a099204751c4e2d20311f565ee74c64e29f1f6fa0"
+    }
+  }
+}

@@ -50,7 +50,7 @@ jobs:
             --server-args="-screen 0 1280x720x24 -nolisten tcp +extension GLX +render -noreset" \
             python tools/qa/capture_client_evidence.py \
               --project . --output build/client-evidence \
-              --jar build/libs/re_demo-0.1.3.jar \
+              --jar build/libs/re_demo-0.1.11.jar \
               --accept-minecraft-eula
       - name: Summarize evidence scope
         if: always()

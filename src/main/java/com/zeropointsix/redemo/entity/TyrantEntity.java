@@ -48,7 +48,7 @@ public final class TyrantEntity extends EncounterMob {
 
     public static AttributeSupplier.Builder attributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.TYRANT_HEALTH)
-                .add(Attributes.ARMOR, 12).add(Attributes.MOVEMENT_SPEED, 0.22)
+                .add(Attributes.ARMOR, 12).add(Attributes.MOVEMENT_SPEED, CommonConfig.TYRANT_MOVE_SPEED)
                 .add(Attributes.ATTACK_DAMAGE, CommonConfig.TYRANT_PUNCH_DAMAGE).add(Attributes.FOLLOW_RANGE, 64)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.9);
     }
@@ -77,7 +77,7 @@ public final class TyrantEntity extends EncounterMob {
         entityData.set(RAGING, true);
         var speed = getAttribute(Attributes.MOVEMENT_SPEED);
         if (speed != null && speed.getModifier(SPEED_BONUS) == null) speed.addTransientModifier(new AttributeModifier(SPEED_BONUS, "Limiter break", 0.25, AttributeModifier.Operation.MULTIPLY_TOTAL));
-        if (!attacking()) startAttack(RAGE, 40, 10);
+        startAttack(RAGE, 40, CommonConfig.TYRANT_RECOVERY, CommonConfig.TYRANT_TRANSITION_SPEED);
         playSound(ModSounds.RAGE.get(), 1.6F, 0.7F);
     }
 
@@ -92,26 +92,31 @@ public final class TyrantEntity extends EncounterMob {
         if (isNoAi() || getTarget() == null || attacking() || cooldown > 0) return;
         double distance = distanceTo(getTarget());
         if (breakCooldown == 0 && hasBreakableAhead()) {
-            startAttack(BREAK, scaled(28), 15);
-            breakCooldown = 60;
+            startAttack(BREAK, 28, CommonConfig.TYRANT_RECOVERY, combatSpeed());
+            breakCooldown = CommonConfig.TYRANT_BREAK_COOLDOWN;
         } else if (distance >= 4 && distance <= 10 && chargeCooldown == 0 && onGround() && hasLineOfSight(getTarget())) {
-            startAttack(CHARGE, scaled(40), 35);
-            chargeCooldown = 180;
+            startAttack(CHARGE, 40, CommonConfig.TYRANT_RECOVERY, combatSpeed());
+            chargeCooldown = CommonConfig.TYRANT_CHARGE_COOLDOWN;
         } else if (distance <= 2.7 && hasLineOfSight(getTarget())) {
             int skill = ++closeAttacks % 3 == 0 ? SHOVE : PUNCH;
-            startAttack(skill, scaled(skill == SHOVE ? 24 : 32), 16);
+            startAttack(skill, skill == SHOVE ? 24 : 32, CommonConfig.TYRANT_RECOVERY, combatSpeed());
         }
     }
 
-    private int scaled(int ticks) { return isRaging() ? Math.max(1, Math.round(ticks * 0.8F)) : ticks; }
+    private double combatSpeed() { return isRaging() ? CommonConfig.TYRANT_RAGE_ATTACK_SPEED : CommonConfig.TYRANT_ATTACK_SPEED; }
     private float damage(float amount) { return isRaging() ? amount * 1.2F : amount; }
 
     @Override
     protected void attackFrame(int attack, int tick) {
-        if (attack == PUNCH && tick == scaled(16)) strike(2.8, 100, damage(CommonConfig.TYRANT_PUNCH_DAMAGE), 0.6);
-        if (attack == SHOVE && tick == scaled(10)) strike(2.8, 150, damage(CommonConfig.TYRANT_SHOVE_DAMAGE), 1.8);
-        if (attack == BREAK && tick == scaled(14)) breakSoftObstacles();
-        if (attack == CHARGE && tick >= scaled(20) && tick <= scaled(35)) {
+        int hitFrame = attack == SHOVE ? 10 : attack == CHARGE ? 20 : 16;
+        if (attack != RAGE && attack != BREAK && tick < attackFrameAt(hitFrame)) {
+            trackWindup(6);
+            if (attack == PUNCH || attack == SHOVE) advanceTowardTarget(CommonConfig.TYRANT_PRESSURE_STEP, 1.8);
+        }
+        if (attack == PUNCH && tick == attackFrameAt(16)) strike(2.8, 110, damage(CommonConfig.TYRANT_PUNCH_DAMAGE), 0.35);
+        if (attack == SHOVE && tick == attackFrameAt(10)) strike(3.2, 240, damage(CommonConfig.TYRANT_SHOVE_DAMAGE), 1.0);
+        if (attack == BREAK && tick == attackFrameAt(14)) breakSoftObstacles();
+        if (attack == CHARGE && tick >= attackFrameAt(20) && tick <= attackFrameAt(35)) {
             if (!horizontalCollision) {
                 Vec3 forward = forward();
                 setDeltaMovement(forward.x * 0.65, getDeltaMovement().y, forward.z * 0.65);
@@ -131,29 +136,33 @@ public final class TyrantEntity extends EncounterMob {
 
     private boolean canBreak(BlockPos pos) {
         BlockState state = level().getBlockState(pos);
-        return state.is(BREAKABLE) && !state.hasBlockEntity() && state.getDestroySpeed(level(), pos) >= 0;
+        float hardness = state.getDestroySpeed(level(), pos);
+        return pos.getY() >= blockPosition().getY() && state.is(BREAKABLE) && !state.hasBlockEntity()
+                && !state.getCollisionShape(level(), pos).isEmpty()
+                && hardness >= 0 && hardness <= CommonConfig.TYRANT_MAX_BREAK_HARDNESS;
     }
 
     public boolean hasBreakableAhead() {
-        if (!CommonConfig.TYRANT_BREAK_BLOCKS.get() || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return false;
-        Vec3 direction = getTarget() == null ? getLookAngle() : getTarget().position().subtract(position());
+        if (!validTarget(getTarget()) || !CommonConfig.TYRANT_BREAK_BLOCKS.get()
+                || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return false;
+        Vec3 direction = getTarget().position().subtract(position());
         for (BlockPos pos : obstacleSection(direction)) if (canBreak(pos)) return true;
         return false;
     }
 
     public void breakSoftObstacles() {
-        if (level().isClientSide || !CommonConfig.TYRANT_BREAK_BLOCKS.get() || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return;
+        if (level().isClientSide || !isAlive() || !validTarget(getTarget())
+                || !CommonConfig.TYRANT_BREAK_BLOCKS.get() || !ForgeEventFactory.getMobGriefingEvent(level(), this)) return;
+        int broken = 0;
         for (BlockPos pos : obstacleSection(forward())) {
-            if (canBreak(pos)) level().destroyBlock(pos, true, this);
+            if (broken >= CommonConfig.TYRANT_BREAK_LIMIT) break;
+            if (canBreak(pos) && level().destroyBlock(pos, true, this)) broken++;
         }
         playSound(ModSounds.IMPACT.get(), 1.3F, 0.7F);
     }
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) { playSound(ModSounds.HEAVY_STEP.get(), 0.75F, 0.7F); }
-
-    @Override
-    protected double animationSpeed() { return isRaging() && attacking() && attack() != RAGE ? 1.25 : 1; }
 
     @Override
     protected String attackAnimation(int attack) {

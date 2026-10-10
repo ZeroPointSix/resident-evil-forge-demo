@@ -1,4 +1,12 @@
 {
   "replace": false,
-  "values": ["#minecraft:wooden_doors", "minecraft:glass", "minecraft:glass_pane"]
+  "values": [
+    "#minecraft:dirt",
+    "#minecraft:leaves",
+    "#minecraft:logs",
+    "#minecraft:planks",
+    "#minecraft:wooden_doors",
+    "#forge:glass",
+    "#forge:glass_panes"
+  ]
 }

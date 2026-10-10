@@ -9,7 +9,6 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,13 +32,15 @@ public final class LickerEntity extends EncounterMob {
     private int hangTicks;
     private int leapCooldown;
     private int tongueCooldown;
+    private double tongueRecoveryRemainder;
     private int hangCooldown;
 
     public LickerEntity(EntityType<? extends Monster> type, Level level) { super(type, level); }
 
     public static AttributeSupplier.Builder attributes() {
         return Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, CommonConfig.LICKER_HEALTH)
-                .add(Attributes.ARMOR, 4).add(Attributes.MOVEMENT_SPEED, 0.29)
+                .add(Attributes.ARMOR, 4).add(Attributes.MOVEMENT_SPEED, CommonConfig.LICKER_MOVE_SPEED)
+                .add(Attributes.KNOCKBACK_RESISTANCE, CommonConfig.LICKER_KNOCKBACK_RESISTANCE)
                 .add(Attributes.ATTACK_DAMAGE, CommonConfig.LICKER_CLAW_DAMAGE).add(Attributes.FOLLOW_RANGE, 24);
     }
 
@@ -67,8 +68,24 @@ public final class LickerEntity extends EncounterMob {
     public Vec3 investigationPoint() { return lastSound; }
     public boolean hasCombatLock() { return combatLock; }
 
-    private boolean inClawRange(LivingEntity target) {
-        return validTarget(target) && distanceTo(target) <= 2.3 && hasLineOfSight(target);
+    int nextTongueRecovery() {
+        // Carry fractional ticks across attacks instead of rounding every
+        // recovery up; 1.25 ticks becomes a repeatable 2, 1, 1, 1 cadence.
+        double budget = CommonConfig.LICKER_TONGUE_RECOVERY + tongueRecoveryRemainder;
+        int ticks = (int) Math.ceil(budget);
+        tongueRecoveryRemainder = budget - ticks;
+        return ticks;
+    }
+
+    boolean inClawRange(LivingEntity target) {
+        // Use the same victim radius as the contact test, avoiding an idle ring
+        // around wide targets while the tongue is cooling down.
+        return validTarget(target)
+                && distanceTo(target) <= CommonConfig.LICKER_CLAW_RANGE + target.getBbWidth() * 0.5
+                && Math.abs(target.getY() - getY()) <= CommonConfig.MELEE_MAX_Y_DIFFERENCE
+                && getBoundingBox().inflate(CommonConfig.LICKER_CLAW_RANGE, CommonConfig.MELEE_VERTICAL_SEARCH,
+                        CommonConfig.LICKER_CLAW_RANGE).intersects(target.getBoundingBox())
+                && hasLineOfSight(target) && clearAttackLine(target);
     }
 
     public void hear(Vec3 position, LivingEntity source, double radius) {
@@ -110,7 +127,7 @@ public final class LickerEntity extends EncounterMob {
         tongueCooldown = Math.max(0, tongueCooldown - 1);
         hangCooldown = Math.max(0, hangCooldown - 1);
         boolean melee = inClawRange(getTarget());
-        // Only an unobstructed claw target is "melee". A dummy 2.3 blocks away
+        // Only an unobstructed claw target is "melee". A nearby dummy
         // behind a wall still has to be climbed; colliding with that dummy in
         // the open must not spider-climb its hurtbox.
         boolean huntClimb = lastSound != null || combatLock;
@@ -122,6 +139,7 @@ public final class LickerEntity extends EncounterMob {
         if (!validTarget(getTarget())) {
             setTarget(null);
             combatLock = false;
+            tongueRecoveryRemainder = 0;
         }
         if (onClimbable() && huntClimb && !isHanging() && !attacking() && !melee) {
             setDeltaMovement(getDeltaMovement().x, Math.max(0.2, getDeltaMovement().y), getDeltaMovement().z);
@@ -145,42 +163,52 @@ public final class LickerEntity extends EncounterMob {
                 entityData.set(HANGING, false);
                 setNoGravity(false);
                 hangCooldown = 160;
-                if (validTarget(getTarget())) startAttack(AMBUSH, 28, 35);
+                if (validTarget(getTarget())) startAttack(AMBUSH, 28, 6, CommonConfig.LICKER_ATTACK_SPEED);
             }
             return;
         }
         if (isNoAi() || attacking() || cooldown > 0 || getTarget() == null) return;
         double range = distanceTo(getTarget());
         if (!hasLineOfSight(getTarget())) return;
-        if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {
-            startAttack(LEAP, 28, 28);
-            leapCooldown = 120;
+        if (range <= CommonConfig.LICKER_TONGUE_RANGE && tongueCooldown == 0) {
+            startAttack(TONGUE, 24, nextTongueRecovery(), CommonConfig.LICKER_ATTACK_SPEED);
+            tongueCooldown = CommonConfig.LICKER_TONGUE_COOLDOWN;
+            playSound(ModSounds.LICKER_TONGUE.get(), 1, 1);
+        } else if (range >= 4 && range <= 7 && leapCooldown == 0 && onGround()) {
+            startAttack(LEAP, 28, 6, CommonConfig.LICKER_ATTACK_SPEED);
+            leapCooldown = CommonConfig.LICKER_LEAP_COOLDOWN;
             playSound(ModSounds.LICKER_HISS.get(), 1, 1.2F);
-        } else if (range > 2.2 && range <= 4 && tongueCooldown == 0) {
-            startAttack(TONGUE, 24, 24);
-            tongueCooldown = 90;
-        } else if (range <= 2.3) startAttack(CLAW, 20, 20);
+        } else if (inClawRange(getTarget())) startAttack(CLAW, 20, CommonConfig.LICKER_RECOVERY, CommonConfig.LICKER_ATTACK_SPEED);
     }
 
     @Override
     protected void attackFrame(int attack, int tick) {
-        if (attack == CLAW && tick == 9) strike(2.3, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.3);
-        if (attack == TONGUE && tick == 11) {
-            strike(4, 22, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
+        int hitFrame = attack == CLAW ? 9 : attack == TONGUE ? CommonConfig.LICKER_TONGUE_HIT_FRAME : attack == LEAP ? 12 : 8;
+        if (tick < attackFrameAt(hitFrame)) {
+            trackWindup(attack == TONGUE ? CommonConfig.LICKER_TONGUE_TRACKING : 16);
+            if (attack == CLAW) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 1.6);
+            else if (attack == TONGUE) advanceTowardTarget(CommonConfig.LICKER_PRESSURE_STEP, 2.8);
+        }
+        if (attack == CLAW && tick == attackFrameAt(9)) strike(CommonConfig.LICKER_CLAW_RANGE, 110, CommonConfig.LICKER_CLAW_DAMAGE, 0.15);
+        if (attack == TONGUE && tick >= attackFrameAt(CommonConfig.LICKER_TONGUE_HIT_FRAME)
+                && tick <= attackFrameAt(CommonConfig.LICKER_TONGUE_CONTACT_END_FRAME)) {
+            // The extended tongue stays active briefly, without tracking after contact.
             LivingEntity target = getTarget();
-            if (target != null && attackHits.contains(target.getUUID())) {
-                Vec3 pull = position().subtract(target.position()).normalize().scale(0.45);
+            boolean alreadyHit = target != null && attackHits.contains(target.getUUID());
+            strike(CommonConfig.LICKER_TONGUE_RANGE, CommonConfig.LICKER_TONGUE_ARC, CommonConfig.LICKER_TONGUE_DAMAGE, 0);
+            if (target != null && !alreadyHit && attackHits.contains(target.getUUID())) {
+                Vec3 pull = position().subtract(target.position()).normalize().scale(CommonConfig.LICKER_TONGUE_PULL);
                 target.push(pull.x, 0.12, pull.z);
                 target.hurtMarked = true;
             }
         }
-        if ((attack == LEAP && tick == 12) || (attack == AMBUSH && tick == 8)) {
+        if ((attack == LEAP && tick == attackFrameAt(12)) || (attack == AMBUSH && tick == attackFrameAt(8))) {
             Vec3 direction = forward();
             double speed = attack == LEAP ? 0.82 : 0.65;
             setDeltaMovement(direction.x * speed, attack == LEAP ? 0.48 : -0.35, direction.z * speed);
             hasImpulse = true;
         }
-        if ((attack == LEAP && tick >= 13) || (attack == AMBUSH && tick >= 9)) {
+        if ((attack == LEAP && tick >= attackFrameAt(13)) || (attack == AMBUSH && tick >= attackFrameAt(9))) {
             strike(1.7, 130, attack == AMBUSH ? CommonConfig.LICKER_AMBUSH_DAMAGE : CommonConfig.LICKER_LEAP_DAMAGE, 0.5);
         }
     }
@@ -197,10 +225,10 @@ public final class LickerEntity extends EncounterMob {
     public int deathDurationTicks() { return 48; }
 
     @Override
-    protected SoundEvent getHurtSound(DamageSource source) { return SoundEvents.SPIDER_HURT; }
+    protected SoundEvent getHurtSound(DamageSource source) { return ModSounds.LICKER_HURT.get(); }
 
     @Override
-    protected SoundEvent getDeathSound() { return SoundEvents.SPIDER_DEATH; }
+    protected SoundEvent getDeathSound() { return ModSounds.LICKER_DEATH.get(); }
 
     @Override
     public boolean causeFallDamage(float distance, float multiplier, DamageSource source) { return false; }

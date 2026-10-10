@@ -27,15 +27,15 @@ jobs:
           set -o pipefail
           ./gradlew clean build --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-ci-build.log"
       - name: Verify packaged asset contract
-        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.3.jar --report build/reports/asset-contract.json
+        run: python tools/qa/validate_assets.py --root . --jar build/libs/re_demo-0.1.11.jar --report build/reports/asset-contract.json
       - name: Install audio verifier
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Verify original music and exact packaged bytes
-        run: python tools/qa/validate_music.py --root . --jar build/libs/re_demo-0.1.3.jar --report build/reports/music-contract.json
+        run: python tools/qa/validate_music.py --root . --jar build/libs/re_demo-0.1.11.jar --report build/reports/music-contract.json
       - name: Run real Forge GameTests
         run: |
           set -o pipefail
-          ./gradlew runGameTestServer --stacktrace --no-daemon 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
+          ./gradlew runGameTestServer --stacktrace --no-daemon -Dre_demo.combatTrials=10 -Dre_demo.requireBalance=true -Dre_demo.combatLabel=${{ github.sha }} 2>&1 | tee "$RUNNER_TEMP/re-demo-gametest.log"
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
@@ -52,6 +52,7 @@ jobs:
             build/reports/asset-contract.json
             build/reports/music-contract.json
             run/logs/
+            run/combat-results.jsonl
             run/crash-reports/
           if-no-files-found: warn
       - name: Upload build log

@@ -218,7 +218,10 @@ public final class TyrantPhaseGameTests {
             h.assertTrue(mob.attack() == TyrantEntity.THROW && !mob.isRaging(),
                     "The original throw is active before the threshold");
             mob.setHealth(120);
-            mob.heal(80);
+            mob.heal(1);
+            h.assertTrue(mob.getHealth() == 121 && !mob.canThrowDebris(),
+                    "Healing from 120 to 121 during the attack cannot undo the threshold");
+            mob.heal(79);
             h.assertTrue(mob.getHealth() == 200 && !mob.canThrowDebris(),
                     "Healing during the attack cannot undo the threshold or re-enable ranged attacks");
             h.assertTrue(inFlight.stream().noneMatch(rock -> rock.canHitEntity(target)),

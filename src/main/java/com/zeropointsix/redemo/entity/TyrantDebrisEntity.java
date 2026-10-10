@@ -43,7 +43,7 @@ public final class TyrantDebrisEntity extends ThrowableItemProjectile {
 
     @Override
     protected boolean canHitEntity(Entity candidate) {
-        if (!super.canHitEntity(candidate) || !(getOwner() instanceof TyrantEntity owner)
+        if (!super.canHitEntity(candidate) || !(getOwner() instanceof TyrantEntity owner) || !owner.canThrowDebris()
                 || !(candidate instanceof LivingEntity victim) || owner.isAlliedTo(victim)
                 || !EncounterMob.validTarget(victim)) return false;
         return victim == owner.getTarget() || victim instanceof Player
@@ -74,6 +74,7 @@ public final class TyrantDebrisEntity extends ThrowableItemProjectile {
 
     @Override
     public void tick() {
+        // Ranged eligibility closes at the health threshold, before a queued rage animation.
         if (!level().isClientSide && (++lifetime > 80 || !(getOwner() instanceof TyrantEntity owner)
                 || !owner.isAlive() || !owner.canThrowDebris())) {
             discard();

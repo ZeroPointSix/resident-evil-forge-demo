@@ -3,6 +3,7 @@ package com.zeropointsix.redemo.entity;
 import com.zeropointsix.redemo.ResidentEvilMod;
 import com.zeropointsix.redemo.config.CommonConfig;
 import com.zeropointsix.redemo.registry.ModEntities;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -139,16 +140,19 @@ public final class TyrantPhaseGameTests {
                 "Rocks travel forward and descend toward the lower target under gravity"));
         h.runAfterDelay(40, () -> {
             h.assertTrue(target.getHealth() < 100, "A ranged target must take a real projectile hit");
-            debris(h, mob).forEach(entity -> entity.discard());
+            var survivors = debris(h, mob);
             mob.setHealth(120);
             mob.throwDebris();
-            h.assertTrue(debris(h, mob).isEmpty(),
+            h.assertTrue(debris(h, mob).equals(survivors),
                     "Health threshold blocks throw immediately, even before phase transition finishes");
+        });
+        h.runAfterDelay(42, () -> {
+            h.assertTrue(debris(h, mob).isEmpty(), "Any surviving debris clears on real server ticks");
             h.succeed();
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 40)
+    @GameTest(template = "empty", timeoutTicks = 60)
     public static void inFlightDebrisClearsAtThresholdBeforeRageAnimation(GameTestHelper h) {
         var mob = tyrant(h);
         var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 12));
@@ -156,20 +160,42 @@ public final class TyrantPhaseGameTests {
         target.setNoGravity(true);
         mob.setTarget(target);
         mob.startAttack(TyrantEntity.THROW, 36, 8, 1.25);
+        var inFlight = new ArrayList<TyrantDebrisEntity>();
         int launch = mob.attackFrameAt(20);
-        h.runAfterDelay(launch + 1, () -> {
-            h.assertTrue(debris(h, mob).size() == 3, "Fixture has three real in-flight projectiles");
+        h.runAfterDelay(launch + 2, () -> {
+            inFlight.addAll(debris(h, mob));
+            h.assertTrue(inFlight.size() == 3, "Fixture has three real in-flight projectiles");
+            h.assertTrue(inFlight.stream().allMatch(rock -> !rock.isRemoved() && rock.tickCount > 0
+                    && rock.getDeltaMovement().length() > 1 && rock.getZ() > mob.getZ() + 1),
+                    "Each projectile has already moved on real server ticks before the threshold");
             h.assertTrue(mob.attack() == TyrantEntity.THROW && !mob.isRaging(),
                     "Throw action is still active before the delayed rage animation");
+            h.assertTrue(target.getHealth() == 100, "No projectile has reached the distant target yet");
             mob.setHealth(120);
             mob.updatePhase();
             h.assertTrue(!mob.canThrowDebris() && !mob.isRaging(),
                     "Threshold disables ranged attacks immediately while the current action finishes");
+            h.assertTrue(inFlight.stream().noneMatch(rock -> rock.canHitEntity(target)),
+                    "Collision damage is disabled immediately, even before the cleanup tick");
+            mob.throwDebris();
+            h.assertTrue(debris(h, mob).equals(inFlight), "Threshold cannot launch any new projectile");
         });
         h.runAfterDelay(launch + 3, () -> {
+            h.assertTrue(inFlight.stream().allMatch(rock -> rock.isRemoved()),
+                    "The original flying entities are removed by the next real server tick");
             h.assertTrue(debris(h, mob).isEmpty(),
                     "All in-flight projectiles clear before the delayed rage animation can start");
+            h.assertTrue(mob.attack() == TyrantEntity.THROW && !mob.isRaging(),
+                    "Cleanup does not wait for the current throw to finish");
+            mob.throwDebris();
+            h.assertTrue(debris(h, mob).isEmpty(), "No new debris can replace the cleared volley");
             h.assertTrue(target.getHealth() == 100, "Cleared projectiles cannot damage the ranged target");
+        });
+        h.runAfterDelay(45, () -> {
+            h.assertTrue(target.getHealth() == 100 && debris(h, mob).isEmpty(),
+                    "The target stays unharmed past the original projectile arrival time");
+            h.assertTrue(mob.isRaging() && !mob.canThrowDebris() && mob.eyePart().isPickable()
+                    && mob.getArmorValue() == 4, "The delayed transformation still exposes the eye and reduces armor");
             h.succeed();
         });
     }

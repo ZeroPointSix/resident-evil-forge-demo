@@ -9,6 +9,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -29,6 +30,36 @@ public final class TyrantPhaseGameTests {
     private static List<TyrantDebrisEntity> debris(GameTestHelper h, TyrantEntity owner) {
         return h.getLevel().getEntitiesOfClass(TyrantDebrisEntity.class, owner.getBoundingBox().inflate(40),
                 rock -> rock.getOwner() == owner);
+    }
+
+    private static void assertMeleeContact(GameTestHelper h, TyrantEntity mob, LivingEntity target,
+            int attack, int contactFrame, float expectedDamage, String label) {
+        float health = target.getHealth();
+        int frame = mob.attackFrameAt(contactFrame);
+        mob.attackFrame(attack, frame - 1);
+        h.assertTrue(target.getHealth() == health, label + " windup cannot deal early damage");
+        mob.attackFrame(attack, frame);
+        h.assertTrue(Math.abs(target.getHealth() - (health - expectedDamage)) < .001,
+                label + " deals its configured damage on the authoritative contact frame");
+        target.invulnerableTime = 0;
+        mob.attackFrame(attack, frame);
+        h.assertTrue(Math.abs(target.getHealth() - (health - expectedDamage)) < .001,
+                label + " cannot damage the same victim twice in one swing");
+    }
+
+    private static void assertNormalMeleeContact(GameTestHelper h, int x, int attack,
+            int contactFrame, float expectedDamage, String label) {
+        var mob = h.spawn(ModEntities.TYRANT.get(), new BlockPos(x, 2, 3));
+        mob.setNoAi(true);
+        mob.setNoGravity(true);
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(x, 2, 5));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        mob.setTarget(target);
+        mob.startAttack(attack, 24, 1, CommonConfig.TYRANT_ATTACK_SPEED);
+        mob.attackYaw = 0;
+        h.assertTrue(mob.attack() == attack, label + " enters its distinct server attack state");
+        assertMeleeContact(h, mob, target, attack, contactFrame, expectedDamage, label);
     }
 
     @GameTest(template = "empty", timeoutTicks = 20)
@@ -76,6 +107,15 @@ public final class TyrantPhaseGameTests {
         float weak = before - mob.getHealth();
         h.assertTrue(Math.abs(weak - normal * CommonConfig.TYRANT_EYE_MULTIPLIER) < .001,
                 "Eye multiplies damage after armor without changing body damage");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void normalMeleeContactFramesHitOnceOnBothSides(GameTestHelper h) {
+        assertNormalMeleeContact(h, 2, TyrantEntity.PUNCH, 16, CommonConfig.TYRANT_PUNCH_DAMAGE, "Right punch");
+        assertNormalMeleeContact(h, 5, TyrantEntity.PUNCH_LEFT, 16, CommonConfig.TYRANT_PUNCH_DAMAGE, "Left punch");
+        assertNormalMeleeContact(h, 8, TyrantEntity.SHOVE, 10, CommonConfig.TYRANT_SHOVE_DAMAGE, "Right shove");
+        assertNormalMeleeContact(h, 11, TyrantEntity.SHOVE_LEFT, 10, CommonConfig.TYRANT_SHOVE_DAMAGE, "Left shove");
         h.succeed();
     }
 
@@ -149,25 +189,31 @@ public final class TyrantPhaseGameTests {
     public static void slashKeepsContactFrameAndSingleHitBudget(GameTestHelper h) {
         var mob = tyrant(h);
         var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 5));
+        var leftMob = h.spawn(ModEntities.TYRANT.get(), new BlockPos(8, 2, 3));
+        var leftTarget = h.spawn(EntityType.IRON_GOLEM, new BlockPos(8, 2, 5));
         target.setNoAi(true);
         target.setNoGravity(true);
+        leftMob.setNoAi(true);
+        leftMob.setNoGravity(true);
+        leftTarget.setNoAi(true);
+        leftTarget.setNoGravity(true);
         mob.setTarget(target);
+        leftMob.setTarget(leftTarget);
         mob.setHealth(120);
+        leftMob.setHealth(120);
         mob.updatePhase();
+        leftMob.updatePhase();
         h.runAfterDelay(24, () -> {
             mob.startAttack(TyrantEntity.SLASH, 24, 1, CommonConfig.TYRANT_RAGE_ATTACK_SPEED);
+            leftMob.startAttack(TyrantEntity.SLASH_LEFT, 24, 1, CommonConfig.TYRANT_RAGE_ATTACK_SPEED);
             mob.attackYaw = 0;
-            h.assertTrue(mob.attack() == TyrantEntity.SLASH && mob.animationSpeed() == 3,
-                    "The real slash state runs faster than the normal attack rate of two");
-            float health = target.getHealth();
-            int frame = mob.attackFrameAt(10);
-            mob.attackFrame(TyrantEntity.SLASH, frame - 1);
-            h.assertTrue(target.getHealth() == health, "Blade windup does not deal early damage");
-            mob.attackFrame(TyrantEntity.SLASH, frame);
-            h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "Blade impact uses the rage damage multiplier");
-            target.invulnerableTime = 0;
-            mob.attackFrame(TyrantEntity.SLASH, frame);
-            h.assertTrue(Math.abs(target.getHealth() - (health - 25.6F)) < .001, "One swing cannot damage a victim twice");
+            leftMob.attackYaw = 0;
+            h.assertTrue(mob.attack() == TyrantEntity.SLASH && leftMob.attack() == TyrantEntity.SLASH_LEFT
+                    && mob.animationSpeed() == 3 && leftMob.animationSpeed() == 3,
+                    "Both real slash states run faster than the normal attack rate of two");
+            float rageDamage = CommonConfig.TYRANT_PUNCH_DAMAGE * CommonConfig.TYRANT_RAGE_DAMAGE_MULTIPLIER;
+            assertMeleeContact(h, mob, target, TyrantEntity.SLASH, 10, rageDamage, "Right blade slash");
+            assertMeleeContact(h, leftMob, leftTarget, TyrantEntity.SLASH_LEFT, 10, rageDamage, "Left blade slash");
             h.succeed();
         });
     }

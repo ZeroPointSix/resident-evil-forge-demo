@@ -184,12 +184,12 @@ public final class CreatureGameTests {
         var tyrant = h.spawn(ModEntities.TYRANT.get(), new BlockPos(4, 1, 4));
         tyrant.setNoAi(true);
         double speed = tyrant.getAttributeValue(Attributes.MOVEMENT_SPEED);
-        tyrant.setHealth(141);
+        tyrant.setHealth(121);
         tyrant.updatePhase();
-        h.assertTrue(!tyrant.isRaging(), "Limiter must not activate above 35 percent");
-        tyrant.setHealth(140);
+        h.assertTrue(!tyrant.isRaging(), "Limiter must not activate above 30 percent");
+        tyrant.setHealth(120);
         tyrant.updatePhase();
-        h.assertTrue(tyrant.isRaging(), "Limiter must activate at 35 percent");
+        h.assertTrue(tyrant.isRaging(), "Limiter must activate at 30 percent");
         tyrant.updatePhase();
         h.assertTrue(Math.abs(tyrant.getAttributeValue(Attributes.MOVEMENT_SPEED) - speed * 1.25) < 0.00001, "Speed bonus must be exactly 25 percent and never stack");
         h.succeed();

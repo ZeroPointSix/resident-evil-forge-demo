@@ -25,8 +25,9 @@ CONTRACTS = {
         "bones": (),
     },
     "tyrant": {
-        "attacks": {"punch": 0.80, "shove": 0.50, "charge": 1.00, "break": 0.70, "rage": 0.0},
-        "bones": ("coat_intact", "coat_torn"),
+        "attacks": {"punch": 0.80, "punch_left": 0.80, "shove": 0.50, "shove_left": 0.50,
+                    "charge": 1.00, "break": 0.70, "rage": 0.0, "throw": 1.00, "slash": 0.50, "slash_left": 0.50},
+        "bones": ("coat_intact", "coat_torn", "tyrant_eye", "mutant_chest", "blade_r", "blade_l"),
     },
     "g1_birkin": {
         "attacks": {"slam": 0.90, "sweep": 1.00, "grab": 0.75, "rage": 0.0},

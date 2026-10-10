@@ -148,6 +148,32 @@ public final class TyrantPhaseGameTests {
         });
     }
 
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void inFlightDebrisClearsAtThresholdBeforeRageAnimation(GameTestHelper h) {
+        var mob = tyrant(h);
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 20));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        mob.setTarget(target);
+        mob.startAttack(TyrantEntity.THROW, 36, 8, 1.25);
+        int launch = mob.attackFrameAt(20);
+        h.runAfterDelay(launch + 1, () -> {
+            h.assertTrue(debris(h, mob).size() == 3, "Fixture has three real in-flight projectiles");
+            h.assertTrue(mob.attack() == TyrantEntity.THROW && !mob.isRaging(),
+                    "Throw action is still active before the delayed rage animation");
+            mob.setHealth(120);
+            mob.updatePhase();
+            h.assertTrue(!mob.canThrowDebris() && !mob.isRaging(),
+                    "Threshold disables ranged attacks immediately while the current action finishes");
+        });
+        h.runAfterDelay(launch + 3, () -> {
+            h.assertTrue(debris(h, mob).isEmpty(),
+                    "All in-flight projectiles clear before the delayed rage animation can start");
+            h.assertTrue(target.getHealth() == 100, "Cleared projectiles cannot damage the ranged target");
+            h.succeed();
+        });
+    }
+
     @GameTest(template = "empty", timeoutTicks = 70)
     public static void debrisStopsAtWallsAndNeverEditsTerrain(GameTestHelper h) {
         var mob = tyrant(h);

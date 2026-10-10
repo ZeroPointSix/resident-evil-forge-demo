@@ -75,7 +75,7 @@ public final class TyrantDebrisEntity extends ThrowableItemProjectile {
     @Override
     public void tick() {
         if (!level().isClientSide && (++lifetime > 80 || !(getOwner() instanceof TyrantEntity owner)
-                || !owner.isAlive() || owner.isRaging())) {
+                || !owner.isAlive() || !owner.canThrowDebris())) {
             discard();
             return;
         }

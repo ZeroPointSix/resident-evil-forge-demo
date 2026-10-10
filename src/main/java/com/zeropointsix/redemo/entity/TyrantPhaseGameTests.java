@@ -151,7 +151,7 @@ public final class TyrantPhaseGameTests {
     @GameTest(template = "empty", timeoutTicks = 40)
     public static void inFlightDebrisClearsAtThresholdBeforeRageAnimation(GameTestHelper h) {
         var mob = tyrant(h);
-        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 20));
+        var target = h.spawn(EntityType.IRON_GOLEM, new BlockPos(4, 2, 12));
         target.setNoAi(true);
         target.setNoGravity(true);
         mob.setTarget(target);

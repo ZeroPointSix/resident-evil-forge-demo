@@ -55,6 +55,7 @@ public final class TyrantEntity extends EncounterMob {
     private final EyePart eye;
     private final PartEntity<?>[] parts;
     private boolean resolvingWeakHit;
+    private boolean rageTriggered;
     private int chargeCooldown;
     private int throwCooldown;
     private int breakCooldown;
@@ -111,8 +112,17 @@ public final class TyrantEntity extends EncounterMob {
 
     public Vec3 eyeCenter() { return EYE_LOCAL_CENTER.yRot(-yBodyRot * Mth.DEG_TO_RAD).add(position()); }
 
+    @Override
+    public void setHealth(float health) {
+        super.setHealth(health);
+        // Capture the crossing before healing or the current attack can defer the phase change.
+        if (!level().isClientSide && getHealth() > 0
+                && getHealth() <= getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD) rageTriggered = true;
+    }
+
     public boolean canThrowDebris() {
-        return isAlive() && !isRaging() && getHealth() > getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD;
+        return isAlive() && !rageTriggered && !isRaging()
+                && getHealth() > getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD;
     }
 
     private void applyPhaseAttributes() {
@@ -129,7 +139,9 @@ public final class TyrantEntity extends EncounterMob {
     }
 
     public void updatePhase() {
-        if (level().isClientSide || !isAlive() || isRaging() || attacking() || getHealth() > getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD) return;
+        if (level().isClientSide || !isAlive() || isRaging()) return;
+        if (getHealth() <= getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD) rageTriggered = true;
+        if (!rageTriggered || attacking()) return;
         entityData.set(RAGING, true);
         applyPhaseAttributes();
         startAttack(RAGE, 40, CommonConfig.TYRANT_RECOVERY, CommonConfig.TYRANT_TRANSITION_SPEED);
@@ -317,6 +329,7 @@ public final class TyrantEntity extends EncounterMob {
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putBoolean("TyrantRaging", isRaging());
+        tag.putBoolean("TyrantRageTriggered", rageTriggered || isRaging());
         tag.putInt("TyrantThrowCooldown", throwCooldown);
         tag.putInt("TyrantChargeCooldown", chargeCooldown);
     }
@@ -325,6 +338,8 @@ public final class TyrantEntity extends EncounterMob {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         entityData.set(RAGING, tag.getBoolean("TyrantRaging"));
+        rageTriggered = tag.getBoolean("TyrantRageTriggered") || isRaging()
+                || getHealth() <= getMaxHealth() * CommonConfig.TYRANT_RAGE_THRESHOLD;
         throwCooldown = Mth.clamp(tag.getInt("TyrantThrowCooldown"), 0, CommonConfig.TYRANT_THROW_COOLDOWN);
         chargeCooldown = Mth.clamp(tag.getInt("TyrantChargeCooldown"), 0, CommonConfig.TYRANT_CHARGE_COOLDOWN);
         applyPhaseAttributes();
